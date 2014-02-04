@@ -14,15 +14,6 @@ var PutBox = function(handler, value) {
 };
 
 var Channel = function(takes, puts, buf) {
-  // if (buf_or_n === 0) {
-  //   buf_or_n = null;
-  // }
-  // if (typeof buf_or_n === "number") {
-  //   this.buf = new buffers.fixed(buf_or_n);
-  // } else {
-  //   this.buf = buf_or_n;
-  // }
-
   this.buf = buf;
   this.takes = takes;
   this.puts = puts;
