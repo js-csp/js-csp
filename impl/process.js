@@ -141,13 +141,11 @@ function alts(operations) {
   return new Instruction(ALTS, operations);
 }
 
-exports = {
-  put_then_callback: put_then_callback,
-  take_then_callback: take_then_callback,
-  put: put,
-  take: take,
-  wait: wait,
-  alts: alts,
+exports.put_then_callback = put_then_callback;
+exports.take_then_callback = take_then_callback;
+exports.put = put;
+exports.take = take;
+exports.wait = wait;
+exports.alts = alts;
 
-  Process: Process
-};
+exports.Process = Process;
