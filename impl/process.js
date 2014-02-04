@@ -93,15 +93,15 @@ Process.prototype.run = function(response) {
     break;
 
   case PUT:
-    data = instruction.data;
+    var data = instruction.data;
     put_then_callback(data.channel, data.value, function() {
       self.run(null);
     });
     break;
 
   case TAKE:
-    data = instruction.data;
-    take_then_callback(data.channel, data.value, function(value) {
+    var channel = instruction.data;
+    take_then_callback(channel, function(value) {
       self.run(value);
     });
     break;
