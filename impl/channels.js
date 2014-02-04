@@ -81,7 +81,7 @@ Channel.prototype._put = function(value, handler) {
 };
 
 Channel.prototype._take = function(handler) {
-  if (handler.is_active()) {
+  if (!handler.is_active()) {
     return null;
   }
 
