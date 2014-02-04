@@ -68,7 +68,7 @@ Channel.prototype._put = function(value, handler) {
         } else {
           this.dirty_puts ++;
         }
-        if (this.puts.count() >= MAX_QUEUE_SIZE) {
+        if (this.puts.length >= MAX_QUEUE_SIZE) {
           throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
         }
         this.puts.unbounded_unshift(new PutBox(handler, value));
@@ -115,7 +115,7 @@ Channel.prototype._take = function(handler) {
         } else {
           this.dirty_takes ++;
         }
-        if (this.takes.length.count() >= MAX_QUEUE_SIZE) {
+        if (this.takes.length >= MAX_QUEUE_SIZE) {
           throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
         }
         this.takes.unbounded_unshift(handler);
