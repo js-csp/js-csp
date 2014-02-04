@@ -68,23 +68,14 @@ Process.prototype.run = function(response) {
     return;
   }
 
-  var instruction;
-  try {
-    if (response === undefined) {
-      instruction = this.gen.next();
-    } else {
-      instruction = this.gen.send(response);
-    }
-  } catch(e) {
-    if (e instanceof StopIteration) {
-      this._done(null);
-      return;
-    } else {
-      throw e;
-    }
+  var iter = this.gen.next(response);
+  if (iter.done) {
+    this._done(null);
+    return;
+  } else {
+    var instruction = iter.value;
   }
 
-  var data;
   var self = this;
 
   switch (instruction.op) {
