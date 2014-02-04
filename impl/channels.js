@@ -38,7 +38,7 @@ Channel.prototype._put = function(value, handler) {
   }
 
   if (this.closed || !handler.is_active()) {
-    return new Box(value);
+    return new Box(!this.closed);
   }
 
   while (true) {
@@ -50,7 +50,7 @@ Channel.prototype._put = function(value, handler) {
         dispatch.run(function() {
           callback(value);
         });
-        return new Box(null);
+        return new Box(true);
       } else {
         continue;
       }
@@ -58,7 +58,7 @@ Channel.prototype._put = function(value, handler) {
       if (this.buf && !this.buf.is_full()) {
         handler.commit();
         this.buf.add(value);
-        return new Box(null);
+        return new Box(true);
       } else {
         if (this.dirty_puts > MAX_DIRTY) {
           this.puts.cleanup(function(putter) {
