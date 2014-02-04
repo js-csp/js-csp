@@ -54,7 +54,7 @@ RingBuffer.prototype.unbounded_unshift = function(item) {
   if (this.length + 1 === this.array.length) {
     this._resize();
   }
-  this._unshift(x);
+  this._unshift(item);
 };
 
 RingBuffer.prototype.pop = function() {
