@@ -150,3 +150,5 @@ Channel.prototype.close = function() {
 exports.chan = function(buf) {
   return new Channel(buffers.ring(32), buffers.ring(32), buf);
 };
+
+exports.Box = Box;
