@@ -27,9 +27,10 @@ function take_then_callback(channel, callback) {
   }
 }
 
-var Process = function(gen) {
+var Process = function(gen, onFinish) {
   this.gen = gen;
   this.finished = false;
+  this.onFinish = onFinish;
 };
 
 var Instruction = function(op, data) {
@@ -47,6 +48,18 @@ Process.prototype._continue = function(response) {
   dispatch.run(function() {
     self.run(response);
   });
+};
+
+Process.prototype._done = function(value) {
+  if (!this.finished) {
+    this.finished = true;
+    var onFinish = this.onFinish;
+    if (typeof onFinish === "function") {
+      dispatch.run(function() {
+        onFinish(value);
+      });
+    }
+  }
 };
 
 Process.prototype.run = function(response) {
