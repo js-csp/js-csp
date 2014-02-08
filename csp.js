@@ -10,6 +10,7 @@ var spawn = exports.spawn = function spawn(gen, returnChannel) {
   if (returnChannel) {
     var chan = channels.chan(buffers.fixed(1));
     (new process.Process(gen, function(value) {
+      // TODO: Shouldn't we close this channel instead of leaving it open?
       process.put_then_callback(chan, value, no_op);
     })).run();
     return chan;

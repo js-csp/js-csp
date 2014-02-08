@@ -70,7 +70,7 @@ Process.prototype.run = function(response) {
 
   var iter = this.gen.next(response);
   if (iter.done) {
-    this._done(null);
+    this._done(undefined);
     return;
   } else {
     var instruction = iter.value;
