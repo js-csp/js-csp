@@ -85,8 +85,8 @@ Process.prototype.run = function(response) {
 
   case PUT:
     var data = instruction.data;
-    put_then_callback(data.channel, data.value, function() {
-      self.run(null);
+    put_then_callback(data.channel, data.value, function(ok) {
+      self.run(ok);
     });
     break;
 
