@@ -70,7 +70,7 @@ Process.prototype.run = function(response) {
 
   var iter = this.gen.next(response);
   if (iter.done) {
-    this._done(null);
+    this._done(undefined);
     return;
   } else {
     var instruction = iter.value;
@@ -85,8 +85,8 @@ Process.prototype.run = function(response) {
 
   case PUT:
     var data = instruction.data;
-    put_then_callback(data.channel, data.value, function() {
-      self.run(null);
+    put_then_callback(data.channel, data.value, function(ok) {
+      self.run(ok);
     });
     break;
 
@@ -106,8 +106,8 @@ Process.prototype.run = function(response) {
 
   case ALTS:
     var operations = instruction.data;
-    select.do_alts(operations, function() {
-      self.run();
+    select.do_alts(operations, function(result) {
+      self.run(result);
     });
     break;
   }

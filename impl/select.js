@@ -73,8 +73,7 @@ exports.do_alts = function(operations, callback) {
     }
     // XXX Hmm
     if (result instanceof Box) {
-      return new Box(AltResult(result.value, port));
+      callback(new AltResult(result.value, port));
     }
-    return null;
   }
 };
