@@ -156,18 +156,18 @@ SlidingBuffer.prototype.count = function() {
 };
 
 
-exports.ring = function ring_buffer(n) {
+var ring = exports.ring = function ring_buffer(n) {
   return new RingBuffer(0, 0, 0, new Array(n));
 };
 
 exports.fixed = function fixed_buffer(n) {
-  return new FixedBuffer(ring_buffer(n), n);
+  return new FixedBuffer(ring(n), n);
 };
 
 exports.dropping = function dropping_buffer(n) {
-  return new DroppingBuffer(ring_buffer(n), n);
+  return new DroppingBuffer(ring(n), n);
 };
 
 exports.sliding = function sliding_buffer(n) {
-  return new SlidingBuffer(ring_buffer(n), n);
+  return new SlidingBuffer(ring(n), n);
 };
