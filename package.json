@@ -1,0 +1,21 @@
+{
+  "name": "csp",
+  "version": "0.1.0",
+  "description": "CSP channels",
+  "author": "Nguyễn Tuấn Anh <ubolonton@gmail.com>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ubolonton/js-csp.git"
+  },
+  "license": {
+    "type": "EPL",
+    "url": "https://github.com/ubolonton/js-csp/raw/master/LICENSE"
+  },
+  "bugs": {
+    "email": "ubolonton@gmail.com",
+    "url": "https://github.com/ubolonton/js-csp/issues"
+  },
+  "dependencies": {},
+  "devDependencies": {
+  }
+}
