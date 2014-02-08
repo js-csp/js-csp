@@ -106,8 +106,8 @@ Process.prototype.run = function(response) {
 
   case ALTS:
     var operations = instruction.data;
-    select.do_alts(operations, function() {
-      self.run();
+    select.do_alts(operations, function(result) {
+      self.run(result);
     });
     break;
   }
