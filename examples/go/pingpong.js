@@ -14,10 +14,10 @@ function* player(name, table) {
 csp.go(function* () {
   var table = csp.chan();
 
-  csp.go(player("ping", table));
-  csp.go(player("pong", table));
+  csp.go(player, ["ping", table]);
+  csp.go(player, ["pong", table]);
 
   yield csp.put(table, {hits: 0});
   yield csp.wait(1000);
   process.exit(0);
-}());
+});

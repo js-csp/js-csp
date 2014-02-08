@@ -6,7 +6,7 @@ var timers = require("./impl/timers");
 function no_op() {
 };
 
-exports.go = function go(gen, returnChannel) {
+var spawn = exports.spawn = function spawn(gen, returnChannel) {
   if (returnChannel) {
     var chan = channels.chan(buffers.fixed(1));
     (new process.Process(gen, function(value) {
@@ -17,6 +17,11 @@ exports.go = function go(gen, returnChannel) {
     (new process.Process(gen)).run();
     return null;
   }
+};
+
+exports.go = function go(f, args, returnChannel) {
+  var gen = f.apply(undefined, args);
+  return spawn(gen, returnChannel);
 };
 
 exports.chan = function chan(buf_or_n) {
