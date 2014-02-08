@@ -1,5 +1,4 @@
 var assert = require("chai").assert;
-
 var a = require("../test_helpers");
 
 var csp = require("../csp");

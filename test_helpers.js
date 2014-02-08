@@ -16,12 +16,16 @@ function identity_chan(x) {
   return ch;
 }
 
+// it("", g(function*() {
+// }));
 function g(f) {
   return function(done) {
     go(f, [done]);
   };
 };
 
+// it_("", function*() {
+// });
 function it_(desc, f) {
   return it(desc, g(function*(done) {
     var ch = go(f, [], true);
