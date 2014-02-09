@@ -44,6 +44,9 @@ var WAIT = "wait";
 var ALTS = "alts";
 var STOP = "stop";
 
+// TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
+// up the stack, but it means double queueing when the value is not
+// immediately available
 Process.prototype._continue = function(response) {
   var self = this;
   dispatch.run(function() {
@@ -68,6 +71,9 @@ Process.prototype.run = function(response) {
     return;
   }
 
+  // TODO: Shouldn't we (optionally) stop error propagation here (and
+  // signal the error through a channel or something)? Otherwise the
+  // uncaught exception will crash some runtimes (e.g. Node)
   var iter = this.gen.next(response);
   if (iter.done) {
     this._done(undefined);
@@ -86,14 +92,14 @@ Process.prototype.run = function(response) {
   case PUT:
     var data = instruction.data;
     put_then_callback(data.channel, data.value, function(ok) {
-      self.run(ok);
+      self._continue(ok);
     });
     break;
 
   case TAKE:
     var channel = instruction.data;
     take_then_callback(channel, function(value) {
-      self.run(value);
+      self._continue(value);
     });
     break;
 
@@ -107,7 +113,7 @@ Process.prototype.run = function(response) {
   case ALTS:
     var operations = instruction.data;
     select.do_alts(operations, function(result) {
-      self.run(result);
+      self._continue(result);
     });
     break;
   }
