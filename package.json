@@ -1,11 +1,11 @@
 {
-  "name": "csp",
+  "name": "js-csp",
   "version": "0.1.0",
-  "description": "CSP channels",
+  "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
   "keywords": [
     "csp", "async", "concurrency", "channel",
     "go", "clojure", "clojurescript", "core.async",
-    "generators", "yield", "coroutines"
+    "es6", "generators", "yield", "coroutines"
   ],
   "author": "Nguyễn Tuấn Anh <ubolonton@gmail.com>",
   "repository": {
