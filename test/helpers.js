@@ -1,7 +1,7 @@
 var assert = require("chai").assert;
-var a = require("../test_helpers");
+var a = require("../src/csp.test-helpers");
 
-var csp = require("../csp");
+var csp = require("../src/csp");
 var go = csp.go;
 
 describe("Test helpers", function() {

@@ -1,5 +1,5 @@
 // http://talks.golang.org/2013/advconc.slide#6
-var csp = require("../../csp");
+var csp = require("../../src/csp");
 
 function* player(name, table) {
   while (true) {

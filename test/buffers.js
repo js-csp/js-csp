@@ -1,5 +1,5 @@
 var assert = require("chai").assert;
-var buffers = require("../csp").buffers;
+var buffers = require("../src/csp").buffers;
 
 describe("Fixed buffer", function() {
   it("should work", function() {

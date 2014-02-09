@@ -1,4 +1,4 @@
-var csp = require("./csp");
+var csp = require("../src/csp");
 var chan = csp.chan;
 var go = csp.go;
 var put = csp.put;
