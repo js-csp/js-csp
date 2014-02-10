@@ -40,6 +40,27 @@ describe("alts", function() {
     assert.equal(r.channel, ch);
   });
 
+  describe("default value", function() {
+    var ch;
+
+    before(function*() {
+      ch = chan(1);
+    });
+
+    it("should be returned if no result is immediately available", function*() {
+      var r = yield alts([ch], {default: "none"});
+      assert.equal(r.value, "none");
+      assert.equal(r.channel, csp.DEFAULT);
+    });
+
+    it("should be ignored if some result is immediately available", function*() {
+      yield put(ch, 1);
+      var r = yield alts([ch], {default: "none"});
+      assert.equal(r.value, 1);
+      assert.equal(r.channel, ch);
+    });
+  });
+
   // FIX: These tests are bad (having (small) chances to pass/fail
   // incorrectly)
   describe("ordering", function() {

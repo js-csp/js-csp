@@ -37,6 +37,8 @@ function random_array(n) {
   return a;
 }
 
+var DEFAULT = {};
+
 // TODO: Accept a priority function or something
 exports.do_alts = function(operations, callback, options) {
   var length = operations.length;
@@ -78,4 +80,15 @@ exports.do_alts = function(operations, callback, options) {
       break;
     }
   }
+
+  if (!(result instanceof Box)
+      && options
+      && Object.prototype.hasOwnProperty.call(options, "default")) {
+    if (flag.value) {
+      flag.value = false;
+      callback(new AltResult(options["default"], DEFAULT));
+    }
+  }
 };
+
+exports.DEFAULT = DEFAULT;

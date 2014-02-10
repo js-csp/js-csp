@@ -53,7 +53,7 @@ module.exports = {
   put: process.put,
   take: process.take,
   wait: process.wait,
-  alts: process.alts,
+  alts: process.alts, DEFAULT: process.DEFAULT,
   stop: process.stop,
   putAsync: process.put_then_callback,
   takeAsync: process.take_then_callback,
