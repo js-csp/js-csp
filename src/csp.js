@@ -6,7 +6,7 @@ var timers = require("./impl/timers");
 function no_op() {
 };
 
-var spawn = exports.spawn = function spawn(gen, returnChannel) {
+function spawn(gen, returnChannel) {
   if (returnChannel) {
     var chan = channels.chan(buffers.fixed(1));
     (new process.Process(gen, function(value) {
@@ -20,36 +20,43 @@ var spawn = exports.spawn = function spawn(gen, returnChannel) {
   }
 };
 
-exports.go = function go(f, args, returnChannel) {
+function go(f, args, returnChannel) {
   var gen = f.apply(undefined, args);
   return spawn(gen, returnChannel);
 };
 
-exports.chan = function chan(buf_or_n) {
+function chan(bufferOrNumber) {
   var buf;
-  if (buf_or_n === 0) {
-    buf_or_n = null;
+  if (bufferOrNumber === 0) {
+    bufferOrNumber = null;
   }
-  if (typeof buf_or_n === "number") {
-    buf = buffers.fixed(buf_or_n);
+  if (typeof bufferOrNumber === "number") {
+    buf = buffers.fixed(bufferOrNumber);
   } else {
-    buf = buf_or_n;
+    buf = bufferOrNumber;
   }
   return channels.chan(buf);
 };
 
-exports.buffers = {
-  fixed: buffers.fixed,
-  dropping: buffers.dropping,
-  sliding: buffers.sliding
+
+module.exports = {
+  buffers: {
+    fixed: buffers.fixed,
+    dropping: buffers.dropping,
+    sliding: buffers.sliding
+  },
+
+  spawn: spawn,
+  go: go,
+  chan: chan,
+
+  put: process.put,
+  take: process.take,
+  wait: process.wait,
+  alts: process.alts,
+  stop: process.stop,
+  putAsync: process.put_then_callback,
+  takeAsync: process.take_then_callback,
+
+  timeout: timers.timeout
 };
-
-exports.put = process.put;
-exports.take = process.take;
-exports.wait = process.wait;
-exports.alts = process.alts;
-exports.stop = process.stop;
-exports.put_then_callback = process.put_then_callback;
-exports.take_then_callback = process.take_then_callback;
-
-exports.timeout = timers.timeout;
