@@ -76,7 +76,7 @@ Process.prototype.run = function(response) {
   // uncaught exception will crash some runtimes (e.g. Node)
   var iter = this.gen.next(response);
   if (iter.done) {
-    this._done(undefined);
+    this._done(iter.value);
     return;
   } else {
     var instruction = iter.value;

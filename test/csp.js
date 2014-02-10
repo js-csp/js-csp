@@ -100,6 +100,16 @@ describe("alts", function() {
   });
 });
 
+describe("Goroutine", function() {
+  it("should put returned value on the channel", function*() {
+    var ch = go(function*(x) {
+      return x;
+    }, [42], true);
+    var value = yield take(ch);
+    assert.equal(value, 42, "returned value is delivered");
+  });
+});
+
 describe("Process runner", function() {
   // TODO: See if this is sufficiently large for all the runtimes (js
   // can't query stack depth)
