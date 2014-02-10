@@ -12,16 +12,6 @@ var take = csp.take;
 var alts = csp.alts;
 var buffers = csp.buffers;
 
-function arrayEqual(arr1, arr2) {
-  var length = arr1;
-  for (var i = 0; i < length; i++) {
-    if (arr1[i] !== arr2[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
 describe("put", function() {
   it("should return whether channel was open", function*() {
     var ch = chan(1);
