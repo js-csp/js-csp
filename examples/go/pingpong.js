@@ -4,6 +4,10 @@ var csp = require("../../src/csp");
 function* player(name, table) {
   while (true) {
     var ball = yield csp.take(table);
+    if (ball === null) {
+      console.log(name + ": table's gone");
+      return;
+    }
     ball.hits += 1;
     console.log(name + " " + ball.hits);
     yield csp.wait(100);
@@ -19,5 +23,5 @@ csp.go(function* () {
 
   yield csp.put(table, {hits: 0});
   yield csp.wait(1000);
-  process.exit(0);
+  table.close();
 });
