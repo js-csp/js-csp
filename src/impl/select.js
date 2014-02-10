@@ -25,34 +25,35 @@ function rand_int(n) {
 
 function random_array(n) {
   var a = new Array(n);
-  for (var i = 0; i < n; i++) {
+  var i;
+  for (i = 0; i < n; i++) {
     a[i] = 0;
   }
-  i = 1;
-  while (true) {
-    if (i >= n) {
-      return a;
-    }
+  for (i = 1; i < n; i++) {
     var j = rand_int(i);
     a[i] = a[j];
     a[j] = i;
-    i ++;
   }
+  return a;
 }
 
 // TODO: Accept a priority function or something
-exports.do_alts = function(operations, callback) {
+exports.do_alts = function(operations, callback, options) {
   var length = operations.length;
   // XXX Hmm
   if (length === 0) {
     throw new Error("Empty alt list");
   }
 
-  var indexes = random_array(length);
+  var priority = (options && options.priority) ? true : false;
+  if (!priority) {
+    var indexes = random_array(length);
+  }
+
   var flag = new Box(true);
 
   for (var i = 0; i < length; i++) {
-    var operation = operations[i];
+    var operation = operations[priority ? i : indexes[i]];
     var port, result;
     // XXX Hmm
     if (operation instanceof Array) {

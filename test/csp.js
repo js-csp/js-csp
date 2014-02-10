@@ -1,6 +1,8 @@
 var assert = require("chai").assert;
 var a = require("../src/csp.test-helpers"),
-    it = a.it;
+    it = a.it,
+    before = a.before,
+    beforeEach = a.beforeEach;
 
 var csp = require("../src/csp");
 var chan = csp.chan;
@@ -8,7 +10,18 @@ var go = csp.go;
 var put = csp.put;
 var take = csp.take;
 var alts = csp.alts;
+var stop = csp.stop;
 var buffers = csp.buffers;
+
+function arrayEqual(arr1, arr2) {
+  var length = arr1;
+  for (var i = 0; i < length; i++) {
+    if (arr1[i] !== arr2[i]) {
+      return false;
+    }
+  }
+  return true;
+}
 
 describe("put", function() {
   it("should return whether channel was open", function*() {
@@ -25,6 +38,44 @@ describe("alts", function() {
     var r = yield alts([ch]);
     assert.equal(r.value, 42);
     assert.equal(r.channel, ch);
+  });
+
+  // FIX: These tests are bad (having (small) chances to pass/fail
+  // incorrectly)
+  describe("ordering", function() {
+    var n = 20;
+    var chs = new Array(n);
+    var sequential = new Array(n);
+
+    before(function*() {
+      for (var i = 0; i < n; i++) {
+        sequential[i] = i;
+      }
+    });
+
+    beforeEach(function*() {
+      for (var i = 0; i < n; i++) {
+        var ch = chan(1);
+        chs[i] = ch;
+        yield put(chs[i], i);
+      }
+    });
+
+    it("should be non-deterministic by default", function*() {
+      var results = new Array(n);
+      for (var i = 0; i < n; i++) {
+        results[i] = (yield alts(chs)).value;
+      }
+      assert.notDeepEqual(sequential, results, "alts ordering is randomized");
+    });
+
+    it("should follow priority if requested", function*() {
+      var results = new Array(n);
+      for (var i = 0; i < n; i++) {
+        results[i] = (yield alts(chs, {priority: true})).value;
+      }
+      assert.deepEqual(sequential, results, "alts ordering is fixed if priority option is specified");
+    });
   });
 });
 

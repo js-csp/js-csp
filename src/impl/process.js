@@ -111,10 +111,9 @@ Process.prototype.run = function(response) {
     break;
 
   case ALTS:
-    var operations = instruction.data;
-    select.do_alts(operations, function(result) {
+    select.do_alts(instruction.data.operations, function(result) {
       self._continue(result);
-    });
+    }, instruction.data.options);
     break;
   }
 
@@ -135,8 +134,11 @@ function wait(msecs) {
   return new Instruction(WAIT, msecs);
 }
 
-function alts(operations) {
-  return new Instruction(ALTS, operations);
+function alts(operations, options) {
+  return new Instruction(ALTS, {
+    operations: operations,
+    options: options
+  });
 }
 
 function stop(value) {
