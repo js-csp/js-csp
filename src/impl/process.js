@@ -77,41 +77,43 @@ Process.prototype.run = function(response) {
   if (iter.done) {
     this._done(iter.value);
     return;
+  }
+
+  var ins = iter.value;
+
+  if (ins instanceof Instruction) {
+    var self = this;
+    switch (ins.op) {
+    case PUT:
+      var data = ins.data;
+      put_then_callback(data.channel, data.value, function(ok) {
+        self._continue(ok);
+      });
+      break;
+
+    case TAKE:
+      var channel = ins.data;
+      take_then_callback(channel, function(value) {
+        self._continue(value);
+      });
+      break;
+
+    case WAIT:
+      var msecs = ins.data;
+      dispatch.queue_delay(function() {
+        self.run(null);
+      }, msecs);
+      break;
+
+    case ALTS:
+      select.do_alts(ins.data.operations, function(result) {
+        self._continue(result);
+      }, ins.data.options);
+      break;
+    }
   } else {
-    var instruction = iter.value;
+    this._continue(ins);
   }
-
-  var self = this;
-
-  switch (instruction.op) {
-  case PUT:
-    var data = instruction.data;
-    put_then_callback(data.channel, data.value, function(ok) {
-      self._continue(ok);
-    });
-    break;
-
-  case TAKE:
-    var channel = instruction.data;
-    take_then_callback(channel, function(value) {
-      self._continue(value);
-    });
-    break;
-
-  case WAIT:
-    var msecs = instruction.data;
-    dispatch.queue_delay(function() {
-      self.run(null);
-    }, msecs);
-    break;
-
-  case ALTS:
-    select.do_alts(instruction.data.operations, function(result) {
-      self._continue(result);
-    }, instruction.data.options);
-    break;
-  }
-
 };
 
 function take(channel) {

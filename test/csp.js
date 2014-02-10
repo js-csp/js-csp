@@ -97,6 +97,15 @@ describe("Goroutine", function() {
     var value = yield take(ch);
     assert.equal(value, 42, "returned value is delivered");
   });
+
+  it("should leave yielded normal values untouched", function*() {
+    var lst = [42, [42], {x: 42}, "", null, undefined, true, false,
+               function() {}, function*() {}];
+    var length = lst.length;
+    for (var i = 0; i < length; i++) {
+      assert.equal((yield lst[i]), lst[i]);
+    }
+  });
 });
 
 describe("Process runner", function() {
