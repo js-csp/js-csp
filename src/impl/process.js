@@ -42,7 +42,6 @@ var TAKE = "take";
 var PUT = "put";
 var WAIT = "wait";
 var ALTS = "alts";
-var STOP = "stop";
 
 // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
 // up the stack, but it means double queueing when the value is not
@@ -85,10 +84,6 @@ Process.prototype.run = function(response) {
   var self = this;
 
   switch (instruction.op) {
-  case STOP:
-    this._done(instruction.data);
-    break;
-
   case PUT:
     var data = instruction.data;
     put_then_callback(data.channel, data.value, function(ok) {
@@ -141,16 +136,11 @@ function alts(operations, options) {
   });
 }
 
-function stop(value) {
-  return new Instruction(STOP, value);
-}
-
 exports.put_then_callback = put_then_callback;
 exports.take_then_callback = take_then_callback;
 exports.put = put;
 exports.take = take;
 exports.wait = wait;
 exports.alts = alts; exports.DEFAULT = select.DEFAULT;
-exports.stop = stop;
 
 exports.Process = Process;

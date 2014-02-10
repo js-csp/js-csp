@@ -10,7 +10,6 @@ var go = csp.go;
 var put = csp.put;
 var take = csp.take;
 var alts = csp.alts;
-var stop = csp.stop;
 var buffers = csp.buffers;
 
 function arrayEqual(arr1, arr2) {
