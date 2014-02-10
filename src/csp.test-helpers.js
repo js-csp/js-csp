@@ -24,18 +24,36 @@ function g(f) {
   };
 };
 
-// it_("", function*() {
-// });
-function it_(desc, f) {
-  return it(desc, g(function*(done) {
+function gg(f) {
+  return g(function*(done) {
     var ch = go(f, [], true);
     yield take(ch);
     done();
-  }));
+  });
 }
 
 module.exports = {
   identity_chan: identity_chan,
-  go: g,
-  it: it_
+  goAsync: g,
+  go: gg,
+
+  it: function(desc, f) {
+    return mocha.it(desc, gg(f));
+  },
+
+  beforeEach: function(f) {
+    return mocha.beforeEach(gg(f));
+  },
+
+  afterEach: function(f) {
+    return mocha.afterEach(gg(f));
+  },
+
+  before: function(f) {
+    return mocha.before(gg(f));
+  },
+
+  after: function(f) {
+    return mocha.after(gg(f));
+  }
 };
