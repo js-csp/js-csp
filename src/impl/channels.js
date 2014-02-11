@@ -135,6 +135,19 @@ Channel.prototype.close = function() {
       });
     }
   }
+  // TODO: Tests
+  while (true) {
+    var putter = this.puts.pop();
+    if (putter === null) {
+      break;
+    }
+    if (putter.handler.is_active()) {
+      var put_callback = putter.handler.commit();
+      dispatch.run(function() {
+        put_callback(false);
+      });
+    }
+  }
 };
 
 
