@@ -36,7 +36,7 @@ csp.go(function* () {
 });
 ```
 
-[More examples](examples/README.md).
+[More examples](examples/).
 
 ## Supported runtimes ##
 js-csp requires ES6 generators
