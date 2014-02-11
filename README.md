@@ -174,12 +174,18 @@ TODO
 ### Composition operations ###
 TODO
 
+## Install ##
+```bash
+    npm install js-csp
+```
+
 ## TODO ##
 
-- Feature parity with Clojurescript's `core.async`.
-- More documentation and examples.
-- Browser builds and tests.
-- Conversion functions that "de-IOC" promises and callback-based APIs.
+- Achieve feature parity with Clojurescript's `core.async`.
+- Add More documentation and examples.
+- Add browser builds and tests.
+- Add conversion functions that "de-IOC" promises and callback-based APIs.
+- Publish to bower.
 
 ## Inspiration ##
 
