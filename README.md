@@ -47,15 +47,13 @@ Earlier versions of Firefox either had ES6 generators turned off, or supported o
 
 #### Node.JS >= 0.11.6 ####
 
-Run with `--harmony` or `--harmony-generators` flag.
-Check support using
+Run with `--harmony` or `--harmony-generators` flag. Check support using
 ```bash
 node --v8-options | grep harmony
 ```
 
-#### Chrome with experimental flag turned on ####
-
-Look for "Enable Experimental JavaScript" at [chrome://flags](chrome://flags).
+#### Chrome >= 28 ####
+Turn on an experimental flag. Look for "Enable Experimental JavaScript" at [chrome://flags](chrome://flags).
 
 #### Other ####
 
@@ -86,20 +84,29 @@ Creates a channel.
 
 ##### `buffers.fixed(n)` #####
 
-Creates a fixed buffer of size n. When full, puts will block.
+Creates a fixed buffer of size n. When full, puts will "block".
+
 TODO: When to use (e.g. backpressure)
 
 ##### `buffers.dropping(n)` #####
 
-Creates a dropping buffer of size n. When full, puts will not block, but the value is discarded.
+Creates a dropping buffer of size n. When full, puts will not "block", but the value is discarded.
+
 TODO: When to use (stop responding to fast stuff)
 
 ##### `buffers.sliding(n)` #####
 
-Creates a sliding buffer of size n. When full, puts will not block, but the oldest value is discarded.
+Creates a sliding buffer of size n. When full, puts will not "block", but the oldest value is discarded.
+
 TODO: When to use (uninteresting stale values)
 
 ### Goroutines ###
+
+TODO: Explain goroutines
+
+TODO: Explain usage of `yield` in goroutines
+
+TODO: Explain deep/shallow, expilicit yield points
 
 ##### `go(f* [, args [, returnChannel]])` #####
 
@@ -176,7 +183,7 @@ TODO
 
 ## Install ##
 ```bash
-    npm install js-csp
+npm install js-csp
 ```
 
 ## TODO ##
