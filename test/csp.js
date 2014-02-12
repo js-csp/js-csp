@@ -2,6 +2,7 @@ var assert = require("chai").assert;
 var a = require("../src/csp.test-helpers"),
     it = a.it,
     before = a.before,
+    afterEach = a.afterEach,
     beforeEach = a.beforeEach;
 
 var csp = require("../src/csp");
@@ -10,14 +11,27 @@ var go = csp.go;
 var put = csp.put;
 var take = csp.take;
 var alts = csp.alts;
+var wait = csp.wait;
 var buffers = csp.buffers;
 
 describe("put", function() {
   it("should return whether channel was open", function*() {
     var ch = chan(1);
-    assert.equal((yield put(ch, 42)), true, "put returns true for open channel");
+    assert.equal((yield put(ch, 42)), true, "immediate put returns true for open channel");
     ch.close();
-    assert.equal((yield put(ch, 43)), false, "put returns false for closed channel");
+    assert.equal((yield put(ch, 43)), false, "immediate put returns false for closed channel");
+
+    ch = chan();
+    go(function*() {
+      // Make sure the puts below are not immediate, by waiting
+      yield wait(5);
+      yield take(ch);
+      yield wait(5);
+      ch.close();
+    });
+
+    assert.equal((yield put(ch, 42)), true, "delayed put returns true for open channel");
+    assert.equal((yield put(ch, 43)), false, "delayed put returns false for closed channel");
   });
 });
 
@@ -130,6 +144,14 @@ describe("Process runner", function() {
   it("should not blow the stack on repeated selects on a closed channel", function*() {
     for (var i = 0; i < LIMIT; i++) {
       yield alts([ch, [ch, 1]]);
+    }
+  });
+
+  it("should not blow the stack on repeated puts and takes that are immediate", function*() {
+    var ch = chan(1);
+    for (var i = 0; i < LIMIT; i++) {
+      yield put(ch, 1);
+      yield take(ch);
     }
   });
 });

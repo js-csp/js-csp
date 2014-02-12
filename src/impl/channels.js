@@ -88,7 +88,9 @@ Channel.prototype._take = function(handler) {
       if (put_handler.is_active()) {
         handler.commit();
         var callback = put_handler.commit();
-        dispatch.run(callback);
+        dispatch.run(function() {
+          callback(true);
+        });
         return new Box(putter.value);
       } else {
         continue;
