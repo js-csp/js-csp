@@ -123,6 +123,8 @@ var ch = csp.go(function*(x) {
 console.log((yield csp.take(chan)));
 ```
 
+TODO: Document go subtlety: `yield go` would start the goroutine "immediately" while `go` would not start it until the next `yield`, or `return`.
+
 ##### `spawn(generator [, returnChannel])` #####
 
 Similar to `go`, but takes a generator instead of creating one.
@@ -144,10 +146,22 @@ These operations (except for `close`) must be prefixed with `yield`, and must be
 ##### `yield put(ch, value)` #####
 
 Puts a value into the channel. "Returns" `true` unless channel is already closed.
+```javascript
+var ch = csp.chan(1);
+yield csp.put(ch, 42); // true
+ch.close()
+yield csp.put(ch, 43); // false
+```
 
 ##### `yield take(ch)` #####
 
-Takes a value from the channel. "Returns" `null` if channel is already closed.
+Takes a value from the channel. "Returns" `null` if channel is empty, and already closed.
+```javascript
+var ch = csp.chan(1);
+yield csp.put(ch, 42); // true
+ch.close()
+yield csp.put(ch, 43); // false
+```
 
 ##### `yield alts(operations [, options])` #####
 
