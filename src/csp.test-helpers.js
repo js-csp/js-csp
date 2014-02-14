@@ -26,9 +26,13 @@ function g(f) {
 
 function gg(f) {
   return g(function*(done) {
-    var ch = go(f, [], true);
-    yield take(ch);
-    done();
+    try {
+      var ch = go(f, [], true);
+      yield take(ch);
+      done();
+    } catch(e) {
+      done(e);
+    }
   });
 }
 
