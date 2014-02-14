@@ -40,9 +40,10 @@ describe("put", function() {
     it("should return true if value is then taken", function*() {
       var ch = chan();
       go(function*() {
-        assert.equal((yield put(ch, 42)), true);
+        yield wait(5);
+        yield take(ch);
       });
-      yield take(ch);
+      assert.equal((yield put(ch, 42)), true);
     });
 
     // it("should return true if value is then buffered", function*() {
@@ -67,32 +68,25 @@ describe("put", function() {
 
     it("should return false if channel is then closed", function*() {
       var ch = chan();
-      var ran = false;
 
       go(function*() {
-        assert.equal((yield put(ch, 42)), false);
+        yield wait(5);
+        ch.close();
 
-        // XXX FIX: Throwing an exception here makes the alts test
-        // crash with a weird "Cannot call method '_take' of
-        // undefined". It goes away if Process.prototype.run handles
-        // exceptions throw by the generator. It looks like it has to
-        // do with mocha's "done" needs to be called for async test to
-        // be cleanedly cleaned up. Yikes! Another way to handle it is
-        // to catch the exception and call "done" in the test helpers.
-        // Actually no, it makes the next tests incorrect. The problem
-        // is exception from "non-top-level" goroutines not being
-        // handled. Not sure how to fix yet.
-        // throw new Error("Ha ha");
-
-        ran = true;
+        // XXX FIX: Throwing an exception here (in a "non-top-level"
+        // goroutine) makes the alts test crash with a weird "Cannot
+        // call method '_take' of undefined". It goes away if
+        // Process.prototype.run handles exceptions throw by the
+        // generator. It looks like it has to do with mocha's "done"
+        // needs to be called for async test to be cleanedly cleaned
+        // up. Yikes! Another way to handle it is to catch the
+        // exception and call "done" in the test helpers. Actually no,
+        // it makes the next tests incorrect. The problem is exception
+        // from "non-top-level" goroutines not being handled. Not sure
+        // how to fix yet. throw new Error("Ha ha");
       });
 
-      // FIX: We have yield twice here. The first is for the put callback
-      // to be scheduled, the second is for it to be actually ran.
-      // That sounds pretty bad.
-      yield ch.close();
-      yield 1;
-      assert.equal(ran, true, "pending put test was run");
+      assert.equal((yield put(ch, 42)), false);
     });
   });
 });
