@@ -12,7 +12,11 @@ function acopy(src, src_start, dst, dst_start, length) {
   }
 }
 
-var EMPTY = {};
+var EMPTY = {
+  toString: function() {
+    return "[object EMPTY]";
+  }
+};
 
 var RingBuffer = function(head, tail, length, array) {
   this.length = length;

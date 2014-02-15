@@ -39,7 +39,11 @@ function random_array(n) {
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
 
-var DEFAULT = {};
+var DEFAULT = {
+  toString: function() {
+    return "[object DEFAULT]";
+  }
+};
 
 // TODO: Accept a priority function or something
 exports.do_alts = function(operations, callback, options) {
