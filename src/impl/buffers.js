@@ -12,6 +12,10 @@ function acopy(src, src_start, dst, dst_start, length) {
   }
 }
 
+function EmptyError() {};
+EmptyError.prototype = new Error();
+EmptyError.prototype.constructor = EmptyError;
+
 var RingBuffer = function(head, tail, length, array) {
   this.length = length;
   this.array = array;
@@ -62,8 +66,7 @@ RingBuffer.prototype.unbounded_unshift = function(item) {
 
 RingBuffer.prototype.pop = function() {
   if (this.length === 0) {
-    // This means the buffer cannot contain null.
-    return null;
+    throw new EmptyError();
   }
   var array = this.array;
   var tail = this.tail;
@@ -174,3 +177,5 @@ exports.dropping = function dropping_buffer(n) {
 exports.sliding = function sliding_buffer(n) {
   return new SlidingBuffer(ring(n), n);
 };
+
+exports.EmptyError = EmptyError;

@@ -26,9 +26,14 @@ function process_messages() {
   queued = false;
   var count = 0;
   while (true) {
-    var task = tasks.pop();
-    if (task === null) {
-      break;
+    try {
+      var task = tasks.pop();
+    } catch (e) {
+      if (e instanceof buffers.EmptyError) {
+        break;
+      } else {
+        throw e;
+      }
     }
     // TODO: Don't we need a try/finally here?
     task();

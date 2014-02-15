@@ -22,7 +22,9 @@ describe("Fixed buffer", function() {
 
     assert.equal(b.remove(), "2");
     assert.equal(b.count(), 0);
-    assert(null === b.remove(), "popping empty buffer gives null");
+    assert.throw(function() {
+      b.remove();
+    }, buffers.EmptyError, "", "popping empty buffer throws EmptyError");
   });
 });
 
@@ -48,7 +50,9 @@ describe("Dropping buffer", function() {
 
     assert.equal(b.remove(), "2", "dropping buffer drops newest item");
     assert.equal(b.count(), 0);
-    assert(null === b.remove(), "popping empty buffer gives null");
+    assert.throw(function() {
+      b.remove();
+    }, buffers.EmptyError, "", "popping empty buffer throws EmptyError");
   });
 });
 
@@ -74,6 +78,8 @@ describe("Sliding buffer", function() {
 
     assert.equal(b.remove(), "3", "sliding buffer keeps newest item");
     assert.equal(b.count(), 0);
-    assert(null === b.remove(), "popping empty buffer gives null");
+    assert.throw(function() {
+      b.remove();
+    }, buffers.EmptyError, "", "popping empty buffer throws EmptyError");
   });
 });

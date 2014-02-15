@@ -33,39 +33,44 @@ Channel.prototype._put = function(value, handler) {
   }
 
   while (true) {
-    var taker = this.takes.pop();
-    if (taker !== null) {
-      if (taker.is_active()) {
-        var callback = taker.commit();
-        handler.commit();
-        dispatch.run(function() {
-          callback(value);
-        });
-        return new Box(true);
-      } else {
-        continue;
-      }
-    } else {
-      if (this.buf && !this.buf.is_full()) {
-        handler.commit();
-        this.buf.add(value);
-        return new Box(true);
-      } else {
-        if (this.dirty_puts > MAX_DIRTY) {
-          this.puts.cleanup(function(putter) {
-            return putter.handler.is_active();
-          });
-          this.dirty_puts = 0;
+    try {
+      var taker = this.takes.pop();
+    } catch (err) {
+      // TODO: Maybe we can skip this check, or have an unsafe flag
+      // that skips it (to squeeze performance)?
+      if (err instanceof buffers.EmptyError) {
+        if (this.buf && !this.buf.is_full()) {
+          handler.commit();
+          this.buf.add(value);
+          return new Box(true);
         } else {
-          this.dirty_puts ++;
+          if (this.dirty_puts > MAX_DIRTY) {
+            this.puts.cleanup(function(putter) {
+              return putter.handler.is_active();
+            });
+            this.dirty_puts = 0;
+          } else {
+            this.dirty_puts ++;
+          }
+          if (this.puts.length >= MAX_QUEUE_SIZE) {
+            throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
+          }
+          this.puts.unbounded_unshift(new PutBox(handler, value));
         }
-        if (this.puts.length >= MAX_QUEUE_SIZE) {
-          throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
-        }
-        this.puts.unbounded_unshift(new PutBox(handler, value));
+      } else {
+        // Should not get here, unless there is a bug
+        throw err;
       }
+      break;
     }
-    break;
+    if (taker.is_active()) {
+      var callback = taker.commit();
+      handler.commit();
+      dispatch.run(function() {
+        callback(value);
+      });
+      return new Box(true);
+    }
   }
 
   return null;
@@ -76,45 +81,55 @@ Channel.prototype._take = function(handler) {
     return null;
   }
 
-  if (this.buf && this.buf.count() > 0) {
-    handler.commit();
-    return new Box(this.buf.remove());
+  if (this.buf) {
+    try {
+      var value = this.buf.remove();
+      handler.commit();
+      return new Box(value);
+    } catch (err) {
+      if (!(err instanceof buffers.EmptyError)) {
+        throw err;
+      }
+    }
   }
 
   while (true) {
-    var putter = this.puts.pop();
-    if (putter !== null) {
-      var put_handler = putter.handler;
-      if (put_handler.is_active()) {
-        handler.commit();
-        var callback = put_handler.commit();
-        dispatch.run(function() {
-          callback(true);
-        });
-        return new Box(putter.value);
-      } else {
-        continue;
-      }
-    } else {
-      if (this.closed) {
-        handler.commit();
-        return new Box(null);
-      } else {
-        if (this.dirty_takes > MAX_DIRTY) {
-          this.takes.cleanup(function(handler) {
-            return handler.is_active();
-          });
-          this.dirty_takes = 0;
+    try {
+      var putter = this.puts.pop();
+    } catch (err) {
+      if (err instanceof buffers.EmptyError) {
+        if (this.closed) {
+          handler.commit();
+          return new Box(null);
         } else {
-          this.dirty_takes ++;
+          if (this.dirty_takes > MAX_DIRTY) {
+            this.takes.cleanup(function(handler) {
+              return handler.is_active();
+            });
+            this.dirty_takes = 0;
+          } else {
+            this.dirty_takes ++;
+          }
+          if (this.takes.length >= MAX_QUEUE_SIZE) {
+            throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
+          }
+          this.takes.unbounded_unshift(handler);
         }
-        if (this.takes.length >= MAX_QUEUE_SIZE) {
-          throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
-        }
-        this.takes.unbounded_unshift(handler);
+      } else {
+        // Should not get here, unless there is a bug
+        throw err;
       }
+      break;
     }
-    break;
+    var put_handler = putter.handler;
+    if (put_handler.is_active()) {
+      handler.commit();
+      var callback = put_handler.commit();
+      dispatch.run(function() {
+        callback(true);
+      });
+      return new Box(putter.value);
+    }
   }
 
   return null;
@@ -126,9 +141,15 @@ Channel.prototype.close = function() {
   }
   this.closed = true;
   while (true) {
-    var taker = this.takes.pop();
-    if (taker === null) {
-      break;
+    try {
+      var taker = this.takes.pop();
+    } catch (err) {
+      if (err instanceof buffers.EmptyError) {
+        break;
+      } else {
+        // Should not get here, unless there is a bug
+        throw err;
+      }
     }
     if (taker.is_active()) {
       var callback = taker.commit();
@@ -139,9 +160,15 @@ Channel.prototype.close = function() {
   }
   // TODO: Tests
   while (true) {
-    var putter = this.puts.pop();
-    if (putter === null) {
-      break;
+    try {
+      var putter = this.puts.pop();
+    } catch (err) {
+      if (err instanceof buffers.EmptyError) {
+        break;
+      } else {
+        // Should not get here, unless there is a bug
+        throw err;
+      }
     }
     if (putter.handler.is_active()) {
       var put_callback = putter.handler.commit();
