@@ -44,8 +44,7 @@ module.exports = {
   buffers: {
     fixed: buffers.fixed,
     dropping: buffers.dropping,
-    sliding: buffers.sliding,
-    EMPTY: buffers.EMPTY
+    sliding: buffers.sliding
   },
 
   spawn: spawn,
