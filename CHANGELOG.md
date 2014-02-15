@@ -1,5 +1,10 @@
 # Changes to js-csp
 
+## 0.1.3
+
+- CHANGED: More reliable `mocha` test helpers.
+- FIXED: Delayed puts now correctly returns `true` on succeed.
+
 ## 0.1.2
 
 - ADDED: Priority and default options for `alts`.
