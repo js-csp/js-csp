@@ -5,14 +5,15 @@ var a = require("../src/csp.test-helpers"),
     afterEach = a.afterEach,
     beforeEach = a.beforeEach;
 
-var csp = require("../src/csp");
-var chan = csp.chan;
-var go = csp.go;
-var put = csp.put;
-var take = csp.take;
-var alts = csp.alts;
-var wait = csp.wait;
-var buffers = csp.buffers;
+var csp = require("../src/csp"),
+    chan = csp.chan,
+    go = csp.go,
+    put = csp.put,
+    take = csp.take,
+    alts = csp.alts,
+    wait = csp.wait,
+    buffers = csp.buffers,
+    CLOSED = csp.CLOSED;
 
 describe("put", function() {
   describe("that is immediate", function() {
@@ -92,12 +93,12 @@ describe("put", function() {
 });
 
 describe("take", function() {
-  it("should return correct value or null", function*() {
+  it("should return correct value or CLOSED", function*() {
     var ch = chan(1);
     yield put(ch, 42);
     assert.equal((yield take(ch)), 42, "immediate take returns correct value");
     ch.close();
-    assert.equal((yield take(ch)), null, "immediate take returns null");
+    assert.equal((yield take(ch)), CLOSED, "immediate take returns CLOSED");
 
     ch = chan();
     go(function*() {

@@ -4,6 +4,8 @@ var dispatch = require("./dispatch");
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
 
+var CLOSED = null;
+
 var Box = function(value) {
   this.value = value;
 };
@@ -24,8 +26,8 @@ var Channel = function(takes, puts, buf) {
 };
 
 Channel.prototype._put = function(value, handler) {
-  if (value === null) {
-    throw new Error("Cannot put null on a channel.");
+  if (value === CLOSED) {
+    throw new Error("Cannot put CLOSED on a channel.");
   }
 
   if (this.closed || !handler.is_active()) {
@@ -98,7 +100,7 @@ Channel.prototype._take = function(handler) {
     } else {
       if (this.closed) {
         handler.commit();
-        return new Box(null);
+        return new Box(CLOSED);
       } else {
         if (this.dirty_takes > MAX_DIRTY) {
           this.takes.cleanup(function(handler) {
@@ -133,7 +135,7 @@ Channel.prototype.close = function() {
     if (taker.is_active()) {
       var callback = taker.commit();
       dispatch.run(function() {
-        callback(null);
+        callback(CLOSED);
       });
     }
   }
@@ -158,3 +160,5 @@ exports.chan = function(buf) {
 };
 
 exports.Box = Box;
+
+exports.CLOSED = CLOSED;

@@ -51,6 +51,7 @@ module.exports = {
   go: go,
   chan: chan,
   DEFAULT: select.DEFAULT,
+  CLOSED: channels.CLOSED,
 
   put: process.put,
   take: process.take,
