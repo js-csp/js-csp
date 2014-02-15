@@ -1,3 +1,6 @@
+// TODO: Consider EmptyError & FullError to avoid redundant bound
+// checks, to improve performance (may need benchmarks)
+
 function acopy(src, src_start, dst, dst_start, length) {
   var count = 0;
   while (true) {
