@@ -27,7 +27,7 @@ function process_messages() {
   var count = 0;
   while (true) {
     var task = tasks.pop();
-    if (task === null) {
+    if (task === buffers.EMPTY) {
       break;
     }
     // TODO: Don't we need a try/finally here?

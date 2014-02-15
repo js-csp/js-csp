@@ -34,7 +34,7 @@ Channel.prototype._put = function(value, handler) {
 
   while (true) {
     var taker = this.takes.pop();
-    if (taker !== null) {
+    if (taker !== buffers.EMPTY) {
       if (taker.is_active()) {
         var callback = taker.commit();
         handler.commit();
@@ -83,7 +83,7 @@ Channel.prototype._take = function(handler) {
 
   while (true) {
     var putter = this.puts.pop();
-    if (putter !== null) {
+    if (putter !== buffers.EMPTY) {
       var put_handler = putter.handler;
       if (put_handler.is_active()) {
         handler.commit();
@@ -127,7 +127,7 @@ Channel.prototype.close = function() {
   this.closed = true;
   while (true) {
     var taker = this.takes.pop();
-    if (taker === null) {
+    if (taker === buffers.EMPTY) {
       break;
     }
     if (taker.is_active()) {
@@ -140,7 +140,7 @@ Channel.prototype.close = function() {
   // TODO: Tests
   while (true) {
     var putter = this.puts.pop();
-    if (putter === null) {
+    if (putter === buffers.EMPTY) {
       break;
     }
     if (putter.handler.is_active()) {
