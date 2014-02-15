@@ -1,5 +1,6 @@
 var buffers = require("./impl/buffers");
 var channels = require("./impl/channels");
+var select = require("./impl/select");
 var process = require("./impl/process");
 var timers = require("./impl/timers");
 
@@ -50,11 +51,12 @@ module.exports = {
   spawn: spawn,
   go: go,
   chan: chan,
+  DEFAULT: select.DEFAULT,
 
   put: process.put,
   take: process.take,
   wait: process.wait,
-  alts: process.alts, DEFAULT: process.DEFAULT,
+  alts: process.alts,
   putAsync: process.put_then_callback,
   takeAsync: process.take_then_callback,
 

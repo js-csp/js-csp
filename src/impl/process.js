@@ -143,6 +143,6 @@ exports.take_then_callback = take_then_callback;
 exports.put = put;
 exports.take = take;
 exports.wait = wait;
-exports.alts = alts; exports.DEFAULT = select.DEFAULT;
+exports.alts = alts;
 
 exports.Process = Process;
