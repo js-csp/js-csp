@@ -181,12 +181,13 @@ describe("alts", function() {
 });
 
 describe("Goroutine", function() {
-  it("should put returned value on the channel", function*() {
+  it("should put returned value on output channel and close it", function*() {
     var ch = go(function*(x) {
       return x;
     }, [42], true);
     var value = yield take(ch);
     assert.equal(value, 42, "returned value is delivered");
+    assert.equal(ch.is_closed(), true, "output channel is closed");
   });
 
   it("should leave yielded normal values untouched", function*() {

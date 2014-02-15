@@ -4,17 +4,15 @@ var select = require("./impl/select");
 var process = require("./impl/process");
 var timers = require("./impl/timers");
 
-function no_op() {
-};
-
 function spawn(gen, returnChannel) {
   if (returnChannel) {
-    var chan = channels.chan(buffers.fixed(1));
+    var ch = channels.chan(buffers.fixed(1));
     (new process.Process(gen, function(value) {
-      // TODO: Shouldn't we close this channel instead of leaving it open?
-      process.put_then_callback(chan, value, no_op);
+      process.put_then_callback(ch, value, function(ok) {
+        ch.close();
+      });
     })).run();
-    return chan;
+    return ch;
   } else {
     (new process.Process(gen)).run();
     return null;

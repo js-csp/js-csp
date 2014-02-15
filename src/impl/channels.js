@@ -155,6 +155,11 @@ Channel.prototype.close = function() {
 };
 
 
+Channel.prototype.is_closed = function() {
+  return this.closed;
+};
+
+
 exports.chan = function(buf) {
   return new Channel(buffers.ring(32), buffers.ring(32), buf);
 };
