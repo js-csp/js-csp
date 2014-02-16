@@ -1,0 +1,374 @@
+var Box = require("./impl/channels").Box;
+
+var csp = require("./csp"),
+    go = csp.go,
+    take = csp.take,
+    put = csp.put,
+    alts = csp.alts,
+    chan = csp.chan,
+    CLOSED = csp.CLOSED;
+
+// // Javascript's notion of equality is broken, so we allow configuring it
+// exports.options = {
+//   equal: function(x, y) {
+//     return x === y;
+//   }
+// };
+
+function mapFrom(f, ch) {
+  return {
+    is_closed: function() {
+      return ch.is_closed();
+    },
+    close: function() {
+      ch.close();
+    },
+    _put: function(value, handler) {
+      return ch._put(value, handler);
+    },
+    _take: function(handler) {
+      var result = ch._take({
+        is_active: function() {
+          return handler.is_active();
+        },
+        commit: function() {
+          var take_cb = handler.commit();
+          return function(value) {
+            return take_cb(value === CLOSED ? CLOSED : f(value));
+          };
+        }
+      });
+      if (result) {
+        var value = result.value;
+        return new Box(value === CLOSED ? CLOSED : f(value));
+      } else {
+        return null;
+      }
+    }
+  };
+}
+
+function mapInto(f, ch) {
+  return {
+    is_closed: function() {
+      return ch.is_closed();
+    },
+    close: function() {
+      ch.close();
+    },
+    _put: function(value, handler) {
+      return ch._put(f(value), handler);
+    },
+    _take: function(handler) {
+      return ch._take(handler);
+    }
+  };
+}
+
+function filterFrom(p, ch, bufferOrN) {
+  var out = chan(bufferOrN);
+  go(function*() {
+    while (true) {
+      var value = yield take(ch);
+      if (value === CLOSED) {
+        out.close();
+        break;
+      }
+      if (p(value)) {
+        yield put(out, value);
+      }
+    };
+  });
+  return out;
+}
+
+function filterInto(p, ch) {
+  return {
+    is_closed: function() {
+      return ch.is_closed();
+    },
+    close: function() {
+      ch.close();
+    },
+    _put: function(value, handler) {
+      if (p(value)) {
+        return ch._put(value, handler);
+      } else {
+        return new Box(!ch.is_closed());
+      }
+    },
+    _take: function(handler) {
+      return ch._take(handler);
+    }
+  };
+}
+
+function removeFrom(p, ch) {
+  return filterFrom(function(value) {
+    return !p(value);
+  }, ch);
+}
+
+function removeInto(p, ch) {
+  return filterInto(function(value) {
+    return !p(value);
+  }, ch);
+}
+
+function* mapcat(f, src, dst) {
+  while (true) {
+    var value = yield take(src);
+    if (value === CLOSED) {
+      dst.close();
+      break;
+    } else {
+      var seq = f(value);
+      var length = seq.length;
+      for (var i = 0; i < length; i++) {
+        yield put(dst, seq[i]);
+      }
+      if (dst.is_closed()) {
+        break;
+      }
+    }
+  }
+}
+
+function mapcatFrom(f, ch, bufferOrN) {
+  var out = chan(bufferOrN);
+  go(mapcat(f, ch, out));
+  return out;
+}
+
+function mapcatInto(f, ch, bufferOrN) {
+  var src = chan(bufferOrN);
+  go(mapcat(f, src, ch));
+  return src;
+}
+
+function pipe(src, dst, keepOpen) {
+  go(function*() {
+    while (true) {
+      var value = yield take(src);
+      if (value === CLOSED) {
+        if (!keepOpen) {
+          dst.close();
+        }
+        break;
+      }
+      if (!(yield put(dst, value))) {
+        break;
+      }
+    }
+  });
+  return dst;
+}
+
+function split(p, ch, trueBufferOrN, falseBufferOrN) {
+  var tch = chan(trueBufferOrN);
+  var fch = chan(falseBufferOrN);
+  go(function*() {
+    while (true) {
+      var value = yield take(ch);
+      if (value === CLOSED) {
+        tch.close();
+        fch.close();
+        break;
+      }
+      yield put(p(value) ? tch : fch, value);
+    }
+  });
+  return [tch, fch];
+}
+
+function reduce(f, init, ch) {
+  return go(function*() {
+    var result = init;
+    while (true) {
+      var value = yield take(ch);
+      if (value === CLOSED) {
+        return result;
+      } else {
+        result = f(result, value);
+      }
+    }
+  }, [], true);
+}
+
+function onto(ch, coll, keepOpen) {
+  return go(function*() {
+    var length = coll.length;
+    // FIX: Should be a generic looping interface (for...in?)
+    for (var i = 0; i < length; i++) {
+      yield put(ch, coll[i]);
+    }
+    if (!keepOpen) {
+      ch.close();
+    }
+  });
+}
+
+function fromColl(coll) {
+  var ch = chan(coll.length);
+  onto(ch, coll);
+  return ch;
+}
+
+// TODO
+// function map(f, chs, bufferOrN) {
+//   var out = chan(bufferOrN);
+//   go(function*() {
+
+//   });
+//   return out;
+// }
+
+function merge(chs, bufferOrN) {
+  var out = chan(bufferOrN);
+  var actives = chs.slice(0);
+  go(function* () {
+    while (true) {
+      if (actives.length === 0) {
+        break;
+      }
+      var r = yield alts(actives);
+      var value = r.value;
+      if (value === CLOSED) {
+        // Remove closed channel
+        var i = actives.indexOf(r.channel);
+        // FIX: I'm afraid this is wrong
+        actives.splice(i, 1);
+        continue;
+      }
+      yield put(out, value);
+    }
+    out.close();
+  });
+  return out;
+}
+
+function into(coll, ch) {
+  var result = coll.slice(0);
+  return reduce(function(result, item) {
+    result.push(item);
+    return result;
+  }, result, ch);
+}
+
+function takeN(n, ch, bufferOrN) {
+  var out = chan(bufferOrN);
+  go(function*() {
+    for (var i = 0; i < n; i ++) {
+      var value = yield take(ch);
+      if (value === CLOSED) {
+        break;
+      }
+      yield put(out, value);
+    }
+    out.close();
+  });
+  return out;
+};
+
+var NOTHING = {};
+
+function unique(ch, bufferOrN) {
+  var out = chan(bufferOrN);
+  var last = NOTHING;
+  go(function*() {
+    while (true) {
+      var value = yield take(ch);
+      if (value === CLOSED) {
+        break;
+      }
+      if (value === last) {
+        continue;
+      }
+      yield put(out, value);
+    }
+    out.close();
+  });
+  return out;
+}
+
+function partitionBy(f, ch, bufferOrN) {
+  var out = chan(bufferOrN);
+  var part = [];
+  var last = NOTHING;
+  go(function*() {
+    while (true) {
+      var value = yield take(ch);
+      if (value === CLOSED) {
+        if (part.length > 0) {
+          yield put(out, part);
+        }
+        out.close();
+        break;
+      } else {
+        var newItem = f(value);
+        if (newItem === last || last === NOTHING) {
+          part.push(newItem);
+        } else {
+          yield put(out, part);
+          part = [newItem];
+        }
+        last = newItem;
+      }
+    }
+  });
+  return out;
+}
+
+function identity(x) {
+  return x;
+}
+
+function partition(ch, bufferOrN) {
+  return partitionBy(identity, ch, bufferOrN);
+}
+
+module.exports = {
+  mapFrom: mapFrom,
+  mapInto: mapInto,
+  filterFrom: filterFrom,
+  filterInto: filterInto,
+  removeFrom: removeFrom,
+  removeInto: removeInto,
+  mapcatFrom: mapcatFrom,
+  mapcatInto: mapcatInto,
+
+  pipe: pipe,
+  split: split,
+  reduce: reduce,
+  onto: onto,
+  fromColl: fromColl,
+
+  // map: map,
+  merge: merge,
+  into: into,
+  take: takeN,
+  unique: unique,
+  partition: partition,
+  partitionBy: partitionBy
+};
+
+
+// Possible "fluid" interfaces:
+
+// thread(
+//   [fromColl, [1, 2, 3, 4]],
+//   [mapFrom, inc],
+//   [into, []]
+// )
+
+// thread(
+//   [fromColl, [1, 2, 3, 4]],
+//   [mapFrom, inc, _],
+//   [into, [], _]
+// )
+
+// wrap()
+//   .fromColl([1, 2, 3, 4])
+//   .mapFrom(inc)
+//   .into([])
+//   .unwrap();
