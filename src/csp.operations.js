@@ -4,6 +4,8 @@ var csp = require("./csp"),
     go = csp.go,
     take = csp.take,
     put = csp.put,
+    takeAsync = csp.takeAsync,
+    putAsync = csp.putAsync,
     alts = csp.alts,
     chan = csp.chan,
     CLOSED = csp.CLOSED;
@@ -14,6 +16,9 @@ var csp = require("./csp"),
 //     return x === y;
 //   }
 // };
+
+function noOp(v) {
+}
 
 function mapFrom(f, ch) {
   return {
@@ -214,14 +219,53 @@ function fromColl(coll) {
   return ch;
 }
 
-// TODO
-// function map(f, chs, bufferOrN) {
-//   var out = chan(bufferOrN);
-//   go(function*() {
-
-//   });
-//   return out;
-// }
+function map(f, chs, bufferOrN) {
+  var out = chan(bufferOrN);
+  var length = chs.length;
+  // Array holding 1 round of values
+  var values = new Array(length);
+  // TODO: Not sure why we need a size-1 buffer here
+  var dchan = chan(1);
+  // How many more items this round
+  var dcount;
+  // put callbacks for each channel
+  var dcallbacks = new Array(length);
+  for (var i = 0; i < length; i++) {
+    dcallbacks[i] = (function(i) {
+      return function(value) {
+        values[i] = value;
+        dcount --;
+        if (dcount === 0) {
+          putAsync(dchan, values.slice(0), noOp);
+        }
+      };
+    }(i));
+  }
+  go(function*() {
+    while (true) {
+      dcount = length;
+      // We could just launch n goroutines here, but for effciency we
+      // don't
+      for (var i = 0; i < length; i++) {
+        try {
+          takeAsync(chs[i], dcallbacks[i]);
+        } catch (e) {
+          // FIX: Hmm why catching here?
+          dcount --;
+        }
+      }
+      var values = yield take(dchan);
+      for (i = 0; i < length; i ++) {
+        if (values[i] === CLOSED) {
+          out.close();
+          return;
+        }
+      }
+      yield put(out, f.apply(null, values));
+    }
+  });
+  return out;
+}
 
 function merge(chs, bufferOrN) {
   var out = chan(bufferOrN);
