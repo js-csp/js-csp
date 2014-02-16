@@ -216,4 +216,4 @@ npm install js-csp
 
 ## License ##
 
-Distributed under [Eclipese Public License](http://opensource.org/licenses/EPL-1.0).
+Distributed under [Eclipse Public License](http://opensource.org/licenses/EPL-1.0).
