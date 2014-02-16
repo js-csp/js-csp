@@ -20,7 +20,7 @@ function spawn(gen, returnChannel) {
 };
 
 function go(f, args, returnChannel) {
-  var gen = f.apply(undefined, args);
+  var gen = f.apply(null, args);
   return spawn(gen, returnChannel);
 };
 
