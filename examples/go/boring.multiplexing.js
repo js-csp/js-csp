@@ -1,3 +1,5 @@
+"use strict";
+
 // http://talks.golang.org/2012/concurrency.slide#27
 // Multiplexing
 

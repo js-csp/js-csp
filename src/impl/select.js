@@ -1,3 +1,5 @@
+"use strict";
+
 var Box = require("./channels").Box;
 
 var AltHandler = function(flag, f) {

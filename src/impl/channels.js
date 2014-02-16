@@ -1,3 +1,5 @@
+"use strict";
+
 var buffers = require("./buffers");
 var dispatch = require("./dispatch");
 

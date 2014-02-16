@@ -1,3 +1,5 @@
+"use strict";
+
 var Box = require("./impl/channels").Box;
 
 var csp = require("./csp"),

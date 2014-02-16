@@ -1,3 +1,5 @@
+"use strict";
+
 var dispatch = require("./dispatch");
 var select = require("./select");
 

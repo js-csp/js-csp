@@ -1,3 +1,5 @@
+"use strict";
+
 // http://talks.golang.org/2012/concurrency.slide#34
 // Fan-in using select
 

@@ -1,3 +1,5 @@
+"use strict";
+
 // TODO: Consider EmptyError & FullError to avoid redundant bound
 // checks, to improve performance (may need benchmarks)
 
