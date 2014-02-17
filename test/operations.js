@@ -15,7 +15,7 @@ var csp = require("../src/csp"),
     buffers = csp.buffers,
     CLOSED = csp.CLOSED;
 
-var ops = require("../src/csp.operations");
+var ops = csp.operations;
 
 function inc(x) {
   return x + 1;

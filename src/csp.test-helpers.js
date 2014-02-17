@@ -1,6 +1,6 @@
 "use strict";
 
-var csp = require("../src/csp");
+var csp = require("./csp");
 var chan = csp.chan;
 var go = csp.go;
 var put = csp.put;

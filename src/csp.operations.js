@@ -2,7 +2,7 @@
 
 var Box = require("./impl/channels").Box;
 
-var csp = require("./csp"),
+var csp = require("./csp.core"),
     go = csp.go,
     take = csp.take,
     put = csp.put,
