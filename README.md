@@ -200,13 +200,14 @@ npm install js-csp
 
 ## TODO ##
 
-- Achieve feature parity with Clojurescript's `core.async`.
+- Channel operations map, filter, reduce, pipe...
+- Multiplexing, mixing, publishing/subscribing.
 - Add more documentation and examples.
 - Add browser builds and tests.
 - Add conversion functions that "de-IOC" promises and callback-based APIs (e.g. Web Workers).
 - Publish to bower.
 - Investigate error handling in goroutines:
-  + Special `yield waitFor` that either return a value or throw an error from the result channel.
+  + Special `yield waitFor` that either returns a value or throws an error from the result channel.
   + Exception propagation & stack capturing.
 
 ## Inspiration ##
