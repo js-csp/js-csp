@@ -207,6 +207,7 @@ npm install js-csp
 - Add browser builds and tests.
 - Add conversion functions that "de-IOC" promises and callback-based APIs.
 - Publish to bower.
+- Explore how deep `yield`s affect composability.
 
 ## Inspiration ##
 
