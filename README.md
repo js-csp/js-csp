@@ -11,7 +11,7 @@ Pingpong (ported from [Go](http://talks.golang.org/2013/advconc.slide#6)).
 function* player(name, table) {
   while (true) {
     var ball = yield csp.take(table);
-    if (ball === null) {
+    if (ball === csp.CLOSED) {
       console.log(name + ": table's gone");
       return;
     }
