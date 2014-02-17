@@ -2,6 +2,9 @@
 
 // http://talks.golang.org/2012/concurrency.slide#46
 
+// Run the Web, Image, and Video searches concurrently, and wait for
+// all results.
+
 var csp = require("../../src/csp"),
     go = csp.go, chan = csp.chan,
     put = csp.put, take = csp.take,

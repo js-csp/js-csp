@@ -1,8 +1,8 @@
 "use strict";
 
-// http://talks.golang.org/2012/concurrency.slide#47
+// http://talks.golang.org/2012/concurrency.slide#50
 
-// Don't wait for slow servers.
+// Reduce tail latency using replicated search servers.
 
 var csp = require("../../src/csp"),
     go = csp.go, chan = csp.chan,
@@ -16,21 +16,35 @@ function fakeSearch(kind) {
   };
 }
 
-var web = fakeSearch("web");
-var image = fakeSearch("image");
-var video = fakeSearch("video");
+var web1 = fakeSearch("web1");
+var web2 = fakeSearch("web2");
+var image1 = fakeSearch("image1");
+var image2 = fakeSearch("image2");
+var video1 = fakeSearch("video1");
+var video2 = fakeSearch("video2");
+
+function* first(query, replicas) {
+  var ch = chan();
+  function* searchReplica(i) {
+    yield put(ch, (yield* replicas[i](query)));
+  }
+  for (var i = 0; i < replicas.length; i++) {
+    go(searchReplica, [i]);
+  }
+  return (yield take(ch));
+}
 
 function* google(query) {
   var ch = chan();
 
   go(function*() {
-    yield put(ch, (yield* web(query)));
+    yield put(ch, (yield* first(query, [web1, web2])));
   });
   go(function*() {
-    yield put(ch, (yield* image(query)));
+    yield put(ch, (yield* first(query, [image1, image2])));
   });
   go(function*() {
-    yield put(ch, (yield* video(query)));
+    yield put(ch, (yield* first(query, [video1, video2])));
   });
 
   var t = csp.timeout(80);
