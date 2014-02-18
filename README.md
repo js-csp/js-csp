@@ -169,7 +169,7 @@ Completes at most one of the channel operations. Each operation is either a chan
 "Returns" an object with 2 properties: The `channel` of the succeeding operation, and the `value` returned by the corresponding `put`/`take` operation.
 - If no operation is ready:
   + If `options.default` is specified, "returns" `{value: options.default, channel: csp.DEFAULT}`.
-  + Otherwise block until the an operation completes.
+  + Otherwise blocks until the an operation completes.
 - If more than one operation is ready:
   + If `options.priority` is `true`, tries the operations in order.
   + Otherwise makes a non-deterministic choice.

@@ -272,7 +272,7 @@ function map(f, chs, bufferOrN) {
 function merge(chs, bufferOrN) {
   var out = chan(bufferOrN);
   var actives = chs.slice(0);
-  go(function* () {
+  go(function*() {
     while (true) {
       if (actives.length === 0) {
         break;
