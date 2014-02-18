@@ -1,3 +1,5 @@
+"use strict";
+
 // TODO: Use process.nextTick if it's available since it's more
 // efficient
 // http://howtonode.org/understanding-process-next-tick

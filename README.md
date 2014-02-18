@@ -73,7 +73,7 @@ This is an almost exact clone of Clojurescript's `core.async`. The most signific
 
 These are *not* constructor functions. Don't use `new`.
 
-##### `chan([bufferOrNumber])` #####
+##### `chan([bufferOrN])` #####
 
 Creates a channel.
 - If a number is passed, the channel is backed by a fixed buffer of that size (bounded asynchronization).
@@ -109,7 +109,7 @@ TODO: Explain deep/shallow, expilicit yield points
 ##### `go(f* [, args [, returnChannel]])` #####
 
 Spawns a "goroutine" from the supplied generator function, and arguments.
-If `returnChannel` is `true`, returns a channel with that will receive the value returned by the goroutine. Returns `null` if `returnChannel` is omitted.
+If `returnChannel` is `true`, returns a channel that will receive the value returned by the goroutine. Returns `null` if `returnChannel` is omitted.
 **Note**: Do not return `null` from the channel.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
@@ -167,7 +167,7 @@ Completes at most one of the channel operations. Each operation is either a chan
 "Returns" an object with 2 properties: The `channel` of the succeeding operation, and the `value` returned by the corresponding `put`/`take` operation.
 - If no operation is ready:
   + If `options.default` is specified, "returns" `{value: options.default, channel: csp.DEFAULT}`.
-  + Otherwise block until the an operation completes.
+  + Otherwise blocks until the an operation completes.
 - If more than one operation is ready:
   + If `options.priority` is `true`, tries the operations in order.
   + Otherwise makes a non-deterministic choice.
@@ -181,17 +181,26 @@ Close a channel.
 - Pending and future takes "return" the buffered values, then `null`.
 - Pending and future puts "return" `false`.
 
-### Other types of endpoint ###
-TODO
-
-#### Multiplexers ####
-
-#### Mixers ####
-
-#### Publishers ####
-
 ### Composition operations ###
-TODO
+These functions are exposed through `csp.operations`.
+
+##### `mapFrom(f, ch)` #####
+Returns a channel that contains values produced by applying `f` to each value taken from the source channel `ch`.
+
+##### `mapInto(f, ch)` #####
+Returns a channel that applies `f` to each received value before putting it on the target channel `ch`. When the channel is closed, it closes the target channel.
+
+##### `filterFrom(p, ch [, bufferOrN])` #####
+Returns a channel that contains values from the source channel `ch` satisfying the predicate `p`. Other values will be discarded. The channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel is closed.
+
+##### `filterInto(p, ch)` #####
+Returns a channel that puts received values satisfying predicate `p` into the target channel `ch`, discarding the rest. When it is closed, it closes the target channel.
+
+##### `removeFrom(p, ch [, bufferOrN])` #####
+Like `filterFrom`, but keeps the the values not satisfying the predicate.
+
+##### `removeInto(p, ch)` #####
+Like `filterInt`, but keeps the the values not satisfying the predicate.
 
 ## Install ##
 ```bash
@@ -209,6 +218,8 @@ npm install js-csp
 - Investigate error handling in goroutines:
   + Special `yield waitFor` that either returns a value or throws an error from the result channel.
   + Exception propagation & stack capturing.
+- Explore how deep `yield`s affect composability.
+- Hands-on examples.
 
 ## Inspiration ##
 

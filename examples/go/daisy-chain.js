@@ -1,3 +1,5 @@
+"use strict";
+
 // http://talks.golang.org/2012/concurrency.slide#39
 // Daisy-chain
 var csp = require("../../src/csp");
