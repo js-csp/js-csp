@@ -215,6 +215,7 @@ function onto(ch, coll, keepOpen) {
   });
 }
 
+// TODO: Bounded?
 function fromColl(coll) {
   var ch = chan(coll.length);
   onto(ch, coll);
@@ -369,9 +370,9 @@ function identity(x) {
   return x;
 }
 
-function partition(ch, bufferOrN) {
-  return partitionBy(identity, ch, bufferOrN);
-}
+// function partition(ch, bufferOrN) {
+//   return partitionBy(identity, ch, bufferOrN);
+// }
 
 module.exports = {
   mapFrom: mapFrom,
@@ -394,7 +395,7 @@ module.exports = {
   into: into,
   take: takeN,
   unique: unique,
-  partition: partition,
+  // partition: partition,
   partitionBy: partitionBy
 };
 
