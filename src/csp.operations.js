@@ -84,7 +84,7 @@ function filterFrom(p, ch, bufferOrN) {
       if (p(value)) {
         yield put(out, value);
       }
-    };
+    }
   });
   return out;
 }
@@ -233,7 +233,7 @@ function map(f, chs, bufferOrN) {
   var dcount;
   // put callbacks for each channel
   var dcallbacks = new Array(length);
-  for (var i = 0; i < length; i++) {
+  for (var i = 0; i < length; i ++) {
     dcallbacks[i] = (function(i) {
       return function(value) {
         values[i] = value;
@@ -249,7 +249,7 @@ function map(f, chs, bufferOrN) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
       // don't
-      for (var i = 0; i < length; i++) {
+      for (var i = 0; i < length; i ++) {
         try {
           takeAsync(chs[i], dcallbacks[i]);
         } catch (e) {
@@ -315,7 +315,7 @@ function takeN(n, ch, bufferOrN) {
     out.close();
   });
   return out;
-};
+}
 
 var NOTHING = {};
 
@@ -390,7 +390,7 @@ module.exports = {
   onto: onto,
   fromColl: fromColl,
 
-  // map: map,
+  map: map,
   merge: merge,
   into: into,
   take: takeN,
