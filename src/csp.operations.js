@@ -366,13 +366,27 @@ function partitionBy(f, ch, bufferOrN) {
   return out;
 }
 
-function identity(x) {
-  return x;
+function partition(n, ch, bufferOrN) {
+  var out = chan(bufferOrN);
+  go(function*() {
+    while (true) {
+      var part = new Array(n);
+      for (var i = 0; i < n; i++) {
+        var value = yield take(ch);
+        if (value === CLOSED) {
+          if (i > 0) {
+            yield put(out, part.slice(0, i));
+          }
+          out.close();
+          return;
+        }
+        part[i] = value;
+      }
+      yield put(out, part);
+    }
+  });
+  return out;
 }
-
-// function partition(ch, bufferOrN) {
-//   return partitionBy(identity, ch, bufferOrN);
-// }
 
 module.exports = {
   mapFrom: mapFrom,
@@ -395,7 +409,7 @@ module.exports = {
   into: into,
   take: takeN,
   unique: unique,
-  // partition: partition,
+  partition: partition,
   partitionBy: partitionBy
 };
 

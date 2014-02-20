@@ -56,10 +56,13 @@ Returns a channel that contains a single array of values taken from `ch` appende
 Returns a channel that contains at most `n` values from the source channel `ch`. It is closed when `n` values have been delivered, or when the source channel closes. The new channel is unbuffered, unless `bufferOrN` is specified.
 
 ##### `unique(ch [, bufferOrN])` #####
-Returns a channel that contains values from the source channels `ch`, dropping consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
+Returns a channel that contains values from the source channel `ch`, dropping consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
+
+##### `partition(n, ch [, bufferOrN])` #####
+Returns a channel that contains values from the source channel `ch` grouped into arrays of size `n`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes. The last array's length is less than `n` if there are not enough values from the source channel.
 
 ##### `partitionBy(f, ch [, bufferOrN])` #####
-Returns a channel that contains values from the source channels grouped into arrays of consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
+Returns a channel that contains values from the source channel `ch` grouped into arrays of consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
 
 ### Multiplexing ###
 
