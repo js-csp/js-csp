@@ -331,6 +331,7 @@ function unique(ch, bufferOrN) {
       if (value === last) {
         continue;
       }
+      last = value;
       yield put(out, value);
     }
     out.close();

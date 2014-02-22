@@ -83,7 +83,7 @@ Bower package and pre-built files for browsers are coming.
 
 ## TODO ##
 
-- Channel operations map, filter, reduce, pipe...
+- Test operations (map, filter, reduce, pipe...) more thoroughly.
 - Multiplexing, mixing, publishing/subscribing.
 - Add more documentation and examples.
 - Add browser builds and tests.
@@ -92,7 +92,7 @@ Bower package and pre-built files for browsers are coming.
 - Investigate error handling in goroutines:
   + Special `yield waitFor` that either returns a value or throws an error from the result channel.
   + Exception propagation & stack capturing.
-- Explore how deep `yield`s affect composability.
+- Explore how deep `yield`s (`yield*`) affect composability.
 - Hands-on examples.
 
 ## Inspiration ##
