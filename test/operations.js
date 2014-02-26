@@ -43,6 +43,10 @@ function range(n) {
   return r;
 }
 
+function typeOf(x) {
+  return typeof x;
+}
+
 // TODO: These are very rudimentary tests. Add more
 
 describe("Operations", function() {
@@ -203,6 +207,17 @@ describe("Operations", function() {
       assert.deepEqual(
         [[1, 2, 3], [4, 5, 6], [7]],
         (yield take(ops.into([], dst))));
+    });
+  });
+
+  describe("partitionBy", function() {
+    it("should work", function*() {
+      var src = ops.fromColl(["a", "b", 1, 2, "c", true, undefined, false]);
+      var dst = ops.partitionBy(typeOf, src);
+      assert.deepEqual(
+        [["a", "b"], [1, 2], ["c"], [true], [undefined], [false]],
+        (yield take(ops.into([], dst)))
+      );
     });
   });
 });

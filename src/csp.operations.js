@@ -355,10 +355,10 @@ function partitionBy(f, ch, bufferOrN) {
       } else {
         var newItem = f(value);
         if (newItem === last || last === NOTHING) {
-          part.push(newItem);
+          part.push(value);
         } else {
           yield put(out, part);
-          part = [newItem];
+          part = [value];
         }
         last = newItem;
       }
