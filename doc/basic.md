@@ -84,7 +84,7 @@ yield csp.put(ch, 43); // false
 
 ##### `yield take(ch)` #####
 
-Takes a value from the channel. "Returns" `null` if channel is empty, and already closed.
+Takes a value from the channel. "Returns" `csp.CLOSED` if channel is empty, and already closed.
 ```javascript
 var ch = csp.chan(1);
 yield csp.put(ch, 42); // true
@@ -108,6 +108,12 @@ Completes at most one of the channel operations. Each operation is either a chan
 "Blocks" the current goroutine for `msecs` milliseconds.
 
 ##### `ch.close()` #####
+
 Close a channel.
-- Pending and future takes "return" the buffered values, then `null`.
+- Pending and future takes "return" the buffered values, then `CLOSED`.
 - Pending and future puts "return" `false`.
+
+### Special values ###
+
+- `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal `null` for now.
+- `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.

@@ -12,12 +12,6 @@ var csp = require("./csp.core"),
     chan = csp.chan,
     CLOSED = csp.CLOSED;
 
-// // Javascript's notion of equality is broken, so we allow configuring it
-// exports.options = {
-//   equal: function(x, y) {
-//     return x === y;
-//   }
-// };
 
 function noOp(v) {
 }
