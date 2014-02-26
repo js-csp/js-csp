@@ -70,6 +70,17 @@ describe("Operations", function() {
     });
   });
 
+  describe("onto", function() {
+    it("should work", function*() {
+      var ch = chan();
+      ops.onto(ch, [1, 2, 3, 4]);
+      assert.deepEqual(
+        [1, 2, 3, 4],
+        (yield take(ops.into([], ch)))
+      );
+    });
+  });
+
   describe("mapFrom", function() {
     it("should work", function*() {
       var result = yield take(
@@ -175,6 +186,16 @@ describe("Operations", function() {
     });
   });
 
+  describe("reduce", function() {
+    it("should work", function*() {
+      var src = ops.fromColl([1, 2, 3, 4, 5]);
+      var dst = ops.reduce(function(x, y) {
+        return x + y;
+      }, 0, src);
+      assert.equal(15, (yield take(dst)));
+    });
+  });
+
   describe("map", function() {
     it("should work", function*() {
       var inputs = [
@@ -187,6 +208,42 @@ describe("Operations", function() {
       assert.deepEqual(
         [4, 8, 12, 16, 20, 24],
         (yield take(ops.into([], output))));
+    });
+  });
+
+  describe("merge", function() {
+    it("should work", function*() {
+      var inputs = [
+        ops.fromColl([1, 2, 3]),
+        ops.fromColl([1, 2, 3]),
+        ops.fromColl([1, 2, 3])
+      ];
+      var output = ops.merge(inputs);
+      var result = yield take(ops.into([], output));
+      assert.deepEqual(
+        [1, 1, 1, 2, 2, 2, 3, 3, 3],
+        result.sort()
+      );
+    });
+  });
+
+  describe("take", function() {
+    it("should work without enough values", function*() {
+      var src = ops.fromColl([1, 2, 3]);
+      var dst = ops.take(10, src);
+      assert.deepEqual(
+        [1, 2, 3],
+        (yield take(ops.into([], dst)))
+      );
+    });
+
+    it("should work with more than enough values", function*() {
+      var src = ops.fromColl([1, 2, 3, 4, 5]);
+      var dst = ops.take(3, src);
+      assert.deepEqual(
+        [1, 2, 3],
+        (yield take(ops.into([], dst)))
+      );
     });
   });
 
