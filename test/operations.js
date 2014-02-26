@@ -35,6 +35,14 @@ function sum() {
   return s;
 }
 
+function range(n) {
+  var r = new Array(n);
+  for (var i = 0; i < n; i++) {
+    r[i] = i;
+  }
+  return r;
+}
+
 // TODO: These are very rudimentary tests. Add more
 
 describe("Operations", function() {
@@ -115,6 +123,25 @@ describe("Operations", function() {
       ops.onto(src, [1, 2, 3, 4, 5, 6]);
       var result = yield take(ops.into([], dst));
       assert.deepEqual(result, [1, 3, 5]);
+    });
+  });
+
+  describe("mapcatFrom", function() {
+    it("should work", function*() {
+      var src = ops.fromColl([1, 2, 3, 4]);
+      var dst = ops.mapcatFrom(range, src);
+      var result = yield take(ops.into([], dst));
+      assert.deepEqual(result, [0, 0, 1, 0, 1, 2, 0, 1, 2, 3]);
+    });
+  });
+
+  describe("mapcatInto", function() {
+    it("should work", function*() {
+      var dst = chan();
+      var src = ops.mapcatInto(range, dst);
+      ops.onto(src, [1, 2, 3, 4]);
+      var result = yield take(ops.into([], dst));
+      assert.deepEqual(result, [0, 0, 1, 0, 1, 2, 0, 1, 2, 3]);
     });
   });
 

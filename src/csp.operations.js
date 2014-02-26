@@ -143,13 +143,13 @@ function* mapcat(f, src, dst) {
 
 function mapcatFrom(f, ch, bufferOrN) {
   var out = chan(bufferOrN);
-  go(mapcat(f, ch, out));
+  go(mapcat, [f, ch, out]);
   return out;
 }
 
 function mapcatInto(f, ch, bufferOrN) {
   var src = chan(bufferOrN);
-  go(mapcat(f, src, ch));
+  go(mapcat, [f, src, ch]);
   return src;
 }
 
