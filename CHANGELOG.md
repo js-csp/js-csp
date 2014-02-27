@@ -1,5 +1,14 @@
 # Changes to js-csp
 
+## 0.2.0
+- ADDED: Channel operations, grouped under `csp.operations` (map, filter, pipe...).
+- ADDED: Named special values:
+  + `DEFAULT`: Returned as `.channel` when no operation is ready for a non-blocking `alts`.
+  + `CLOSED`: Returned when taking from a closed channel (still equal to `null`).
+- ADDED: More example from Go slides.
+- CHANGED: Rename `wait` into `sleep`.
+- FIXED: Goroutine's output channel is now closed after return value is delivered.
+
 ## 0.1.3
 
 - CHANGED: More reliable `mocha` test helpers.
