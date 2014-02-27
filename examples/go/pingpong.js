@@ -12,7 +12,7 @@ function* player(name, table) {
     }
     ball.hits += 1;
     console.log(name + " " + ball.hits);
-    yield csp.wait(100);
+    yield csp.sleep(100);
     yield csp.put(table, ball);
   }
 }
@@ -24,6 +24,6 @@ csp.go(function* () {
   csp.go(player, ["pong", table]);
 
   yield csp.put(table, {hits: 0});
-  yield csp.wait(1000);
+  yield csp.sleep(1000);
   table.close();
 });

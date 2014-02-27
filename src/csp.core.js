@@ -55,7 +55,7 @@ module.exports = {
 
   put: process.put,
   take: process.take,
-  wait: process.wait,
+  sleep: process.sleep,
   alts: process.alts,
   putAsync: process.put_then_callback,
   takeAsync: process.take_then_callback,

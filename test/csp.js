@@ -11,7 +11,7 @@ var csp = require("../src/csp"),
     put = csp.put,
     take = csp.take,
     alts = csp.alts,
-    wait = csp.wait,
+    sleep = csp.sleep,
     buffers = csp.buffers,
     CLOSED = csp.CLOSED;
 
@@ -41,7 +41,7 @@ describe("put", function() {
     it("should return true if value is then taken", function*() {
       var ch = chan();
       go(function*() {
-        yield wait(5);
+        yield sleep(5);
         yield take(ch);
       });
       assert.equal((yield put(ch, 42)), true);
@@ -71,7 +71,7 @@ describe("put", function() {
       var ch = chan();
 
       go(function*() {
-        yield wait(5);
+        yield sleep(5);
         ch.close();
 
         // XXX FIX: Throwing an exception here (in a "non-top-level"
@@ -103,9 +103,9 @@ describe("take", function() {
     ch = chan();
     go(function*() {
       // Make sure the takes below are not immediate, by waiting
-      yield wait(5);
+      yield sleep(5);
       yield put(ch, 42);
-      yield wait(5);
+      yield sleep(5);
       ch.close();
     });
 

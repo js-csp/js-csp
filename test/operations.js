@@ -11,7 +11,7 @@ var csp = require("../src/csp"),
     put = csp.put,
     take = csp.take,
     alts = csp.alts,
-    wait = csp.wait,
+    sleep = csp.sleep,
     buffers = csp.buffers,
     CLOSED = csp.CLOSED;
 

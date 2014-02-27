@@ -42,7 +42,7 @@ var Instruction = function(op, data) {
 
 var TAKE = "take";
 var PUT = "put";
-var WAIT = "wait";
+var SLEEP = "sleep";
 var ALTS = "alts";
 
 // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
@@ -100,7 +100,7 @@ Process.prototype.run = function(response) {
       });
       break;
 
-    case WAIT:
+    case SLEEP:
       var msecs = ins.data;
       dispatch.queue_delay(function() {
         self.run(null);
@@ -129,8 +129,8 @@ function put(channel, value) {
   });
 }
 
-function wait(msecs) {
-  return new Instruction(WAIT, msecs);
+function sleep(msecs) {
+  return new Instruction(SLEEP, msecs);
 }
 
 function alts(operations, options) {
@@ -144,7 +144,7 @@ exports.put_then_callback = put_then_callback;
 exports.take_then_callback = take_then_callback;
 exports.put = put;
 exports.take = take;
-exports.wait = wait;
+exports.sleep = sleep;
 exports.alts = alts;
 
 exports.Process = Process;

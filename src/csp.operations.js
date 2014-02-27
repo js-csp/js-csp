@@ -277,7 +277,6 @@ function merge(chs, bufferOrN) {
       if (value === CLOSED) {
         // Remove closed channel
         var i = actives.indexOf(r.channel);
-        // FIX: I'm afraid this is wrong
         actives.splice(i, 1);
         continue;
       }
