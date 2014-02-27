@@ -1,4 +1,3 @@
-TODO: Document all operations
 TODO: Maybe it should be "items" not "values" (js is mutable)
 
 ### Composition operations ###
@@ -63,15 +62,3 @@ Returns a channel that contains values from the source channel `ch` grouped into
 
 ##### `partitionBy(f, ch [, bufferOrN])` #####
 Returns a channel that contains values from the source channel `ch` grouped into arrays of consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
-
-### Multiplexing ###
-
-TODO
-
-### Mixing ###
-
-TODO
-
-### Publishing ###
-
-TODO
