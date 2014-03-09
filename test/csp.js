@@ -93,22 +93,48 @@ describe("put", function() {
 });
 
 describe("take", function() {
-  it("should return correct value or CLOSED", function*() {
-    var ch = chan(1);
-    yield put(ch, 42);
-    assert.equal((yield take(ch)), 42, "immediate take returns correct value");
-    ch.close();
-    assert.equal((yield take(ch)), CLOSED, "immediate take returns CLOSED");
-
-    ch = chan();
-    go(function*() {
-      // Make sure the takes below are not immediate, by waiting
-      yield sleep(5);
-      yield put(ch, 42);
-      yield sleep(5);
-      ch.close();
+  describe("that is immediate", function() {
+    it("should return correct value that was directly put", function*() {
+      var ch = chan();
+      go(function*() {
+        yield put(ch, 42);
+      });
+      assert.equal((yield take(ch)), 42);
     });
 
+    it("should return correct value that was buffered", function*() {
+      var ch = chan(1);
+      yield put(ch, 42);
+      assert.equal((yield take(ch)), 42);
+    });
+
+    it("should return false if channel is already closed", function*() {
+      var ch = chan();
+      ch.close();
+      assert.equal((yield take(ch)), CLOSED);
+    });
+  });
+
+  describe("that is parked", function() {
+    it("should return correct value if it is then delivered", function*() {
+      var ch = chan();
+      go(function*() {
+        yield sleep(5);
+        yield put(ch, 42);
+      });
+      assert.equal((yield take(ch)), 42);
+    });
+
+    it("should return CLOSED if channel is then closed", function*() {
+      var ch = chan();
+
+      go(function*() {
+        yield sleep(5);
+        ch.close();
+      });
+
+      assert.equal((yield take(ch)), CLOSED);
+    });
   });
 });
 
