@@ -1,0 +1,41 @@
+<html>
+  <head>
+    <meta charset="UTF-8"></meta>
+    <title>Events</title>
+    <script type="text/javascript" src="../../csp.bundled.js"></script>
+  </head>
+  <body>
+    <script type="text/javascript">
+    var csp = require("csp");
+    function noOp() {};
+
+    function firehose(element, eventName) {
+      var ch = csp.chan(csp.buffers.dropping(1));
+      element.addEventListener(eventName, function(event) {
+        csp.putAsync(ch, event, noOp);
+      });
+      return ch;
+    }
+
+    var pointChannel = firehose(document.body, "mousemove");
+
+    csp.go(function*() {
+      for (;;) {
+        yield csp.take(pointChannel);
+        console.log("-------------------- START");
+
+        for (;;) {
+          var result = yield csp.alts([pointChannel, csp.timeout(50)]);
+          var value = result.value;
+          if (value === csp.CLOSED) {
+            console.log("-------------------- STOP");
+            break;
+          }
+          var event = value;
+          console.log(event.x, event.y);
+        }
+      }
+    });
+    </script>
+  </body>
+</html>
