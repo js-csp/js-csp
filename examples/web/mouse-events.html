@@ -2,11 +2,20 @@
   <head>
     <meta charset="UTF-8"></meta>
     <title>Events</title>
-    <script type="text/javascript" src="../../csp.bundled.js"></script>
+    <script type="text/javascript" src="../../build/csp.js"></script>
   </head>
   <body>
+    <div id="display">
+    </div>
     <script type="text/javascript">
     var csp = require("csp");
+
+    var el = document.getElementById("display");
+    function show(text) {
+      el.textContent = text;
+      console.log(text);
+    }
+
     function noOp() {};
 
     function firehose(element, eventName) {
@@ -17,22 +26,22 @@
       return ch;
     }
 
-    var pointChannel = firehose(document.body, "mousemove");
+    var moves = firehose(document.body, "mousemove");
 
     csp.go(function*() {
       for (;;) {
-        yield csp.take(pointChannel);
-        console.log("-------------------- START");
+        var event = yield csp.take(moves);
+        show(event.x + ":" + event.y);
 
         for (;;) {
-          var result = yield csp.alts([pointChannel, csp.timeout(50)]);
+          var result = yield csp.alts([moves, csp.timeout(50)]);
           var value = result.value;
           if (value === csp.CLOSED) {
-            console.log("-------------------- STOP");
+            show("STOP");
             break;
           }
-          var event = value;
-          console.log(event.x, event.y);
+          event = value;
+          show(event.x + ":" + event.y);
         }
       }
     });
