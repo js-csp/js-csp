@@ -277,4 +277,26 @@ describe("Operations", function() {
       );
     });
   });
+
+  describe("mult", function() {
+    // TODO: More tests
+    it("should work", function*() {
+      var a = chan(4);
+      var b = chan(4);
+      var src = chan();
+      var m = ops.mult(src);
+      ops.mult.tap(m, a);
+      ops.mult.tap(m, b);
+      ops.pipe(ops.fromColl([1, 2, 3, 4]), src);
+
+      assert.deepEqual(
+        [1, 2, 3, 4],
+        (yield take(ops.into([], a)))
+      );
+      assert.deepEqual(
+        [1, 2, 3, 4],
+        (yield take(ops.into([], b)))
+      );
+    });
+  });
 });

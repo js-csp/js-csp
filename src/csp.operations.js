@@ -382,6 +382,123 @@ function partition(n, ch, bufferOrN) {
   return out;
 }
 
+// For channel identification
+var genId = (function() {
+  var i = 0;
+  return function() {
+    i ++;
+    return "" + i;
+  };
+})();
+
+var ID_ATTR = "__csp_channel_id";
+
+// TODO: Do we need to check with hasOwnProperty?
+function len(obj) {
+  var count = 0;
+  for (var p in obj) {
+    count ++;
+  }
+  return count;
+}
+
+function chanId(ch) {
+  var id = ch[ID_ATTR];
+  if (id === undefined) {
+    id = ch[ID_ATTR] = genId();
+  }
+  return id;
+}
+
+var Mult = function(ch) {
+  this.taps = {};
+  this.ch = ch;
+};
+
+var Tap = function(channel, keepOpen) {
+  this.channel = channel;
+  this.keepOpen = keepOpen;
+};
+
+Mult.prototype.muxch = function() {
+  return this.ch;
+};
+
+Mult.prototype.tap = function(ch, keepOpen) {
+  var id = chanId(ch);
+  this.taps[id] = new Tap(ch, keepOpen);
+};
+
+Mult.prototype.untap = function(ch) {
+  delete this.taps[chanId(ch)];
+};
+
+Mult.prototype.untapAll = function() {
+  this.taps = {};
+};
+
+function mult(ch) {
+  var m = new Mult(ch);
+  var dchan = chan(1);
+  var dcount;
+  function makeDoneCallback(tap) {
+    return function(stillOpen) {
+      dcount --;
+      if (dcount === 0) {
+        putAsync(dchan, true, noOp);
+      }
+      if (!stillOpen) {
+        m.untap(tap.channel);
+      }
+    };
+  }
+  go(function*() {
+    while (true) {
+      var value = yield take(ch);
+      var id, t;
+      var taps = m.taps;
+      if (value === CLOSED) {
+        for (id in taps) {
+          t = taps[id];
+          if (!t.keepOpen) {
+            t.channel.close();
+          }
+        }
+        // TODO: Is this necessary?
+        m.untapAll();
+        break;
+      }
+      dcount = len(taps);
+      // XXX: This is because putAsync can actually call back
+      // immediately. Fix that
+      var initDcount = dcount;
+      // Put value on tapping channels...
+      for (id in taps) {
+        t = taps[id];
+        putAsync(t.channel, value, makeDoneCallback(t));
+      }
+      // ... waiting for all puts to complete
+      if (initDcount > 0) {
+        yield take(dchan);
+      }
+    }
+  });
+  return m;
+}
+
+mult.tap = function tap(m, ch, keepOpen) {
+  m.tap(ch, keepOpen);
+  return ch;
+};
+
+mult.untap = function untap(m, ch) {
+  m.untap(ch);
+};
+
+mult.untapAll = function untapAll(m) {
+  m.untapAll();
+};
+
 module.exports = {
   mapFrom: mapFrom,
   mapInto: mapInto,
@@ -404,7 +521,9 @@ module.exports = {
   take: takeN,
   unique: unique,
   partition: partition,
-  partitionBy: partitionBy
+  partitionBy: partitionBy,
+
+  mult: mult
 };
 
 
