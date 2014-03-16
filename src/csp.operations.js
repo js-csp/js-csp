@@ -499,6 +499,87 @@ mult.untapAll = function untapAll(m) {
   m.untapAll();
 };
 
+function constantlyNull() {
+  return null;
+}
+
+var Pub = function(ch, topicFn, bufferFn) {
+  this.ch = ch;
+  this.topicFn = topicFn;
+  this.bufferFn = bufferFn;
+  this.mults = {};
+};
+
+Pub.prototype._ensureMult = function(topic) {
+  var m = this.mults[topic];
+  var bufferFn = this.bufferFn;
+  if (!m) {
+    m = this.mults[topic] = mult(chan(bufferFn(topic)));
+  }
+  return m;
+};
+
+Pub.prototype.sub = function(topic, ch, keepOpen) {
+  var m = this._ensureMult(topic);
+  return mult.tap(m, ch, keepOpen);
+};
+
+Pub.prototype.unsub = function(topic, ch) {
+  var m = this.mults[topic];
+  if (m) {
+    mult.untap(m, ch);
+  }
+};
+
+Pub.prototype.unsubAll = function(topic) {
+  if (topic === undefined) {
+    this.mults = {};
+  } else {
+    delete this.mults[topic];
+  }
+};
+
+function pub(ch, topicFn, bufferFn) {
+  bufferFn = bufferFn || constantlyNull;
+  var p = new Pub(ch, topicFn, bufferFn);
+  go(function*() {
+    while (true) {
+      var value = yield take(ch);
+      var mults = p.mults;
+      var topic;
+      if (value === CLOSED) {
+        for (topic in mults) {
+          mults[topic].muxch().close();
+        }
+        break;
+      }
+      // TODO: Somehow ensure/document that this must return a string
+      // (otherwise use proper (hash)maps)
+      topic = topicFn(value);
+      var m = mults[topic];
+      if (m) {
+        var stillOpen = yield put(m.muxch(), value);
+        if (!stillOpen) {
+          delete mults[topic];
+        }
+      }
+    }
+  });
+  return p;
+}
+
+pub.sub = function sub(p, topic, ch, keepOpen) {
+  return p.sub(topic, ch, keepOpen);
+};
+
+pub.unsub = function unsub(p, topic, ch) {
+  p.unsub(topic, ch);
+};
+
+pub.unsubAll = function unsubAll(p, topic) {
+  p.unsubAll(topic);
+};
+
 module.exports = {
   mapFrom: mapFrom,
   mapInto: mapInto,
@@ -523,7 +604,8 @@ module.exports = {
   partition: partition,
   partitionBy: partitionBy,
 
-  mult: mult
+  mult: mult,
+  pub: pub
 };
 
 

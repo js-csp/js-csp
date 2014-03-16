@@ -299,4 +299,40 @@ describe("Operations", function() {
       );
     });
   });
+
+  describe("pub-sub", function() {
+    // TODO: More tests
+    it("should work", function*() {
+      var a_nums = chan(5);
+      var a_strs = chan(5);
+      var b_nums = chan(5);
+      var b_strs = chan(5);
+      var src = chan();
+      var p = ops.pub(src, typeOf);
+
+      ops.pub.sub(p, "string", a_strs);
+      ops.pub.sub(p, "string", b_strs);
+      ops.pub.sub(p, "number", a_nums);
+      ops.pub.sub(p, "number", b_nums);
+
+      ops.pipe(ops.fromColl([1, "a", 2, "b", 3, "c"]), src);
+
+      assert.deepEqual(
+        [1, 2, 3],
+        (yield take(ops.into([], a_nums)))
+      );
+      assert.deepEqual(
+        [1, 2, 3],
+        (yield take(ops.into([], b_nums)))
+      );
+      assert.deepEqual(
+        ["a", "b", "c"],
+        (yield take(ops.into([], a_strs)))
+      );
+      assert.deepEqual(
+        ["a", "b", "c"],
+        (yield take(ops.into([], b_strs)))
+      );
+    });
+  });
 });
