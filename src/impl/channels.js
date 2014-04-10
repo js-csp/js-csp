@@ -80,18 +80,40 @@ Channel.prototype._take = function(handler) {
     return null;
   }
 
+  var putter, put_handler, callback;
+
   if (this.buf && this.buf.count() > 0) {
     handler.commit();
-    return new Box(this.buf.remove());
+    var value = this.buf.remove();
+    // We need to check pending puts here, other wise they won't
+    // be able to proceed until their number reaches MAX_DIRTY
+    while (true) {
+      putter = this.puts.pop();
+      if (putter !== buffers.EMPTY) {
+        put_handler = putter.handler;
+        if (put_handler.is_active()) {
+          callback = put_handler.commit();
+          dispatch.run(function() {
+            callback(true);
+          });
+          this.buf.add(putter.value);
+          break;
+        } else {
+          continue;
+        }
+      }
+      break;
+    }
+    return new Box(value);
   }
 
   while (true) {
-    var putter = this.puts.pop();
+    putter = this.puts.pop();
     if (putter !== buffers.EMPTY) {
-      var put_handler = putter.handler;
+      put_handler = putter.handler;
       if (put_handler.is_active()) {
         handler.commit();
-        var callback = put_handler.commit();
+        callback = put_handler.commit();
         dispatch.run(function() {
           callback(true);
         });

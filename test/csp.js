@@ -1,4 +1,5 @@
 var assert = require("chai").assert;
+var mocha = require("mocha");
 var a = require("../src/csp.test-helpers"),
     it = a.it,
     before = a.before,
@@ -10,8 +11,11 @@ var csp = require("../src/csp"),
     go = csp.go,
     put = csp.put,
     take = csp.take,
+    putAsync = csp.putAsync,
+    takeAsync = csp.takeAsync,
     alts = csp.alts,
     sleep = csp.sleep,
+    timeout = csp.timeout,
     buffers = csp.buffers,
     CLOSED = csp.CLOSED;
 
@@ -88,6 +92,26 @@ describe("put", function() {
       });
 
       assert.equal((yield put(ch, 42)), false);
+    });
+
+    // http://onbeyondlambda.blogspot.com/2014/04/asynchronous-naivete.html
+    mocha.it("should be moved to the buffer when a value is taken from it", function(done) {
+      var ch = chan(1);
+      var count = 0;
+
+      function inc() {
+        count ++;
+      }
+
+      putAsync(ch, 42, inc);
+      putAsync(ch, 42, inc);
+      takeAsync(ch, function() {
+        go(function*() {
+          yield take(timeout(500));
+          assert.equal(count, 2);
+          done();
+        });
+      });
     });
   });
 });
