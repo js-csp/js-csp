@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.2.2
+- FIXED: Pending puts are now properly processed when takes make place for them in the buffer.
+
 ## 0.2.0
 - ADDED: Channel operations, grouped under `csp.operations` (map, filter, pipe...).
 - ADDED: Named special values:
