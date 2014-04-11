@@ -602,10 +602,7 @@ module.exports = {
   take: takeN,
   unique: unique,
   partition: partition,
-  partitionBy: partitionBy,
-
-  mult: mult,
-  pub: pub
+  partitionBy: partitionBy
 };
 
 
