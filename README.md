@@ -84,6 +84,8 @@ Bower package and pre-built files for browsers are coming.
 ## TODO ##
 
 - Test operations (map, filter, reduce, pipe...) more thoroughly.
+- Use better name for functions.
+- Better code style?
 - Multiplexing, mixing, publishing/subscribing.
 - Add more documentation and examples.
 - Add browser builds and tests.
