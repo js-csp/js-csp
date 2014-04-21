@@ -107,7 +107,7 @@ describe("put", function() {
       putAsync(ch, 42, inc);
       takeAsync(ch, function() {
         go(function*() {
-          yield take(timeout(500));
+          yield null;
           assert.equal(count, 2);
           done();
         });
