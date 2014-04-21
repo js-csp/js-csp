@@ -300,6 +300,30 @@ describe("Operations", function() {
     });
   });
 
+  describe("mix", function() {
+    it("should work", function*() {
+      var out = chan();
+      var m = ops.mix(out);
+      var take_out = chan();
+      go(function*() {
+        for (var i = 0; i < 6; i++) {
+          var value = yield take(out);
+          yield put(take_out, value);
+        }
+        take_out.close();
+      });
+      var in1 = ops.fromColl([1, 2, 3]);
+      var in2 = ops.fromColl([4, 5, 6]);
+      ops.mix.add(m, in1);
+      ops.mix.add(m, in2);
+      ops.mix.toggle(m, [[in1, {solo: true}], [in2, {solo: true}]]);
+      assert.deepEqual(
+        [1, 2, 3, 4, 5, 6],
+        (yield take(ops.into([], take_out))).sort()
+      );
+    });
+  });
+
   describe("pub-sub", function() {
     // TODO: More tests
     it("should work", function*() {
