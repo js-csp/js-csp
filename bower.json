@@ -1,0 +1,35 @@
+{
+  "name": "js-csp",
+  "version": "0.2.4-dev",
+  "homepage": "https://github.com/ubolonton/js-csp",
+  "authors": [
+    "Nguyễn Tuấn Anh <ubolonton@gmail.com>"
+  ],
+  "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
+  "main": "./src/csp.js",
+  "moduleType": [
+    "node"
+  ],
+  "keywords": [
+    "csp",
+    "async",
+    "concurrency",
+    "channel",
+    "go",
+    "clojure",
+    "clojurescript",
+    "core.async",
+    "es6",
+    "generators",
+    "yield",
+    "coroutines"
+  ],
+  "license": "EPL",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ]
+}
