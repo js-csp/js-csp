@@ -499,6 +499,168 @@ mult.untapAll = function untapAll(m) {
   m.untapAll();
 };
 
+var Mix = function(ch) {
+  this.ch = ch;
+  this.stateMap = {};
+  this.change = chan();
+  this.soloMode = mix.MUTE;
+};
+
+Mix.prototype._changed = function() {
+  putAsync(this.change, true, noOp);
+};
+
+Mix.prototype._getAllState = function() {
+  var allState = {};
+  var stateMap = this.stateMap;
+  var solos = [];
+  var mutes = [];
+  var pauses = [];
+  var reads;
+  for (var id in stateMap) {
+    var chanData = stateMap[id];
+    var state = chanData.state;
+    var channel = chanData.channel;
+    if (state[mix.SOLO]) {
+      solos.push(channel);
+    }
+    // TODO
+    if (state[mix.MUTE]) {
+      mutes.push(channel);
+    }
+    if (state[mix.PAUSE]) {
+      pauses.push(channel);
+    }
+  }
+  var i, n;
+  if (this.soloMode === mix.PAUSE && solos.length > 0) {
+    n = solos.length;
+    reads = new Array(n + 1);
+    for (i = 0; i < n; i++) {
+      reads[i] = solos[i];
+    }
+    reads[n] = this.change;
+  } else {
+    reads = [];
+    for (id in stateMap) {
+      chanData = stateMap[id];
+      channel = chanData.channel;
+      if (pauses.indexOf(channel) < 0) {
+        reads.push(channel);
+      }
+    }
+    reads.push(this.change);
+  }
+
+  return {
+    solos: solos,
+    mutes: mutes,
+    reads: reads
+  };
+};
+
+Mix.prototype.admix = function(ch) {
+  this.stateMap[chanId(ch)] = {
+    channel: ch,
+    state: {}
+  };
+  this._changed();
+};
+
+Mix.prototype.unmix = function(ch) {
+  delete this.stateMap[chanId(ch)];
+  this._changed();
+};
+
+Mix.prototype.unmixAll = function() {
+  this.stateMap = {};
+  this._changed();
+};
+
+Mix.prototype.toggle = function(updateStateList) {
+  // [[ch1, {}], [ch2, {solo: true}]];
+  var length = updateStateList.length;
+  for (var i = 0; i < length; i++) {
+    var ch = updateStateList[i][0];
+    var id = chanId(ch);
+    var updateState = updateStateList[i][1];
+    var chanData = this.stateMap[id];
+    if (!chanData) {
+      chanData = this.stateMap[id] = {
+        channel: ch,
+        state: {}
+      };
+    }
+    for (var mode in updateState) {
+      chanData.state[mode] = updateState[mode];
+    }
+  }
+  this._changed();
+};
+
+Mix.prototype.setSoloMode = function(mode) {
+  if (VALID_SOLO_MODES.indexOf(mode) < 0) {
+    throw new Error("Mode must be one of: ", VALID_SOLO_MODES.join(", "));
+  }
+  this.soloMode = mode;
+  this._changed();
+};
+
+function mix(out) {
+  var m = new Mix(out);
+  go(function*() {
+    var state = m._getAllState();
+    while (true) {
+      var result = yield alts(state.reads);
+      var value = result.value;
+      var channel = result.channel;
+      if (value === CLOSED) {
+        delete m.stateMap[chanId(channel)];
+        state = m._getAllState();
+        continue;
+      }
+      if (channel === m.change) {
+        state = m._getAllState();
+        continue;
+      }
+      var solos = state.solos;
+      if (solos.indexOf(channel) > -1 ||
+          (solos.length && !(m.mutes.indexOf(channel) > -1))) {
+        var stillOpen = yield put(out, value);
+        if (!stillOpen) {
+          break;
+        }
+      }
+    }
+  });
+  return m;
+}
+
+mix.MUTE = "mute";
+mix.PAUSE = "pause";
+mix.SOLO = "solo";
+var VALID_SOLO_MODES = [mix.MUTE, mix.PAUSE];
+
+mix.add = function admix(m, ch) {
+  m.admix(ch);
+};
+
+mix.remove = function unmix(m, ch) {
+  m.unmix(ch);
+};
+
+mix.removeAll = function unmixAll(m) {
+  m.unmixAll();
+};
+
+mix.toggle = function toggle(m, updateStateList) {
+  m.toggle(updateStateList);
+};
+
+mix.setSoloMode = function setSoloMode(m, mode) {
+  m.setSoloMode(mode);
+};
+
 function constantlyNull() {
   return null;
 }
@@ -602,7 +764,11 @@ module.exports = {
   take: takeN,
   unique: unique,
   partition: partition,
-  partitionBy: partitionBy
+  partitionBy: partitionBy,
+
+  mult: mult,
+  mix: mix,
+  pub: pub
 };
 
 
