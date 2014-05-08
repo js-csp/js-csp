@@ -74,12 +74,15 @@ https://github.com/clojure/core.async
 
 ## Install ##
 
-There's currently only a npm package. For browsers, [browserify](http://browserify.org/) is recommended.
+It's available for both `npm` and `bower`. For browsers, use [browserify](http://browserify.org/)+`npm` or `browserify`+`bower`+`debowerify`.
 ```bash
 npm install js-csp
 ```
+```bash
+bower install js-csp
+```
 
-Bower package and pre-built files for browsers are coming.
+Pre-built files for (old) browsers may be coming.
 
 ## TODO ##
 
@@ -90,7 +93,6 @@ Bower package and pre-built files for browsers are coming.
 - Add more documentation and examples.
 - Add browser builds and tests.
 - Add conversion functions that "de-IOC" promises and callback-based APIs (e.g. Web Workers).
-- Publish to bower.
 - Investigate error handling in goroutines:
   + Special `yield waitFor` that either returns a value or throws an error from the result channel.
   + Exception propagation & stack capturing.
