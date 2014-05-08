@@ -97,6 +97,7 @@ Pre-built files for (old) browsers may be coming.
   + Special `yield waitFor` that either returns a value or throws an error from the result channel.
   + Exception propagation & stack capturing.
 - Explore how deep `yield`s (`yield*`) affect composability.
+- Deadlock detector.
 - Hands-on examples.
 
 ## Inspiration ##
