@@ -248,6 +248,15 @@ describe("Goroutine", function() {
       assert.equal((yield lst[i]), lst[i]);
     }
   });
+
+  it("should work when special value CLOSED is returned", function*() {
+    var ch = go(function*(x) {
+      return x;
+    }, [CLOSED], true);
+    var value = yield take(ch);
+    assert.equal(value, CLOSED, "CLOSED is delivered");
+    assert.equal(ch.is_closed(), true, "output channel is closed");
+  });
 });
 
 describe("Process runner", function() {

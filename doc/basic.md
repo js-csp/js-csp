@@ -41,7 +41,6 @@ TODO: Explain deep/shallow, expilicit yield points
 
 Spawns a "goroutine" from the supplied generator function, and arguments.
 If `returnChannel` is `true`, returns a channel that will receive the value returned by the goroutine. Returns `null` if `returnChannel` is omitted.
-**Note**: Do not return `null` from the channel.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
 var ch = csp.go(function*(x) {

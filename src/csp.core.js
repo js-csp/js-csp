@@ -10,9 +10,13 @@ function spawn(gen, returnChannel) {
   if (returnChannel) {
     var ch = channels.chan(buffers.fixed(1));
     (new process.Process(gen, function(value) {
-      process.put_then_callback(ch, value, function(ok) {
+      if (value === channels.CLOSED) {
         ch.close();
-      });
+      } else {
+        process.put_then_callback(ch, value, function(ok) {
+          ch.close();
+        });
+      }
     })).run();
     return ch;
   } else {
