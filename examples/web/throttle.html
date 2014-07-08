@@ -1,0 +1,88 @@
+<html>
+  <head>
+    <meta charset="UTF-8"></meta>
+    <title>Events</title>
+    <script type="text/javascript" src="../../build/csp.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+  </head>
+  <body>
+    <style>
+      #display.waiting {
+        color: gray;
+      }
+    </style>
+    Event if you type fast, only 1 request is run at a time <br>
+    <input type="text" name="" value="" id="query" />
+    <div id="running"></div>
+    <div id="display">
+    </div>
+    <script type="text/javascript">
+    var csp = require("csp");
+
+    function noOp() {};
+
+    var $display = $("#display");
+    function show(text) {
+      $display.text(text);
+      console.log(text);
+    }
+
+    var $input = $("#query");
+    function query() {
+      return $input.val();
+    }
+
+    function request(term) {
+      var url = "http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=" + term + "&callback=gotData";
+      /* $("script#request").remove(); */
+      $("<script>").attr({
+        /* id: "request", */
+        type: "text/javascript",
+        src: url
+      }).appendTo("body");
+    }
+
+    function firehose($el, eventName) {
+      var ch = csp.chan(csp.buffers.dropping(1));
+      $el.on(eventName, function(event) {
+        csp.putAsync(ch, event, noOp);
+      });
+      return ch;
+    }
+
+    function gotData(data) {
+      // console.log(data);
+      csp.putAsync(result, data, noOp);
+    }
+
+    var keydowns = firehose($input, "keydown");
+    var input = csp.chan(csp.buffers.dropping(1));
+    var result = csp.chan();
+
+    csp.go(function*() {
+      var count = 0;
+      for (;;) {
+        var event = yield csp.take(keydowns);
+        count ++;
+        console.log(count);
+        yield csp.put(input, query());
+      }
+    });
+
+    csp.go(function*() {
+      for (;;) {
+        var query = yield csp.take(input);
+        request(query);
+        $display.addClass("waiting");
+        var data = yield csp.take(result);
+        $display.removeClass("waiting");
+        $display.html("");
+        data[1].forEach(function(item) {
+          $("<div>").text(item).appendTo($display);
+        });
+      }
+    });
+
+    </script>
+  </body>
+</html>
