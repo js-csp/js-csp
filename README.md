@@ -64,6 +64,7 @@ Turn on an experimental flag. Look for "Enable Experimental JavaScript" at [chro
 
 Use one of the js-to-js compilers:
 - [Facebook Regenerator](http://facebook.github.io/regenerator/).
+- [Google Closure Compiler](https://developers.google.com/closure/compiler/) with `--language_in ECMASCRIPT6 --language_out ECMASCRIPT3` flags.
 - [Google Traceur](https://github.com/google/traceur-compiler).
 
 Or, if you use Python's Twisted:
