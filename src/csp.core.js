@@ -6,28 +6,23 @@ var select = require("./impl/select");
 var process = require("./impl/process");
 var timers = require("./impl/timers");
 
-function spawn(gen, returnChannel) {
-  if (returnChannel) {
-    var ch = channels.chan(buffers.fixed(1));
-    (new process.Process(gen, function(value) {
-      if (value === channels.CLOSED) {
+function spawn(gen) {
+  var ch = channels.chan(buffers.fixed(1));
+  (new process.Process(gen, function(value) {
+    if (value === channels.CLOSED) {
+      ch.close();
+    } else {
+      process.put_then_callback(ch, value, function(ok) {
         ch.close();
-      } else {
-        process.put_then_callback(ch, value, function(ok) {
-          ch.close();
-        });
-      }
-    })).run();
-    return ch;
-  } else {
-    (new process.Process(gen)).run();
-    return null;
-  }
+      });
+    }
+  })).run();
+  return ch;
 };
 
-function go(f, args, returnChannel) {
+function go(f, args) {
   var gen = f.apply(null, args);
-  return spawn(gen, returnChannel);
+  return spawn(gen);
 };
 
 function chan(bufferOrNumber) {
