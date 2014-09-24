@@ -37,23 +37,23 @@ TODO: Explain usage of `yield` in goroutines
 
 TODO: Explain deep/shallow, expilicit yield points
 
-##### `go(f* [, args [, returnChannel]])` #####
+##### `go(f* [, args])` #####
 
 Spawns a "goroutine" from the supplied generator function, and arguments.
-If `returnChannel` is `true`, returns a channel that will receive the value returned by the goroutine. Returns `null` if `returnChannel` is omitted.
+Returns a channel that will receive the value returned by the goroutine.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
 var ch = csp.go(function*(x) {
   yield csp.sleep(1000);
   return x;
-}, [42], true);
+}, [42]);
 // Will "block" for 1 second then print 42;
 console.log((yield csp.take(chan)));
 ```
 
-TODO: Document go subtlety: `yield go` would start the goroutine "immediately" while `go` would not start it until the next `yield`, or `return`.
+`yield go` would start the goroutine "immediately" while `go` would not start it until the next `yield`, or `return`.
 
-##### `spawn(generator [, returnChannel])` #####
+##### `spawn(generator)` #####
 
 Similar to `go`, but takes a generator instead of creating one.
 ```javascript
@@ -62,7 +62,7 @@ function* id(x) {
   yield csp.sleep(1000);
   return x;
 }
-var ch = csp.spawn(id(42), true);
+var ch = csp.spawn(id(42));
 // Will "block" for 1 second then print 42;
 console.log((yield csp.take(chan)));
 ```

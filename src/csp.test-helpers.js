@@ -29,7 +29,7 @@ function g(f) {
 function gg(f) {
   return g(function*(done) {
     try {
-      var ch = go(f, [], true);
+      var ch = go(f, []);
       yield take(ch);
       done();
     } catch(e) {

@@ -234,7 +234,7 @@ describe("Goroutine", function() {
   it("should put returned value on output channel and close it", function*() {
     var ch = go(function*(x) {
       return x;
-    }, [42], true);
+    }, [42]);
     var value = yield take(ch);
     assert.equal(value, 42, "returned value is delivered");
     assert.equal(ch.is_closed(), true, "output channel is closed");
@@ -252,7 +252,7 @@ describe("Goroutine", function() {
   it("should work when special value CLOSED is returned", function*() {
     var ch = go(function*(x) {
       return x;
-    }, [CLOSED], true);
+    }, [CLOSED]);
     var value = yield take(ch);
     assert.equal(value, CLOSED, "CLOSED is delivered");
     assert.equal(ch.is_closed(), true, "output channel is closed");
