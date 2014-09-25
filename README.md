@@ -109,4 +109,4 @@ Pre-built files for (old) browsers may be coming.
 
 ## License ##
 
-Distributed under [Eclipse Public License](http://opensource.org/licenses/EPL-1.0).
+Distributed under [MIT License](http://opensource.org/licenses/MIT).

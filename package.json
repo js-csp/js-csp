@@ -13,7 +13,7 @@
     "url": "https://github.com/ubolonton/js-csp.git"
   },
   "license": {
-    "type": "EPL",
+    "type": "MIT",
     "url": "https://github.com/ubolonton/js-csp/raw/master/LICENSE"
   },
   "bugs": {

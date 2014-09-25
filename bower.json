@@ -24,7 +24,7 @@
     "yield",
     "coroutines"
   ],
-  "license": "EPL",
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "node_modules",
