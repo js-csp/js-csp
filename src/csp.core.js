@@ -25,7 +25,7 @@ function go(f, args) {
   return spawn(gen);
 };
 
-function chan(bufferOrNumber) {
+function chan(bufferOrNumber, xform) {
   var buf;
   if (bufferOrNumber === 0) {
     bufferOrNumber = null;
@@ -35,7 +35,7 @@ function chan(bufferOrNumber) {
   } else {
     buf = bufferOrNumber;
   }
-  return channels.chan(buf);
+  return channels.chan(buf, xform);
 };
 
 

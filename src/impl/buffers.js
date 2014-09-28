@@ -81,6 +81,13 @@ RingBuffer.prototype.pop = function() {
   return item;
 };
 
+RingBuffer.prototype.peek = function() {
+  if (this.length === 0) {
+    return EMPTY;
+  }
+  return this.array[this.tail];
+};
+
 RingBuffer.prototype.cleanup = function(predicate) {
   var length = this.length;
   for (var i = 0; i < length; i++) {
