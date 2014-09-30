@@ -2,6 +2,9 @@
 
 var buffers = require("./buffers");
 var dispatch = require("./dispatch");
+// TODO: This feels awkward depending on this lib just for early
+// termination checking
+var Reduced = require("transducers.js").Reduced;
 
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
@@ -62,8 +65,8 @@ var Channel = function(takes, puts, buf, xform) {
 };
 
 Channel.prototype._put = function(value, handler) {
-  // TODO: This should be checked after the reducer runs (but if it
-  // fails, it should fail here, not in a callback)
+  // FIX: This should be checked after the reducer runs (but if it
+  // fails, it should fail here, not in a callback?)
   if (value === CLOSED) {
     throw new Error("Cannot put CLOSED on a channel.");
   }
@@ -84,9 +87,20 @@ Channel.prototype._put = function(value, handler) {
           value = this.consume(NONE, value);
         }
         handler.commit();
+        // Reduced, this channel is done for. TODO: This becomes funny
+        // because putting a Reduced object on a channel can close it
+        // (while CLOSED gets through if it's produced by a reducer!!)
+        if (value instanceof Reduced) {
+          // TODO: How about still checking against NONE here?
+          // Because if a reducer both lets a value through and
+          // signals termination in the same step, we probably want to
+          // deliver the value first, then terminate, instead of just
+          // terminating and discarding the value.
+          this.close();
+        }
         // Give the output value to taker, unless the reducer
         // slurped it (e.g. filter)
-        if (value !== NONE) {
+        else if (value !== NONE) {
           var callback = taker.commit();
           dispatch.run(function() {
             callback(value);
@@ -102,7 +116,9 @@ Channel.prototype._put = function(value, handler) {
     } else {
       if (this.buf && !this.buf.is_full()) {
         handler.commit();
-        this.add(this.buf, value);
+        if (this.add(this.buf, value) instanceof Reduced) {
+          this.close();
+        }
         return new Box(true);
       } else {
         if (this.dirty_puts > MAX_DIRTY) {
@@ -147,7 +163,9 @@ Channel.prototype._take = function(handler) {
           dispatch.run(function() {
             callback(true);
           });
-          this.add(this.buf, putter.value);
+          if (this.add(this.buf, putter.value)) {
+            this.close();
+          }
           break;
         } else {
           continue;
@@ -171,8 +189,11 @@ Channel.prototype._take = function(handler) {
         if (this.consume) {
           value = this.consume(NONE, value);
         }
+        if (value instanceof Reduced) {
+          this.close();
+        }
         // The reducer slurped this value, check next pending put
-        if (value === NONE) {
+        else if (value === NONE) {
           continue;
         }
         handler.commit();
