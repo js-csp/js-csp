@@ -87,12 +87,27 @@ Pre-built files for (old) browsers may be coming.
 
 ## TODO ##
 
-- Test operations (map, filter, reduce, pipe...) more thoroughly.
+- Exception handler for transducer. The current core.async
+  implementation seems too simplistic. The handler should probably be
+  able to do early termination also, not just ignoring a value.
+  Another approach is to simply let user code handle exceptions
+  itself, in the transducer, e.g.
+```javascript
+function terminateOnError(r) {
+  return function(result, input) {
+    try {
+      return r(result, input);
+    } catch (error) {
+      return new Reduced(result);
+    }
+  }
+};
+var ch = chan(1, comp(terminateOnError, xform));
+```
 - Use better name for functions.
 - Better code style?
 - Multiplexing, mixing, publishing/subscribing.
 - Add more documentation and examples.
-- Add browser builds and tests.
 - Add conversion functions that "de-IOC" promises and callback-based APIs (e.g. Web Workers).
 - Investigate error handling in goroutines:
   + Special `yield waitFor` that either returns a value or throws an error from the result channel.
