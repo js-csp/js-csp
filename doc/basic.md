@@ -4,12 +4,14 @@ TODO: Explain the concepts
 
 These are *not* constructor functions. Don't use `new`.
 
-##### `chan([bufferOrN])` #####
+##### `chan([bufferOrN [, xform]])` #####
 
 Creates a channel.
-- If a number is passed, the channel is backed by a fixed buffer of that size (bounded asynchronization).
-- If a buffer is passed, the channel is backed by that buffer (bounded asynchronization).
-- If no argument is passed, the channel is unbuffered (synchronization).
+- `bufferOrN`:
+  + If a number is passed, the channel is backed by a fixed buffer of that size (bounded asynchronization).
+  + If a buffer is passed, the channel is backed by that buffer (bounded asynchronization).
+  + If `null` or `undefined`, the channel is unbuffered (synchronization).
+- `xform`: An optional transducer to transform values put into the channel. The transformation is run when a put succeeds, i.e. when the value is about to be buffered, or when it is about to be taken off the channel. It is not run when the put is still pending. In addition to transforming values, a transformation can also drop values, or close the channel (early termination).
 
 ##### `buffers.fixed(n)` #####
 
