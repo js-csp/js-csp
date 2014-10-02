@@ -14,34 +14,6 @@ var csp = require("../src/csp"),
 
 var t = require("transducers.js");
 
-function map(f) {
-  return function(r) {
-    return function(result, input) {
-      if (arguments.length === 2) {
-        return r(result, f(input));
-      } else {
-        return result;
-      }
-    };
-  };
-}
-
-function filter(f) {
-  return function(r) {
-    return function(result, input) {
-      if (arguments.length === 2) {
-        if (f(input)) {
-          return r(result, input);
-        } else {
-          return result;
-        }
-      } else {
-        return result;
-      }
-    };
-  };
-}
-
 function inc(x) {
   return x + 1;
 }
@@ -107,9 +79,11 @@ describe("Transducers", function() {
     it("should work without buffer", function*() {
       var ch = chan(null, t.take(3));
       go(function*() {
-        for (var i = 0; i < 6; i++) {
-          yield put(ch, i);
-        }
+        assert.equal((yield put(ch, 0)), true);
+        assert.equal((yield put(ch, 1)), true);
+        assert.equal((yield put(ch, 2)), true);
+        assert.equal((yield put(ch, 3)), true);
+        assert.equal((yield put(ch, 4)), false);
       });
       assert.equal((yield take(ch)), 0);
       assert.equal((yield take(ch)), 1);
@@ -118,16 +92,18 @@ describe("Transducers", function() {
     });
 
     it("should work with buffer", function*() {
-      var ch = chan(2, t.take(3));
+      var ch = chan(1, t.take(3));
       go(function*() {
-        for (var i = 0; i < 6; i++) {
-          yield put(ch, i);
-        }
+        assert.equal((yield put(ch, 0)), true);
+        assert.equal((yield put(ch, 1)), true);
+        assert.equal((yield put(ch, 2)), true);
+        assert.equal((yield put(ch, 3)), true);
+        assert.equal((yield put(ch, 4)), false);
       });
       assert.equal((yield take(ch)), 0);
       assert.equal((yield take(ch)), 1);
       assert.equal((yield take(ch)), 2);
-      assert.equal((yield take(ch)),  CLOSED);
+      assert.equal((yield take(ch)), CLOSED);
     });
   });
 });
