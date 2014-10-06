@@ -20,32 +20,6 @@ var PutBox = function(handler, value) {
   this.value = value;
 };
 
-// Reducer for buffered puts. TODO: Support early termination
-function add(buf, value) {
-  var l = arguments.length;
-  if (l === 2) {
-    buf.add(value);
-  } else if (l !== 1) {
-    // TODO: Hmm
-    throw new Error("add must take 1 or 2 arguments");
-  }
-  return buf;
-}
-
-var NONE = {};
-// Reducer for straight-to-take puts. TODO: Support early termination
-function consume(maybe, value) {
-  var l = arguments.length;
-  if (l === 2) {
-    return value;
-  }
-  if (l === 1) {
-    return NONE;
-  }
-  // TODO: Hmm
-  throw new Error("consume must take 1 or 2 arguments");
-}
-
 // uses temp_handler and temp_result to talk back to the channel
 function process_one(channel, value) {
   switch (arguments.length) {
@@ -70,7 +44,7 @@ function process_one(channel, value) {
     }
     break;
   default:
-    throw new Error("process_once must take 1 or 2 arguments");
+    throw new Error("process_one must take 1 or 2 arguments");
   };
   return channel;
 };
