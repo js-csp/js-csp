@@ -107,6 +107,34 @@ describe("Transducers", function() {
     });
   });
 
+  describe("drop (stateful reduction)", function() {
+    it("should work without buffer", function*() {
+      var ch = chan(null, t.drop(3));
+      go(function*() {
+        assert.equal((yield put(ch, 0)), true);
+        assert.equal((yield put(ch, 1)), true);
+        assert.equal((yield put(ch, 2)), true);
+        assert.equal((yield put(ch, 3)), true);
+        assert.equal((yield put(ch, 4)), true);
+      });
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 4);
+    });
+
+    it("should work with buffer", function*() {
+      var ch = chan(1, t.drop(3));
+      go(function*() {
+        assert.equal((yield put(ch, 0)), true);
+        assert.equal((yield put(ch, 1)), true);
+        assert.equal((yield put(ch, 2)), true);
+        assert.equal((yield put(ch, 3)), true);
+        assert.equal((yield put(ch, 4)), true);
+      });
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 4);
+    });
+  });
+
   describe("cat (expanding reduction)", function() {
     var cat = function(step) {
       return function(result, value) {
