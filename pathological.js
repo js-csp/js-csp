@@ -35,7 +35,7 @@ var limit = 20000;
 csp.putAsync(seed, limit, function(){});
 csp.takeAsync(c, function(val) {
   console.log(val);
-  console.log(v.buf.buf.array.length, v.overflow.array.length);
+  console.log(v.buf.buf.capacity, v.overflow.capacity);
 });
 var sum = 0;
 for (var i = 0; i < limit; ++i)

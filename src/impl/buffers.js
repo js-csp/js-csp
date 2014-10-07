@@ -20,8 +20,9 @@ var EMPTY = {
   }
 };
 
-var RingBuffer = function(head, tail, length, array) {
+var RingBuffer = function(head, tail, length, capacity, array) {
   this.length = length;
+  this.capacity = capacity;
   this.array = array;
   this.head = head;
   this.tail = tail;
@@ -38,7 +39,8 @@ RingBuffer.prototype._unshift = function(item) {
 
 RingBuffer.prototype._resize = function() {
   var array = this.array;
-  var new_length = 2 * array.length;
+  var new_capacity = this.capacity * 2;
+  var new_length = new_capacity + 1;
   var new_array = new Array(new_length);
   var head = this.head;
   var tail = this.tail;
@@ -48,21 +50,24 @@ RingBuffer.prototype._resize = function() {
     this.tail = 0;
     this.head = length;
     this.array = new_array;
+    this.capacity = new_capacity;
   } else if (tail > head) {
     acopy(array, tail, new_array, 0, array.length - tail);
     acopy(array, 0, new_array, array.length - tail, head);
     this.tail = 0;
     this.head = length;
     this.array = new_array;
+    this.capacity = new_capacity;
   } else if (tail === head) {
     this.tail = 0;
     this.head = 0;
     this.array = new_array;
+    this.capacity = new_capacity;
   }
 };
 
 RingBuffer.prototype.unbounded_unshift = function(item) {
-  if (this.length + 1 === this.array.length) {
+  if (this.length === this.capacity) {
     this._resize();
   }
   this._unshift(item);
@@ -82,7 +87,7 @@ RingBuffer.prototype.pop = function() {
 };
 
 RingBuffer.prototype.is_full = function() {
-  return this.length + 1 === this.array.length;
+  return this.length === this.capacity;
 };
 
 RingBuffer.prototype.peek = function() {
@@ -174,7 +179,7 @@ SlidingBuffer.prototype.count = function() {
 
 
 var ring = exports.ring = function ring_buffer(n) {
-  return new RingBuffer(0, 0, 0, new Array(n));
+  return new RingBuffer(0, 0, 0, n, new Array(n + 1));
 };
 
 exports.fixed = function fixed_buffer(n) {
