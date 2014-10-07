@@ -81,6 +81,10 @@ RingBuffer.prototype.pop = function() {
   return item;
 };
 
+RingBuffer.prototype.is_full = function() {
+  return this.length + 1 === this.array.length;
+};
+
 RingBuffer.prototype.peek = function() {
   if (this.length === 0) {
     return EMPTY;
@@ -99,13 +103,12 @@ RingBuffer.prototype.cleanup = function(predicate) {
 };
 
 
-var FixedBuffer = function(buf,  n) {
+var FixedBuffer = function(buf) {
   this.buf = buf;
-  this.n = n;
 };
 
 FixedBuffer.prototype.is_full = function() {
-  return this.buf.length == this.n;
+  return this.buf.is_full();
 };
 
 FixedBuffer.prototype.remove = function() {
@@ -113,10 +116,7 @@ FixedBuffer.prototype.remove = function() {
 };
 
 FixedBuffer.prototype.add = function(item) {
-  if (this.is_full()) {
-    throw new Error("Can't add to a full buffer");
-  }
-  this.buf._unshift(item);
+  this.buf.unbounded_unshift(item);
 };
 
 FixedBuffer.prototype.count = function() {
@@ -178,7 +178,7 @@ var ring = exports.ring = function ring_buffer(n) {
 };
 
 exports.fixed = function fixed_buffer(n) {
-  return new FixedBuffer(ring(n), n);
+  return new FixedBuffer(ring(n));
 };
 
 exports.dropping = function dropping_buffer(n) {
