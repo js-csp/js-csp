@@ -1,6 +1,8 @@
 var assert = require("chai").assert;
 var buffers = require("../src/impl/buffers");
 
+// TODO: Test peek
+
 describe("Fixed buffer", function() {
   it("should work", function() {
     var b = buffers.fixed(2);
