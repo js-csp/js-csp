@@ -106,4 +106,89 @@ describe("Transducers", function() {
       assert.equal((yield take(ch)), CLOSED);
     });
   });
+
+  describe("drop (stateful reduction)", function() {
+    it("should work without buffer", function*() {
+      var ch = chan(null, t.drop(3));
+      go(function*() {
+        assert.equal((yield put(ch, 0)), true);
+        assert.equal((yield put(ch, 1)), true);
+        assert.equal((yield put(ch, 2)), true);
+        assert.equal((yield put(ch, 3)), true);
+        assert.equal((yield put(ch, 4)), true);
+      });
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 4);
+    });
+
+    it("should work with buffer", function*() {
+      var ch = chan(1, t.drop(3));
+      go(function*() {
+        assert.equal((yield put(ch, 0)), true);
+        assert.equal((yield put(ch, 1)), true);
+        assert.equal((yield put(ch, 2)), true);
+        assert.equal((yield put(ch, 3)), true);
+        assert.equal((yield put(ch, 4)), true);
+      });
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 4);
+    });
+  });
+
+  describe("cat (expanding reduction)", function() {
+    var cat = function(step) {
+      return function(result, value) {
+        for (var val in value) {
+          result = step(result, value[val]);
+        }
+        return result;
+      };
+    };
+
+    it("should work without buffer", function*() {
+      var ch = chan(null, cat);
+      go(function*() {
+        assert.equal((yield put(ch, [0, 1])), true);
+        assert.equal((yield put(ch, [1, 2])), true);
+        assert.equal((yield put(ch, [2, 3])), true);
+        assert.equal((yield put(ch, [3, 4])), true);
+        assert.equal((yield put(ch, [4, 5])), true);
+        ch.close();
+      });
+      assert.equal((yield take(ch)), 0);
+      assert.equal((yield take(ch)), 1);
+      assert.equal((yield take(ch)), 1);
+      assert.equal((yield take(ch)), 2);
+      assert.equal((yield take(ch)), 2);
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 4);
+      assert.equal((yield take(ch)), 4);
+      assert.equal((yield take(ch)), 5);
+      assert.equal((yield take(ch)), CLOSED);
+    });
+
+    it("should work with buffer", function*() {
+      var ch = chan(1, cat);
+      go(function*() {
+        assert.equal((yield put(ch, [0, 1])), true);
+        assert.equal((yield put(ch, [1, 2])), true);
+        assert.equal((yield put(ch, [2, 3])), true);
+        assert.equal((yield put(ch, [3, 4])), true);
+        assert.equal((yield put(ch, [4, 5])), true);
+        ch.close();
+      });
+      assert.equal((yield take(ch)), 0);
+      assert.equal((yield take(ch)), 1);
+      assert.equal((yield take(ch)), 1);
+      assert.equal((yield take(ch)), 2);
+      assert.equal((yield take(ch)), 2);
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 3);
+      assert.equal((yield take(ch)), 4);
+      assert.equal((yield take(ch)), 4);
+      assert.equal((yield take(ch)), 5);
+      assert.equal((yield take(ch)), CLOSED);
+    });
+  });
 });

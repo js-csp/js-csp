@@ -20,34 +20,40 @@ var PutBox = function(handler, value) {
   this.value = value;
 };
 
-// Reducer for buffered puts. TODO: Support early termination
-function add(buf, value) {
-  var l = arguments.length;
-  if (l === 2) {
-    buf.add(value);
-  } else if (l !== 1) {
-    // TODO: Hmm
-    throw new Error("add must take 1 or 2 arguments");
-  }
-  return buf;
-}
+function process_one(channel, value) {
+  switch (arguments.length) {
+  case 1:
+    break;
+  case 2:
+    if (value === CLOSED)
+      throw new Error("Cannot put CLOSED on a channel");
+    var taker;
+    do {
+      taker = channel.takes.pop();
+    } while (taker !== buffers.EMPTY && !taker.is_active());
+    if (taker !== buffers.EMPTY) {
+      // if we have a taker: pass our value to it
+      var callback = taker.commit();
+      dispatch.run(function() {
+        callback(value);
+      });
+    } else if (channel.buf && !channel.buf.is_full()) {
+      // if the buffer has room: put the value ino the buffer
+      channel.buf.add(value);
+    } else {
+      // otherwise, store it in our overflow buffer
+      channel.overflow.unbounded_unshift(value);
+    }
+    break;
+  default:
+    throw new Error("process_one must take 1 or 2 arguments");
+  };
+  return channel;
+};
 
-var NONE = {};
-// Reducer for straight-to-take puts. TODO: Support early termination
-function consume(maybe, value) {
-  var l = arguments.length;
-  if (l === 2) {
-    return value;
-  }
-  if (l === 1) {
-    return NONE;
-  }
-  // TODO: Hmm
-  throw new Error("consume must take 1 or 2 arguments");
-}
-
-var Channel = function(takes, puts, buf, xform) {
+var Channel = function(takes, overflow, puts, buf, xform) {
   this.buf = buf;
+  this.overflow = overflow;
   this.takes = takes;
   this.puts = puts;
 
@@ -55,90 +61,65 @@ var Channel = function(takes, puts, buf, xform) {
   this.dirty_puts = 0;
   this.closed = false;
 
-  if (xform) {
-    this.consume = xform(consume);
-  }
-
-  if (buf) {
-    this.add = xform ? xform(add) : add;
-  }
+  this.process_one = xform ? xform(process_one) : process_one;
 };
 
 Channel.prototype._put = function(value, handler) {
-  // FIX: This should be checked after the reducer runs (but if it
-  // fails, it should fail here, not in a callback?)
-  if (value === CLOSED) {
-    throw new Error("Cannot put CLOSED on a channel.");
-  }
-
   if (this.closed || !handler.is_active()) {
     return new Box(!this.closed);
   }
 
-  while (true) {
-    // Peek first, pop only when the reducer lets the value through
-    // (or when the taker is no longer "interested")
-    var taker = this.takes.peek();
-    if (taker !== buffers.EMPTY) {
-      if (taker.is_active()) {
-        // Putter commits first. Taker commits only if the
-        // reducer lets the value through
-        if (this.consume) {
-          value = this.consume(NONE, value);
-        }
-        handler.commit();
-        // Reduced, this channel is done for. TODO: This becomes funny
-        // because putting a Reduced object on a channel can close it
-        // (while CLOSED gets through if it's produced by a reducer!!)
-        if (value instanceof Reduced) {
-          // TODO: How about still checking against NONE here?
-          // Because if a reducer both lets a value through and
-          // signals termination in the same step, we probably want to
-          // deliver the value first, then terminate, instead of just
-          // terminating and discarding the value.
-          this.close();
-        }
-        // Give the output value to taker, unless the reducer
-        // slurped it (e.g. filter)
-        else if (value !== NONE) {
-          var callback = taker.commit();
-          dispatch.run(function() {
-            callback(value);
-          });
-          // The taker will get the value now, so it can go away
-          this.takes.pop();
-        }
-        return new Box(true);
-      } else {
-        this.takes.pop();
-        continue;
-      }
-    } else {
-      if (this.buf && !this.buf.is_full()) {
-        handler.commit();
-        if (this.add(this.buf, value) instanceof Reduced) {
-          this.close();
-        }
-        return new Box(true);
-      } else {
-        if (this.dirty_puts > MAX_DIRTY) {
-          this.puts.cleanup(function(putter) {
-            return putter.handler.is_active();
-          });
-          this.dirty_puts = 0;
-        } else {
-          this.dirty_puts ++;
-        }
-        if (this.puts.length >= MAX_QUEUE_SIZE) {
-          throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
-        }
-        this.puts.unbounded_unshift(new PutBox(handler, value));
-      }
-    }
-    break;
+  // Peek first, pop only when the reducer lets the value through
+  // (or when the taker is no longer "interested")
+  var taker = this.takes.peek();
+  while (taker !== buffers.EMPTY && !taker.is_active()) {
+    this.takes.pop();
+    taker = this.takes.peek();
+  }
+  // we only peek here because the call to process_one will pop
+
+  var haveTaker = (taker !== buffers.EMPTY);
+  var roomInBuffer = (this.buf && !this.buf.is_full());
+  if (haveTaker || roomInBuffer) {
+    // if we have a taker, or if we have room in the buffer,
+    // then call our transducer to "add" it appropriately
+    if (this.process_one(this, value) instanceof Reduced)
+      this.close();
+    handler.commit();
+    return new Box(true);
   }
 
+  // we don't have a taker *and* we don't have room in our buffer,
+  // so add it to our put queue
+  if (this.dirty_puts > MAX_DIRTY) {
+    this.puts.cleanup(function(putter) {
+      return putter.handler.is_active();
+    });
+    this.dirty_puts = 0;
+  } else {
+    this.dirty_puts ++;
+  }
+  if (this.puts.length >= MAX_QUEUE_SIZE) {
+    throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
+  }
+  this.puts.unbounded_unshift(new PutBox(handler, value));
+
   return null;
+};
+
+var run_putter = function(putter) {
+  if (putter.handler.is_active()) {
+    // active putter: run it!
+    var callback = putter.handler.commit();
+    if (this.process_one(this, putter.value) instanceof Reduced)
+      this.close();
+    dispatch.run(function() {
+      callback(true);
+    });
+    return true;
+  } else {
+    return false;
+  }
 };
 
 Channel.prototype._take = function(handler) {
@@ -148,79 +129,58 @@ Channel.prototype._take = function(handler) {
 
   var putter, put_handler, callback, value;
 
+  // check actual buffer
+  //  if popped: pull in from overflow buffer
+  // check overflow buffer
+  // check putters
+
   if (this.buf && this.buf.count() > 0) {
     handler.commit();
     value = this.buf.remove();
-    // We need to check pending puts here, other wise they won't
-    // be able to proceed until their number reaches MAX_DIRTY
-    while (true) {
-      putter = this.puts.pop();
-      if (putter !== buffers.EMPTY) {
-        put_handler = putter.handler;
-        if (put_handler.is_active()) {
-          // TODO: Run reducer first (to check for CLOSED)
-          callback = put_handler.commit();
-          dispatch.run(function() {
-            callback(true);
-          });
-          if (this.add(this.buf, putter.value)) {
-            this.close();
-          }
-          break;
-        } else {
-          continue;
-        }
+    if (this.overflow.peek() !== buffers.EMPTY) {
+      this.buf.add(this.overflow.pop()); // pop from overflow to buf
+    } else {
+      while (!this.buf.is_full() && this.puts.peek() != buffers.EMPTY) {
+        // a transducer might not return any results, so keep going until we get something
+        // or until we run out of buffered puts
+        run_putter.call(this, this.puts.pop());
       }
-      break;
     }
     return new Box(value);
   }
 
-  while (true) {
-    putter = this.puts.pop();
-    if (putter !== buffers.EMPTY) {
-      put_handler = putter.handler;
-      if (put_handler.is_active()) {
-        callback = put_handler.commit();
-        dispatch.run(function() {
-          callback(true);
-        });
-        value = putter.value;
-        if (this.consume) {
-          value = this.consume(NONE, value);
-        }
-        if (value instanceof Reduced) {
-          this.close();
-        }
-        // The reducer slurped this value, check next pending put
-        else if (value === NONE) {
-          continue;
-        }
-        handler.commit();
-        return new Box(value);
-      } else {
-        continue;
-      }
-    } else {
-      if (this.closed) {
-        handler.commit();
-        return new Box(CLOSED);
-      } else {
-        if (this.dirty_takes > MAX_DIRTY) {
-          this.takes.cleanup(function(handler) {
-            return handler.is_active();
-          });
-          this.dirty_takes = 0;
-        } else {
-          this.dirty_takes ++;
-        }
-        if (this.takes.length >= MAX_QUEUE_SIZE) {
-          throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
-        }
-        this.takes.unbounded_unshift(handler);
-      }
+  if ((value = this.overflow.pop()) !== buffers.EMPTY) {
+    // if we have a value popped from overflow then use it
+    handler.commit();
+    return new Box(value);
+  }
+
+  while (this.puts.peek() !== buffers.EMPTY) {
+    // while we still have puts to consider: try them
+    // if one runs: re-enter _take now that it's written to the buffer/overflow
+    if (run_putter.call(this, this.puts.pop())) {
+      return this._take(handler);
     }
-    break;
+  }
+
+  if (this.closed) {
+    // if the channel is closed: put the CLOSED value straight in
+    handler.commit();
+    return new Box(CLOSED);
+  } else {
+    // we've failed to get any sort of a value, so add it to the takers queue
+    if (this.dirty_takes > MAX_DIRTY) {
+      this.takes.cleanup(function(handler) {
+        return handler.is_active();
+      });
+      this.dirty_takes = 0;
+    } else {
+      this.dirty_takes ++;
+    }
+    if (this.takes.length >= MAX_QUEUE_SIZE) {
+      throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
+    }
+    this.takes.unbounded_unshift(handler);
   }
 
   return null;
@@ -265,7 +225,7 @@ Channel.prototype.is_closed = function() {
 
 
 exports.chan = function(buf, xform) {
-  return new Channel(buffers.ring(32), buffers.ring(32), buf, xform);
+  return new Channel(buffers.ring(32), buffers.ring(32), buffers.ring(32), buf, xform);
 };
 
 exports.Box = Box;
