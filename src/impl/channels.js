@@ -17,8 +17,9 @@ var PutBox = function(handler, value) {
   this.value = value;
 };
 
-var Channel = function(takes, puts, buf) {
+var Channel = function(takes, puts, buf, add) {
   this.buf = buf;
+  this.add = add;
   this.takes = takes;
   this.puts = puts;
 
@@ -52,7 +53,7 @@ Channel.prototype._put = function(value, handler) {
     } else {
       if (this.buf && !this.buf.is_full()) {
         handler.commit();
-        this.buf.add(value);
+        this.add(this.buf, value);
         return new Box(true);
       } else {
         if (this.dirty_puts > MAX_DIRTY) {
@@ -96,7 +97,7 @@ Channel.prototype._take = function(handler) {
           dispatch.run(function() {
             callback(true);
           });
-          this.buf.add(putter.value);
+          this.add(this.buf, putter.value);
           break;
         } else {
           continue;
@@ -183,9 +184,56 @@ Channel.prototype.is_closed = function() {
   return this.closed;
 };
 
+function defaultHandler(e) {
+  console.log('error in channel transformer', e);
+}
 
-exports.chan = function(buf) {
-  return new Channel(buffers.ring(32), buffers.ring(32), buf);
+function handleEx(buf, exHandler, e) {
+  var def = (exHandler || defaultHandler)(e);
+  if(def !== undefined) {
+    return buf.add(def);
+  }
+  return buf;
+}
+
+// The base transformer object to use with transducers
+function AddTransformer() {
+}
+
+AddTransformer.prototype.init = function() {
+  throw new Error('init not available');
+};
+
+AddTransformer.prototype.finalize = function(v) {
+  return v;
+};
+
+AddTransformer.prototype.step = function(buffer, input) {
+  buffer.add(input);
+  return buffer;
+}
+
+exports.chan = function(buf, xform, exHandler) {
+  if(xform) {
+    xform = xform(new AddTransformer());
+  }
+
+  return new Channel(buffers.ring(32),
+                     buffers.ring(32),
+                     buf,
+                     function(buf, x) {
+                       if(xform) {
+                         try {
+                           xform.step(buf, x);
+                         }
+                         catch(e) {
+                           return handleEx(buf, exHandler, e);
+                         }
+                       }
+                       else {
+                         buf.add(x);
+                       }
+                     });
 };
 
 exports.Box = Box;
