@@ -20,7 +20,9 @@
     "email": "ubolonton@gmail.com",
     "url": "https://github.com/ubolonton/js-csp/issues"
   },
-  "dependencies": {},
+  "dependencies": {
+    "transducers.js": "^0.2.1"
+  },
   "devDependencies": {
     "browserify": "^6.0.2",
     "chai": "~1.9.0",

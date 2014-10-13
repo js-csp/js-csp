@@ -12,9 +12,6 @@ describe("Fixed buffer", function() {
     b.add("2");
     assert.equal(b.count(), 2);
     assert.equal(b.is_full(), true, "buffer is full");
-    assert.throw(function() {
-      b.add("3");
-    }, Error, /full/);
 
     assert.equal(b.remove(), "1");
     assert.equal(b.is_full(), false);
@@ -23,6 +20,23 @@ describe("Fixed buffer", function() {
     assert.equal(b.remove(), "2");
     assert.equal(b.count(), 0);
     assert(buffers.EMPTY === b.remove(), "popping empty buffer gives EMPTY");
+  });
+
+  it("should allow overflowing", function() {
+    var b = buffers.fixed(2);
+    b.add("1");
+    b.add("2");
+
+    assert.equal(b.is_full(), true, "buffer is full");
+    b.add("3");
+    assert.equal(b.is_full(), true, "buffer is full (1 item overflowing)");
+    b.add("4");
+    assert.equal(b.is_full(), true, "buffer is full (2 items overflowing)");
+    b.remove();
+    b.remove();
+    assert.equal(b.is_full(), true, "buffer is full (without overflowing)");
+    b.remove();
+    assert.equal(b.is_full(), false, "buffer is again not full");
   });
 });
 

@@ -91,14 +91,13 @@ RingBuffer.prototype.cleanup = function(predicate) {
   }
 };
 
-
 var FixedBuffer = function(buf,  n) {
   this.buf = buf;
   this.n = n;
 };
 
 FixedBuffer.prototype.is_full = function() {
-  return this.buf.length == this.n;
+  return this.buf.length >= this.n;
 };
 
 FixedBuffer.prototype.remove = function() {
@@ -106,10 +105,9 @@ FixedBuffer.prototype.remove = function() {
 };
 
 FixedBuffer.prototype.add = function(item) {
-  if (this.is_full()) {
-    throw new Error("Can't add to a full buffer");
-  }
-  this.buf._unshift(item);
+  // Note that even though the underlying buffer may grow, "n" is
+  // fixed so after overflowing the buffer is still considered full.
+  this.buf.unbounded_unshift(item);
 };
 
 FixedBuffer.prototype.count = function() {
@@ -170,6 +168,14 @@ var ring = exports.ring = function ring_buffer(n) {
   return new RingBuffer(0, 0, 0, new Array(n));
 };
 
+/**
+ * Returns a buffer that is considered "full" when it reaches size n,
+ * but still accepts additional items, effectively allow overflowing.
+ * The overflowing behavior is useful for supporting "expanding"
+ * transducers, where we want to check if a buffer is full before
+ * running the transduced step function, while still allowing a
+ * transduced step to expand into multiple "essence" steps.
+ */
 exports.fixed = function fixed_buffer(n) {
   return new FixedBuffer(ring(n), n);
 };
