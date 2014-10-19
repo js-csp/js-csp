@@ -72,7 +72,7 @@ Channel.prototype._put = function(value, handler) {
   // pending takes, or we don't have a buffer, in which case this loop
   // fulfills the first of them that is active (note that we don't
   // have to worry about transducers here since we require a buffer
-  // for that.
+  // for that).
   while (true) {
     taker = this.takes.pop();
     if (taker === buffers.EMPTY) {
@@ -139,6 +139,11 @@ Channel.prototype._take = function(handler) {
     return new Box(value);
   }
 
+  // Either the buffer is empty, in which case there won't be any
+  // pending puts, or we don't have a buffer, in which case this loop
+  // fulfills the first of them that is active (note that we don't
+  // have to worry about transducers here since we require a buffer
+  // for that).
   while (true) {
     putter = this.puts.pop();
     if (putter === buffers.EMPTY) {
@@ -154,16 +159,9 @@ Channel.prototype._take = function(handler) {
     }
   }
 
-  // XXX: This section looks weird
   if (this.closed) {
-    if (handler.is_active()) {
-      handler.commit();
-      if (this.buf && this.buf.count() > 0) {
-        value = this.buf.remove();
-        return new Box(value);
-      }
-      return new Box(CLOSED);
-    }
+    handler.commit();
+    return new Box(CLOSED);
   }
 
   // No buffer, empty buffer, no pending puts. Queue this take now.
