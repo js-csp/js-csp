@@ -9,6 +9,7 @@ var csp = require("../src/csp"),
     chan = csp.chan,
     go = csp.go,
     put = csp.put,
+    takeAsync = csp.takeAsync,
     take = csp.take,
     CLOSED = csp.CLOSED;
 
@@ -120,7 +121,7 @@ describe("Transducers", function() {
   });
 
   describe("cat (expanding reduction)", function() {
-    it("should work with buffer", function*() {
+    it("should work", function*() {
       var ch = chan(1, t.cat);
       go(function*() {
         assert.equal((yield put(ch, [0, 1])), true);
@@ -141,6 +142,22 @@ describe("Transducers", function() {
       assert.equal((yield take(ch)), 4);
       assert.equal((yield take(ch)), 5);
       assert.equal((yield take(ch)), CLOSED);
+    });
+
+    it("should flush multiple takes when flushing a chunk", function* () {
+      var count = 0;
+      var ch = chan(1, t.cat);
+      takeAsync(ch, function() {
+        count += 1;
+      });
+      takeAsync(ch, function() {
+        count += 1;
+      });
+      takeAsync(ch, function() {
+        count += 1;
+      });
+      yield put(ch, [1, 2, 3]);
+      assert.equal(count, 3);
     });
   });
 

@@ -60,8 +60,6 @@ Channel.prototype._put = function(value, handler) {
         dispatch.run(function() {
           callback(value);
         });
-        // FIX: Shouldn't this be "continue" (and add test for it)
-        break;
       }
     }
     if (done) {
