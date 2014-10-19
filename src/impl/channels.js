@@ -133,7 +133,6 @@ Channel.prototype._take = function(handler) {
         if (this.xform.step(this.buf, putter.value) instanceof Reduced) {
           this.close();
         }
-        break;
       }
     }
     return new Box(value);

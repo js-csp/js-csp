@@ -10,6 +10,7 @@ var csp = require("../src/csp"),
     go = csp.go,
     put = csp.put,
     takeAsync = csp.takeAsync,
+    putAsync = csp.putAsync,
     take = csp.take,
     CLOSED = csp.CLOSED;
 
@@ -59,7 +60,7 @@ function partition(n) {
 
 describe("Transducers", function() {
   describe("map (normal reduction)", function() {
-    it("should work with buffer", function*() {
+    it("should work", function*() {
       var ch = chan(3, t.map(inc));
       go(function*() {
         for (var i = 0; i < 6; i++) {
@@ -73,7 +74,7 @@ describe("Transducers", function() {
   });
 
   describe("filter (input-supressing reduction)", function() {
-    it("should work with buffer", function*() {
+    it("should work", function*() {
       var ch = chan(3, t.filter(even));
       go(function*() {
         for (var i = 0; i < 6; i++) {
@@ -87,7 +88,7 @@ describe("Transducers", function() {
   });
 
   describe("take (terminating reduction)", function() {
-    it("should work with buffer", function*() {
+    it("should work", function*() {
       var ch = chan(1, t.take(3));
       go(function*() {
         assert.equal((yield put(ch, 0)), true);
@@ -106,7 +107,7 @@ describe("Transducers", function() {
   });
 
   describe("drop (stateful reduction)", function() {
-    it("should work with buffer", function*() {
+    it("should work", function*() {
       var ch = chan(1, t.drop(3));
       go(function*() {
         assert.equal((yield put(ch, 0)), true);
@@ -144,7 +145,7 @@ describe("Transducers", function() {
       assert.equal((yield take(ch)), CLOSED);
     });
 
-    it("should flush multiple takes when flushing a chunk", function* () {
+    it("should flush multiple takes in one expansion", function* () {
       var count = 0;
       var ch = chan(1, t.cat);
       takeAsync(ch, function() {
@@ -161,7 +162,7 @@ describe("Transducers", function() {
     });
   });
 
-  describe("partition (completing reduction)", function() {
+  describe("partition (gathering reduction)", function() {
     it("should complete when terminated from outside", function*() {
       var ch = chan(1, partition(2));
       go(function*() {
@@ -194,6 +195,23 @@ describe("Transducers", function() {
       assert.deepEqual((yield take(ch)), [3, 4]);
       assert.deepEqual((yield take(ch)), [5]);
       assert.deepEqual((yield take(ch)), CLOSED);
+    });
+
+    it("should flush multiple pending puts when a value is taken off the buffer", function*() {
+      var ch = chan(1, partition(3));
+      var count = 0;
+      var inc = function() {
+        count += 1;
+      };
+      yield put(ch, 1);
+      yield put(ch, 1);
+      yield put(ch, 1);
+
+      putAsync(ch, 1, inc);
+      putAsync(ch, 1, inc);
+      putAsync(ch, 1, inc);
+      yield take(ch);
+      assert.equal(count, 3);
     });
   });
 });
