@@ -18,9 +18,9 @@ var PutBox = function(handler, value) {
   this.value = value;
 };
 
-var Channel = function(takes, puts, buf, add) {
+var Channel = function(takes, puts, buf, xform) {
   this.buf = buf;
-  this.add = add;
+  this.xform = xform;
   this.takes = takes;
   this.puts = puts;
 
@@ -45,7 +45,7 @@ Channel.prototype._put = function(value, handler) {
   // value.
   if (this.buf && !this.buf.is_full()) {
     handler.commit();
-    var done = (this.add(this.buf, value) instanceof Reduced);
+    var done = (this.xform.step(this.buf, value) instanceof Reduced);
     while (true) {
       if (this.buf.count() === 0) {
         break;
@@ -130,7 +130,7 @@ Channel.prototype._take = function(handler) {
         dispatch.run(function() {
           callback(true);
         });
-        if (this.add(this.buf, putter.value) instanceof Reduced) {
+        if (this.xform.step(this.buf, putter.value) instanceof Reduced) {
           this.close();
         }
         break;
@@ -190,7 +190,7 @@ Channel.prototype.close = function() {
 
   // TODO: Duplicate code. Make a "_flush" function or something
   if (this.buf) {
-    this.add(this.buf);
+    this.xform.result(this.buf);
     while (true) {
       if (this.buf.count() === 0) {
         break;
@@ -221,6 +221,7 @@ Channel.prototype.close = function() {
       });
     }
   }
+
   // TODO: Tests
   while (true) {
     var putter = this.puts.pop();
@@ -270,39 +271,40 @@ AddTransformer.prototype.step = function(buffer, input) {
   return buffer;
 };
 
-exports.chan = function(buf, xform, exHandler) {
-  if(xform) {
-    xform = xform(new AddTransformer());
-  }
 
-  return new Channel(buffers.ring(32),
-                     buffers.ring(32),
-                     buf,
-                     function(buf, x) {
-                       var l = arguments.length;
-                       if (xform) {
-                         try {
-                           if (l === 2) {
-                             return xform.step(buf, x);
-                           } else if (l === 1) {
-                             return xform.result(buf);
-                           } else {
-                             throw new Error('init not available');
-                           }
-                         } catch (e) {
-                           return handleEx(buf, exHandler, e);
-                         }
-                       } else {
-                         if (l === 2) {
-                           buf.add(x);
-                           return buf;
-                         } else if (l === 1) {
-                           return buf;
-                         } else {
-                           throw new Error('init not available');
-                         }
-                       }
-                     });
+function handleException(exHandler) {
+  return function(xform) {
+    return {
+      step: function(buffer, input) {
+        try {
+          return xform.step(buffer, input);
+        } catch (e) {
+          return handleEx(buffer, exHandler, e);
+        }
+      },
+
+      result: function(buffer) {
+        try {
+          return xform.result(buffer);
+        } catch (e) {
+          return handleEx(buffer, exHandler, e);
+        }
+      }
+    };
+  };
+}
+
+// XXX: This is inconsistent. We should either call the reducing
+// function xform, or call the transducer xform, not both
+exports.chan = function(buf, xform, exHandler) {
+  if (xform) {
+    xform = xform(new AddTransformer());
+  } else {
+    xform = new AddTransformer();
+  }
+  xform = handleException(exHandler)(xform);
+
+  return new Channel(buffers.ring(32), buffers.ring(32), buf, xform);
 };
 
 exports.Box = Box;
