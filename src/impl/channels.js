@@ -60,6 +60,7 @@ Channel.prototype._put = function(value, handler) {
         dispatch.run(function() {
           callback(value);
         });
+        // FIX: Shouldn't this be "continue" (and add test for it)
         break;
       }
     }
@@ -157,10 +158,6 @@ Channel.prototype._take = function(handler) {
 
   // XXX: This section looks weird
   if (this.closed) {
-    if (this.buf) {
-      // TODO: Doesn't this mean there can be more than 1 completion?
-      this.add(this.buf);
-    }
     if (handler.is_active()) {
       handler.commit();
       if (this.buf && this.buf.count() > 0) {
@@ -192,6 +189,28 @@ Channel.prototype.close = function() {
     return;
   }
   this.closed = true;
+
+  // TODO: Duplicate code. Make a "_flush" function or something
+  if (this.buf) {
+    this.add(this.buf);
+    while (true) {
+      if (this.buf.count() === 0) {
+        break;
+      }
+      taker = this.takes.pop();
+      if (taker === buffers.EMPTY) {
+        break;
+      }
+      if (taker.is_active()) {
+        callback = taker.commit();
+        var value = this.buf.remove();
+        dispatch.run(function() {
+          callback(value);
+        });
+      }
+    }
+  }
+
   while (true) {
     var taker = this.takes.pop();
     if (taker === buffers.EMPTY) {
@@ -216,10 +235,6 @@ Channel.prototype.close = function() {
         put_callback(false);
       });
     }
-  }
-  // TODO: Why here?
-  if (this.buf) {
-    this.add(this.buf);
   }
 };
 
