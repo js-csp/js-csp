@@ -20,19 +20,18 @@
     "email": "ubolonton@gmail.com",
     "url": "https://github.com/ubolonton/js-csp/issues"
   },
-  "dependencies": {
-    "transducers.js": "^0.2.1"
-  },
+  "dependencies": {},
   "devDependencies": {
     "browserify": "^6.0.2",
     "chai": "~1.9.0",
-    "mocha": "~1.17.1"
+    "mocha": "~1.17.1",
+    "transducers.js": "^0.2.3"
   },
   "engines": {
     "node": ">=0.11.6"
   },
   "scripts": {
-    "test": "make test"
+    "test": "node --harmony ./node_modules/.bin/gulp test"
   },
   "main": "./src/csp.js",
   "files": [

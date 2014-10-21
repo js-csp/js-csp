@@ -3,7 +3,6 @@
 var buffers = require("./buffers");
 var dispatch = require("./dispatch");
 
-var Reduced = require("transducers.js").Reduced;
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
 
@@ -29,6 +28,10 @@ var Channel = function(takes, puts, buf, xform) {
   this.closed = false;
 };
 
+function isReduced(v) {
+  return v && v.__transducers_reduced__;
+}
+
 Channel.prototype._put = function(value, handler) {
   if (value === CLOSED) {
     throw new Error("Cannot put CLOSED on a channel.");
@@ -45,7 +48,7 @@ Channel.prototype._put = function(value, handler) {
   // value.
   if (this.buf && !this.buf.is_full()) {
     handler.commit();
-    var done = (this.xform.step(this.buf, value) instanceof Reduced);
+    var done = isReduced(this.xform.step(this.buf, value));
     while (true) {
       if (this.buf.count() === 0) {
         break;
@@ -130,7 +133,7 @@ Channel.prototype._take = function(handler) {
         dispatch.run(function() {
           callback(true);
         });
-        if (this.xform.step(this.buf, putter.value) instanceof Reduced) {
+        if (isReduced(this.xform.step(this.buf, putter.value))) {
           this.close();
         }
       }

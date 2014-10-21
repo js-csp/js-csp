@@ -24,40 +24,6 @@ function even(x) {
   return x % 2 === 0;
 }
 
-// TODO: This should be from transducers.js
-function partition(n) {
-  return function(xform) {
-    var part = new Array(n);
-    var i = 0;
-    return {
-      init: function() {
-        return xform.init();
-      },
-      step: function(result, input) {
-        part[i] = input;
-        i += 1;
-        if (result instanceof t.Reduced) {
-          return new t.Reduced(xform.step(result.val, part.slice(0, i - 1)));
-        } else {
-          if (i === n) {
-            var out = part.slice(0, n);
-            part = new Array(n);
-            i = 0;
-            return xform.step(result, out);
-          }
-        }
-        return result;
-      },
-      result: function(v) {
-        if (i > 0) {
-          return xform.step(v, part.slice(0, i));
-        }
-        return xform.result(v);
-      }
-    };
-  };
-}
-
 describe("Transducers", function() {
   describe("map (normal reduction)", function() {
     it("should work", function*() {
@@ -164,7 +130,7 @@ describe("Transducers", function() {
 
   describe("partition (gathering reduction)", function() {
     it("should complete when terminated from outside", function*() {
-      var ch = chan(1, partition(2));
+      var ch = chan(1, t.partition(2));
       go(function*() {
         yield put(ch, 1);
         yield put(ch, 2);
@@ -180,7 +146,7 @@ describe("Transducers", function() {
     });
 
     it("should complete when terminated by an earlier reduction", function*() {
-      var ch = chan(1, t.compose(t.take(5), partition(2)));
+      var ch = chan(1, t.compose(t.take(5), t.partition(2)));
       go(function*() {
         assert.equal((yield put(ch, 1)), true);
         assert.equal((yield put(ch, 2)), true);
@@ -198,7 +164,7 @@ describe("Transducers", function() {
     });
 
     it("should flush multiple pending puts when a value is taken off the buffer", function*() {
-      var ch = chan(1, partition(3));
+      var ch = chan(1, t.partition(3));
       var count = 0;
       var inc = function() {
         count += 1;
