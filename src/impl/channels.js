@@ -17,8 +17,9 @@ var PutBox = function(handler, value) {
   this.value = value;
 };
 
-var Channel = function(takes, puts, buf) {
+var Channel = function(takes, puts, buf, xform) {
   this.buf = buf;
+  this.xform = xform;
   this.takes = takes;
   this.puts = puts;
 
@@ -26,6 +27,10 @@ var Channel = function(takes, puts, buf) {
   this.dirty_puts = 0;
   this.closed = false;
 };
+
+function isReduced(v) {
+  return v && v.__transducers_reduced__;
+}
 
 Channel.prototype._put = function(value, handler) {
   if (value === CLOSED) {
@@ -36,42 +41,69 @@ Channel.prototype._put = function(value, handler) {
     return new Box(!this.closed);
   }
 
-  while (true) {
-    var taker = this.takes.pop();
-    if (taker !== buffers.EMPTY) {
+  var taker, callback;
+
+  // Soak the value through the buffer first, even if there is a
+  // pending taker. This way the step function has a chance to act on the
+  // value.
+  if (this.buf && !this.buf.is_full()) {
+    handler.commit();
+    var done = isReduced(this.xform.step(this.buf, value));
+    while (true) {
+      if (this.buf.count() === 0) {
+        break;
+      }
+      taker = this.takes.pop();
+      if (taker === buffers.EMPTY) {
+        break;
+      }
       if (taker.is_active()) {
-        var callback = taker.commit();
-        handler.commit();
+        callback = taker.commit();
+        value = this.buf.remove();
         dispatch.run(function() {
           callback(value);
         });
-        return new Box(true);
-      } else {
-        continue;
-      }
-    } else {
-      if (this.buf && !this.buf.is_full()) {
-        handler.commit();
-        this.buf.add(value);
-        return new Box(true);
-      } else {
-        if (this.dirty_puts > MAX_DIRTY) {
-          this.puts.cleanup(function(putter) {
-            return putter.handler.is_active();
-          });
-          this.dirty_puts = 0;
-        } else {
-          this.dirty_puts ++;
-        }
-        if (this.puts.length >= MAX_QUEUE_SIZE) {
-          throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
-        }
-        this.puts.unbounded_unshift(new PutBox(handler, value));
       }
     }
-    break;
+    if (done) {
+      this.close();
+    }
+    return new Box(true);
   }
 
+  // Either the buffer is full, in which case there won't be any
+  // pending takes, or we don't have a buffer, in which case this loop
+  // fulfills the first of them that is active (note that we don't
+  // have to worry about transducers here since we require a buffer
+  // for that).
+  while (true) {
+    taker = this.takes.pop();
+    if (taker === buffers.EMPTY) {
+      break;
+    }
+    if (taker.is_active()) {
+      handler.commit();
+      callback = taker.commit();
+      dispatch.run(function() {
+        callback(value);
+      });
+      return new Box(true);
+    }
+  }
+
+  // No buffer, full buffer, no pending takes. Queue this put now.
+  if (this.dirty_puts > MAX_DIRTY) {
+    this.puts.cleanup(function(putter) {
+      return putter.handler.is_active();
+    });
+    this.dirty_puts = 0;
+  } else {
+    this.dirty_puts ++;
+  }
+  if (this.puts.length >= MAX_QUEUE_SIZE) {
+    throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
+  }
+  this.puts.unbounded_unshift(new PutBox(handler, value));
   return null;
 };
 
@@ -80,69 +112,73 @@ Channel.prototype._take = function(handler) {
     return null;
   }
 
-  var putter, put_handler, callback;
+  var putter, put_handler, callback, value;
 
   if (this.buf && this.buf.count() > 0) {
     handler.commit();
-    var value = this.buf.remove();
+    value = this.buf.remove();
     // We need to check pending puts here, other wise they won't
     // be able to proceed until their number reaches MAX_DIRTY
     while (true) {
-      putter = this.puts.pop();
-      if (putter !== buffers.EMPTY) {
-        put_handler = putter.handler;
-        if (put_handler.is_active()) {
-          callback = put_handler.commit();
-          dispatch.run(function() {
-            callback(true);
-          });
-          this.buf.add(putter.value);
-          break;
-        } else {
-          continue;
-        }
+      if (this.buf.is_full()) {
+        break;
       }
-      break;
-    }
-    return new Box(value);
-  }
-
-  while (true) {
-    putter = this.puts.pop();
-    if (putter !== buffers.EMPTY) {
+      putter = this.puts.pop();
+      if (putter === buffers.EMPTY) {
+        break;
+      }
       put_handler = putter.handler;
       if (put_handler.is_active()) {
-        handler.commit();
         callback = put_handler.commit();
         dispatch.run(function() {
           callback(true);
         });
-        return new Box(putter.value);
-      } else {
-        continue;
-      }
-    } else {
-      if (this.closed) {
-        handler.commit();
-        return new Box(CLOSED);
-      } else {
-        if (this.dirty_takes > MAX_DIRTY) {
-          this.takes.cleanup(function(handler) {
-            return handler.is_active();
-          });
-          this.dirty_takes = 0;
-        } else {
-          this.dirty_takes ++;
+        if (isReduced(this.xform.step(this.buf, putter.value))) {
+          this.close();
         }
-        if (this.takes.length >= MAX_QUEUE_SIZE) {
-          throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
-        }
-        this.takes.unbounded_unshift(handler);
       }
     }
-    break;
+    return new Box(value);
   }
 
+  // Either the buffer is empty, in which case there won't be any
+  // pending puts, or we don't have a buffer, in which case this loop
+  // fulfills the first of them that is active (note that we don't
+  // have to worry about transducers here since we require a buffer
+  // for that).
+  while (true) {
+    putter = this.puts.pop();
+    if (putter === buffers.EMPTY) {
+      break;
+    }
+    put_handler = putter.handler;
+    if (put_handler.is_active()) {
+      callback = put_handler.commit();
+      dispatch.run(function() {
+        callback(true);
+      });
+      return new Box(putter.value);
+    }
+  }
+
+  if (this.closed) {
+    handler.commit();
+    return new Box(CLOSED);
+  }
+
+  // No buffer, empty buffer, no pending puts. Queue this take now.
+  if (this.dirty_takes > MAX_DIRTY) {
+    this.takes.cleanup(function(handler) {
+      return handler.is_active();
+    });
+    this.dirty_takes = 0;
+  } else {
+    this.dirty_takes ++;
+  }
+  if (this.takes.length >= MAX_QUEUE_SIZE) {
+    throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
+  }
+  this.takes.unbounded_unshift(handler);
   return null;
 };
 
@@ -151,6 +187,28 @@ Channel.prototype.close = function() {
     return;
   }
   this.closed = true;
+
+  // TODO: Duplicate code. Make a "_flush" function or something
+  if (this.buf) {
+    this.xform.result(this.buf);
+    while (true) {
+      if (this.buf.count() === 0) {
+        break;
+      }
+      taker = this.takes.pop();
+      if (taker === buffers.EMPTY) {
+        break;
+      }
+      if (taker.is_active()) {
+        callback = taker.commit();
+        var value = this.buf.remove();
+        dispatch.run(function() {
+          callback(value);
+        });
+      }
+    }
+  }
+
   while (true) {
     var taker = this.takes.pop();
     if (taker === buffers.EMPTY) {
@@ -163,6 +221,7 @@ Channel.prototype.close = function() {
       });
     }
   }
+
   // TODO: Tests
   while (true) {
     var putter = this.puts.pop();
@@ -183,9 +242,69 @@ Channel.prototype.is_closed = function() {
   return this.closed;
 };
 
+function defaultHandler(e) {
+  console.log('error in channel transformer', e.stack);
+}
 
-exports.chan = function(buf) {
-  return new Channel(buffers.ring(32), buffers.ring(32), buf);
+function handleEx(buf, exHandler, e) {
+  var def = (exHandler || defaultHandler)(e);
+  if (def !== undefined && def !== CLOSED) {
+    buf.add(def);
+  }
+  return buf;
+}
+
+// The base transformer object to use with transducers
+function AddTransformer() {
+}
+
+AddTransformer.prototype.init = function() {
+  throw new Error('init not available');
+};
+
+AddTransformer.prototype.result = function(v) {
+  return v;
+};
+
+AddTransformer.prototype.step = function(buffer, input) {
+  buffer.add(input);
+  return buffer;
+};
+
+
+function handleException(exHandler) {
+  return function(xform) {
+    return {
+      step: function(buffer, input) {
+        try {
+          return xform.step(buffer, input);
+        } catch (e) {
+          return handleEx(buffer, exHandler, e);
+        }
+      },
+
+      result: function(buffer) {
+        try {
+          return xform.result(buffer);
+        } catch (e) {
+          return handleEx(buffer, exHandler, e);
+        }
+      }
+    };
+  };
+}
+
+// XXX: This is inconsistent. We should either call the reducing
+// function xform, or call the transducer xform, not both
+exports.chan = function(buf, xform, exHandler) {
+  if (xform) {
+    xform = xform(new AddTransformer());
+  } else {
+    xform = new AddTransformer();
+  }
+  xform = handleException(exHandler)(xform);
+
+  return new Channel(buffers.ring(32), buffers.ring(32), buf, xform);
 };
 
 exports.Box = Box;
