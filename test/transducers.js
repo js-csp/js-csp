@@ -60,10 +60,7 @@ describe("Transducers", function() {
         assert.equal((yield put(ch, 0)), true);
         assert.equal((yield put(ch, 1)), true);
         assert.equal((yield put(ch, 2)), true);
-        // FIX: It says "take(3)", but the 4th put still gets "true".
-        // See https://github.com/jlongster/transducers.js/issues/9
-        assert.equal((yield put(ch, 3)), true);
-        assert.equal((yield put(ch, 4)), false);
+        assert.equal((yield put(ch, 3)), false);
       });
       assert.equal((yield take(ch)), 0);
       assert.equal((yield take(ch)), 1);
@@ -153,9 +150,7 @@ describe("Transducers", function() {
         assert.equal((yield put(ch, 3)), true);
         assert.equal((yield put(ch, 4)), true);
         assert.equal((yield put(ch, 5)), true);
-        // FIX: take(5) closes this, so it should be false. TODO: This
-        // should have its own test
-        yield put(ch, 6);
+        assert.equal((yield put(ch, 6)), false);
       });
       assert.deepEqual((yield take(ch)), [1, 2]);
       assert.deepEqual((yield take(ch)), [3, 4]);
