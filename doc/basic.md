@@ -1,35 +1,35 @@
 TODO: Explain the concepts
 
-### Channels ###
+## Channels ##
 
 These are *not* constructor functions. Don't use `new`.
 
-##### `chan([bufferOrN])` #####
+### `chan(bufferOrN?)` ###
 
 Creates a channel.
 - If a number is passed, the channel is backed by a fixed buffer of that size (bounded asynchronization).
 - If a buffer is passed, the channel is backed by that buffer (bounded asynchronization).
 - If no argument is passed, the channel is unbuffered (synchronization).
 
-##### `buffers.fixed(n)` #####
+### `buffers.fixed(n)` ###
 
 Creates a fixed buffer of size n. When full, puts will "block".
 
 TODO: When to use (e.g. backpressure)
 
-##### `buffers.dropping(n)` #####
+### `buffers.dropping(n)` ###
 
 Creates a dropping buffer of size n. When full, puts will not "block", but the value is discarded.
 
 TODO: When to use (stop responding to fast stuff)
 
-##### `buffers.sliding(n)` #####
+### `buffers.sliding(n)` ###
 
 Creates a sliding buffer of size n. When full, puts will not "block", but the oldest value is discarded.
 
 TODO: When to use (uninteresting stale values)
 
-### Goroutines ###
+## Goroutines ##
 
 TODO: Explain goroutines
 
@@ -37,7 +37,7 @@ TODO: Explain usage of `yield` in goroutines
 
 TODO: Explain deep/shallow, expilicit yield points
 
-##### `go(f* [, args])` #####
+### `go(f*, args?)` ###
 
 Spawns a "goroutine" from the supplied generator function, and arguments.
 Returns a channel that will receive the value returned by the goroutine.
@@ -53,7 +53,7 @@ console.log((yield csp.take(chan)));
 
 `yield go` would start the goroutine "immediately" while `go` would not start it until the next `yield`, or `return`.
 
-##### `spawn(generator)` #####
+### `spawn(generator)` ###
 
 Similar to `go`, but takes a generator instead of creating one.
 ```javascript
@@ -67,11 +67,11 @@ var ch = csp.spawn(id(42));
 console.log((yield csp.take(chan)));
 ```
 
-### Channel operations ###
+## Channel operations ##
 
 These operations (except for `close`) must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
 
-##### `yield put(ch, value)` #####
+### `yield put(ch, value)` ###
 
 Puts a value into the channel. "Returns" `true` unless channel is already closed.
 ```javascript
@@ -81,7 +81,7 @@ ch.close()
 yield csp.put(ch, 43); // false
 ```
 
-##### `yield take(ch)` #####
+### `yield take(ch)` ###
 
 Takes a value from the channel. "Returns" `csp.CLOSED` if channel is empty, and already closed.
 ```javascript
@@ -91,7 +91,7 @@ ch.close()
 yield csp.put(ch, 43); // false
 ```
 
-##### `yield alts(operations [, options])` #####
+### `yield alts(operations, options?)` ###
 
 Completes at most one of the channel operations. Each operation is either a channel to be taken from, or a 2-element array of the form `[channel-to-put-into, value-to-put]`.
 "Returns" an object with 2 properties: The `channel` of the succeeding operation, and the `value` returned by the corresponding `put`/`take` operation.
@@ -102,17 +102,17 @@ Completes at most one of the channel operations. Each operation is either a chan
   + If `options.priority` is `true`, tries the operations in order.
   + Otherwise makes a non-deterministic choice.
 
-##### `yield sleep(msecs)` #####
+### `yield sleep(msecs)` ###
 
 "Blocks" the current goroutine for `msecs` milliseconds.
 
-##### `ch.close()` #####
+### `ch.close()` ###
 
 Close a channel.
 - Pending and future takes "return" the buffered values, then `CLOSED`.
 - Pending and future puts "return" `false`.
 
-### Special values ###
+## Special values ##
 
 - `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal `null` for now.
 - `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.
