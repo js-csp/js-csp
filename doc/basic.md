@@ -1,5 +1,3 @@
-TODO: Explain the concepts
-
 ## Channels ##
 
 These are *not* constructor functions. Don't use `new`.
@@ -15,27 +13,19 @@ Creates a channel.
 
 Creates a fixed buffer of size n. When full, puts will "block".
 
-TODO: When to use (e.g. backpressure)
-
 ### `buffers.dropping(n)` ###
 
 Creates a dropping buffer of size n. When full, puts will not "block", but the value is discarded.
-
-TODO: When to use (stop responding to fast stuff)
 
 ### `buffers.sliding(n)` ###
 
 Creates a sliding buffer of size n. When full, puts will not "block", but the oldest value is discarded.
 
-TODO: When to use (uninteresting stale values)
+### `timeout(msecs)` ###
+
+Creates an unbuffered channel that will be closed after `msecs` milliseconds.
 
 ## Goroutines ##
-
-TODO: Explain goroutines
-
-TODO: Explain usage of `yield` in goroutines
-
-TODO: Explain deep/shallow, expilicit yield points
 
 ### `go(f*, args?)` ###
 
