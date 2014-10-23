@@ -8,13 +8,13 @@
 var csp = require("../../src/csp"),
     go = csp.go, chan = csp.chan,
     put = csp.put, take = csp.take,
-    sleep = csp.sleep;
+    timeout = csp.timeout;
 
 // This example also shows how to compose generator functions with deep yields
 
 function fakeSearch(kind) {
   return function*(query) {
-    yield sleep(Math.random() * 200);
+    yield timeout(Math.random() * 200);
     return kind  + " result for query " + query;
   };
 }

@@ -34,7 +34,7 @@ Returns a channel that will receive the value returned by the goroutine.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
 var ch = csp.go(function*(x) {
-  yield csp.sleep(1000);
+  yield csp.timeout(1000);
   return x;
 }, [42]);
 // Will "block" for 1 second then print 42;
@@ -49,7 +49,7 @@ Similar to `go`, but takes a generator instead of creating one.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
 function* id(x) {
-  yield csp.sleep(1000);
+  yield csp.timeout(1000);
   return x;
 }
 var ch = csp.spawn(id(42));
@@ -93,6 +93,8 @@ Completes at most one of the channel operations. Each operation is either a chan
   + Otherwise makes a non-deterministic choice.
 
 ### `yield sleep(msecs)` ###
+
+This is deprecated. Use `yield timeout(msecs)` instead.
 
 "Blocks" the current goroutine for `msecs` milliseconds.
 

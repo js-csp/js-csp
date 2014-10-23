@@ -7,11 +7,11 @@
 var csp = require("../../src/csp"),
     go = csp.go, chan = csp.chan,
     put = csp.put, take = csp.take, alts = csp.alts,
-    sleep = csp.sleep, timeout = csp.timeout;
+    timeout = csp.timeout, timeout = csp.timeout;
 
 function fakeSearch(kind) {
   return function*(query) {
-    yield sleep(Math.random() * 200);
+    yield timeout(Math.random() * 200);
     return kind  + " result for query " + query;
   };
 }

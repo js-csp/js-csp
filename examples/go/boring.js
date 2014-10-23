@@ -7,7 +7,7 @@ module.exports = function boring(message) {
   csp.go(function*() {
     for (var i = 0;; i++) {
       yield csp.put(ch, message + " " + i);
-      yield csp.sleep(Math.random() * 1000);
+      yield csp.timeout(Math.random() * 1000);
     }
   });
   return ch;
