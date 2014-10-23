@@ -11,7 +11,7 @@ gulp.task("dev:test", function() {
 });
 
 gulp.task("dev:watch", function() {
-  return gulp.watch(["test/*.js", "src/**/*.js"], ["test:dev"]);
+  return gulp.watch(["test/*.js", "src/**/*.js"], ["dev:test"]);
 });
 
 gulp.task("bundle:browser", function() {
