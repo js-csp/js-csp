@@ -308,5 +308,5 @@ exports.chan = function(buf, xform, exHandler) {
 };
 
 exports.Box = Box;
-
+exports.Channel = Channel;
 exports.CLOSED = CLOSED;

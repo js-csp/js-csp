@@ -2,6 +2,7 @@
 
 var dispatch = require("./dispatch");
 var select = require("./select");
+var Channel = require("./channels").Channel;
 
 var FnHandler = function(f) {
   this.f = f;
@@ -82,9 +83,9 @@ Process.prototype.run = function(response) {
   }
 
   var ins = iter.value;
+  var self = this;
 
   if (ins instanceof Instruction) {
-    var self = this;
     switch (ins.op) {
     case PUT:
       var data = ins.data;
@@ -113,7 +114,14 @@ Process.prototype.run = function(response) {
       }, ins.data.options);
       break;
     }
-  } else {
+  }
+  else if(ins instanceof Channel) {
+    var channel = ins;
+    take_then_callback(channel, function(value) {
+      self._continue(value);
+    });
+  }
+  else {
     this._continue(ins);
   }
 };
