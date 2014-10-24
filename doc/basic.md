@@ -2,12 +2,17 @@
 
 These are *not* constructor functions. Don't use `new`.
 
-### `chan(bufferOrN?)` ###
+### `chan(bufferOrN?, transducer?, exHandler?)` ###
 
-Creates a channel.
+Creates a channel with an optional buffer, an optional transducer, and optional exception handler.
+
+If no argument is passed, the channel is unbuffered (synchronization).
+
+`bufferOrN`:
 - If a number is passed, the channel is backed by a fixed buffer of that size (bounded asynchronization).
 - If a buffer is passed, the channel is backed by that buffer (bounded asynchronization).
-- If no argument is passed, the channel is unbuffered (synchronization).
+
+If a transducer is specified, the channel must be buffered. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used.
 
 ### `buffers.fixed(n)` ###
 
