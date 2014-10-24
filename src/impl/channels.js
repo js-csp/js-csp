@@ -305,6 +305,10 @@ function handleException(exHandler) {
 // function xform, or call the transducer xform, not both
 exports.chan = function(buf, xform, exHandler) {
   if (xform) {
+    if (!buf) {
+      throw new Error("Only buffered channels can use transducers");
+    }
+
     xform = xform(new AddTransformer());
   } else {
     xform = new AddTransformer();
