@@ -250,11 +250,12 @@ Channel.prototype.is_closed = function() {
 
 function defaultHandler(e) {
   console.log('error in channel transformer', e.stack);
+  return CLOSED;
 }
 
 function handleEx(buf, exHandler, e) {
   var def = (exHandler || defaultHandler)(e);
-  if (def !== undefined && def !== CLOSED) {
+  if (def !== CLOSED) {
     buf.add(def);
   }
   return buf;
