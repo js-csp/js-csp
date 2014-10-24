@@ -18,7 +18,7 @@ FnHandler.prototype.commit = function() {
 
 function put_then_callback(channel, value, callback) {
   var result = channel._put(value, new FnHandler(callback));
-  if (result) {
+  if (result && callback) {
     callback(result.value);
   }
 }
