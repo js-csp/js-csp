@@ -1,5 +1,11 @@
 # Changes to js-csp
 
+## 0.3.0
+- ADDED: Buffered channels can use transducers to transform values put onto them.
+- CHANGED: Each goroutine now always returns a channel.
+- CHANGED: `yield ch` now behaves the same as `yield take(ch)`.
+- CHANGED: `sleep` is deprecated in favor of `timeout`.
+
 ## 0.2.3
 - FIXED: Pending puts are now properly processed when takes make place for them in the buffer.
 
