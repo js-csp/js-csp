@@ -130,9 +130,11 @@ Channel.prototype._take = function(handler) {
       put_handler = putter.handler;
       if (put_handler.is_active()) {
         callback = put_handler.commit();
-        dispatch.run(function() {
-          callback(true);
-        });
+        if (callback) {
+          dispatch.run(function() {
+            callback(true);
+          });
+        }
         if (isReduced(this.xform.step(this.buf, putter.value))) {
           this.close();
         }
@@ -154,9 +156,11 @@ Channel.prototype._take = function(handler) {
     put_handler = putter.handler;
     if (put_handler.is_active()) {
       callback = put_handler.commit();
-      dispatch.run(function() {
-        callback(true);
-      });
+      if (callback) {
+        dispatch.run(function() {
+          callback(true);
+        });
+      }
       return new Box(putter.value);
     }
   }
@@ -230,9 +234,11 @@ Channel.prototype.close = function() {
     }
     if (putter.handler.is_active()) {
       var put_callback = putter.handler.commit();
-      dispatch.run(function() {
-        put_callback(false);
-      });
+      if (put_callback) {
+        dispatch.run(function() {
+          put_callback(false);
+        });
+      }
     }
   }
 };

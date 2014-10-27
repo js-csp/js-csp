@@ -13,9 +13,6 @@ var csp = require("./csp.core"),
     CLOSED = csp.CLOSED;
 
 
-function noOp(v) {
-}
-
 function mapFrom(f, ch) {
   return {
     is_closed: function() {
@@ -233,7 +230,7 @@ function map(f, chs, bufferOrN) {
         values[i] = value;
         dcount --;
         if (dcount === 0) {
-          putAsync(dchan, values.slice(0), noOp);
+          putAsync(dchan, values.slice(0));
         }
       };
     }(i));
@@ -445,7 +442,7 @@ function mult(ch) {
     return function(stillOpen) {
       dcount --;
       if (dcount === 0) {
-        putAsync(dchan, true, noOp);
+        putAsync(dchan, true);
       }
       if (!stillOpen) {
         m.untap(tap.channel);
@@ -507,7 +504,7 @@ var Mix = function(ch) {
 };
 
 Mix.prototype._changed = function() {
-  putAsync(this.change, true, noOp);
+  putAsync(this.change, true);
 };
 
 Mix.prototype._getAllState = function() {
