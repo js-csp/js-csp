@@ -3,7 +3,6 @@ var mocha = require("mocha");
 var a = require("../src/csp.test-helpers"),
     it = a.it,
     before = a.before,
-    afterEach = a.afterEach,
     beforeEach = a.beforeEach;
 
 var csp = require("../src/csp"),
@@ -15,8 +14,9 @@ var csp = require("../src/csp"),
     takeAsync = csp.takeAsync,
     alts = csp.alts,
     timeout = csp.timeout,
-    buffers = csp.buffers,
     CLOSED = csp.CLOSED;
+
+var do_alts = require("../src/impl/select").do_alts;
 
 describe("put", function() {
   describe("that is immediate", function() {
@@ -225,6 +225,74 @@ describe("alts", function() {
         results[i] = (yield alts(chs, {priority: true})).value;
       }
       assert.deepEqual(sequential, results, "alts ordering is fixed if priority option is specified");
+    });
+  });
+
+  describe("synchronization (at most once guarantee)", function() {
+    it("should work correctly when taking from a closed channel", function*() {
+      var count = 0;
+      function inc() {
+        count++;
+      }
+
+      var ch1 = chan();
+      var ch2 = chan();
+
+      ch1.close();
+
+      // We want to test that an immediately-available-due-to-closed
+      // operation deactivates previously registered operations.
+      // Therefore we use "priority" to ensure ch1 is registered after
+      // ch2.
+      do_alts([ch2, ch1], inc, {priority: true});
+
+      var ch = go(function*() {
+        // This put should be answered by ch2-closing, not by
+        // ch2-taking above, which should have been deactivated
+        assert.equal((yield put(ch2, 1)), false);
+      });
+
+      // Let the above goroutine register its put
+      yield null;
+      // Now close ch2 to ensure that goroutine will be able to finish
+      ch2.close();
+      // Then wait for it
+      yield ch;
+
+      assert.equal(count, 1);
+    });
+
+    it("should work correctly when putting into a closed channel", function*() {
+      var count = 0;
+      function inc() {
+        count++;
+      }
+
+      var ch1 = chan();
+      var ch2 = chan();
+
+      ch1.close();
+
+      // We want to test that an immediately-available-due-to-closed
+      // operation deactivates previously registered operations.
+      // Therefore we use "priority" to ensure ch1 is registered after
+      // ch2.
+      do_alts([[ch2, 2], [ch1, 1]], inc, {priority: true});
+
+      var ch = go(function*() {
+        // This put should be answered by ch2-closing, not by
+        // ch2-putting above, which should have been deactivated
+        assert.equal((yield take(ch2)), CLOSED);
+      });
+
+      // Let the above goroutine register its take
+      yield null;
+      // Now close ch2 to ensure that goroutine will be able to finish
+      ch2.close();
+      // Then wait for it
+      yield ch;
+
+      assert.equal(count, 1);
     });
   });
 });

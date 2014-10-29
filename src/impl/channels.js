@@ -37,8 +37,19 @@ Channel.prototype._put = function(value, handler) {
     throw new Error("Cannot put CLOSED on a channel.");
   }
 
-  if (this.closed || !handler.is_active()) {
-    return new Box(!this.closed);
+  // TODO: I'm not sure how this can happen, because the operations
+  // are registered in 1 tick, and the only way for this to be inactive
+  // is for a previous operation in the same alt to have returned
+  // immediately, which would have short-circuited to prevent this to
+  // be ever register anyway. The same thing goes for the active check
+  // in "_take".
+  if (!handler.is_active()) {
+    return null;
+  }
+
+  if (this.closed) {
+    handler.commit();
+    return new Box(false);
   }
 
   var taker, callback;
