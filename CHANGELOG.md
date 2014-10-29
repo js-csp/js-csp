@@ -1,5 +1,10 @@
 # Changes to js-csp
 
+## 0.3.1
+- FIXED: `alts`' at-most-once guarantee is no longer violated when there is an operation that:
+  + Attempts to put on a closed channel.
+  + Is registered after other not-ready-yet operations, causing one of these operation to be fulfilled as well.
+
 ## 0.3.0
 - ADDED: Buffered channels can use transducers to transform values put onto them.
 - CHANGED: Each goroutine now always returns a channel.
