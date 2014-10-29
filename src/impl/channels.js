@@ -38,6 +38,7 @@ Channel.prototype._put = function(value, handler) {
   }
 
   if (this.closed || !handler.is_active()) {
+    handler.commit();
     return new Box(!this.closed);
   }
 
