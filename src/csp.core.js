@@ -6,7 +6,7 @@ var select = require("./impl/select");
 var process = require("./impl/process");
 var timers = require("./impl/timers");
 
-function spawn(gen) {
+function spawn(gen, creator) {
   var ch = channels.chan(buffers.fixed(1));
   (new process.Process(gen, function(value) {
     if (value === channels.CLOSED) {
@@ -16,13 +16,13 @@ function spawn(gen) {
         ch.close();
       });
     }
-  })).run();
+  }, creator)).run();
   return ch;
 };
 
 function go(f, args) {
   var gen = f.apply(null, args);
-  return spawn(gen);
+  return spawn(gen, f);
 };
 
 function chan(bufferOrNumber, xform, exHandler) {

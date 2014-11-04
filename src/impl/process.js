@@ -30,8 +30,9 @@ function take_then_callback(channel, callback) {
   }
 }
 
-var Process = function(gen, onFinish) {
+var Process = function(gen, onFinish, creator) {
   this.gen = gen;
+  this.creatorFunc = creator;
   this.finished = false;
   this.onFinish = onFinish;
 };
