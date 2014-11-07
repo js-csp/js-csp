@@ -108,19 +108,29 @@ describe("Transducers", function() {
       assert.equal((yield take(ch)), CLOSED);
     });
 
-    it("should flush multiple takes in one expansion", function* () {
+    it("should flush correct values to multiple takes in one expansion", function* () {
       var count = 0;
       var ch = chan(1, t.cat);
-      takeAsync(ch, function() {
+
+      go(function*() {
+        assert.equal(1, (yield take(ch)));
         count += 1;
+        assert.equal(count, 1);
       });
-      takeAsync(ch, function() {
+      go(function*() {
+        assert.equal(2, (yield take(ch)));
         count += 1;
+        assert.equal(count, 2);
       });
-      takeAsync(ch, function() {
+      go(function*() {
+        assert.equal(3, (yield take(ch)));
         count += 1;
+        assert.equal(count, 3);
       });
+
       yield put(ch, [1, 2, 3]);
+
+      yield undefined;
       assert.equal(count, 3);
     });
   });

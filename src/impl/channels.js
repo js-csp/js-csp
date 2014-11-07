@@ -77,9 +77,7 @@ Channel.prototype._put = function(value, handler) {
       if (taker.is_active()) {
         callback = taker.commit();
         value = this.buf.remove();
-        dispatch.run(function() {
-          callback(value);
-        });
+        schedule(callback, value);
       }
     }
     if (done) {
