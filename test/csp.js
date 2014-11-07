@@ -384,4 +384,28 @@ describe("close", function() {
     ch.close();
     yield undefined;
   });
+
+  it("should correctly flush CLOSED to pending takes", function*() {
+    var ch = chan();
+    var count = 0;
+
+    go(function*() {
+      assert.equal((yield take(ch)), CLOSED);
+      count += 1;
+      assert.equal(count, 1);
+    });
+    go(function*() {
+      assert.equal((yield take(ch)), CLOSED);
+      count += 1;
+      assert.equal(count, 2);
+    });
+    go(function*() {
+      assert.equal((yield take(ch)), CLOSED);
+      count += 1;
+      assert.equal(count, 3);
+    });
+
+    ch.close();
+    yield undefined;
+  });
 });

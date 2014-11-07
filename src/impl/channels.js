@@ -233,9 +233,7 @@ Channel.prototype.close = function() {
     }
     if (taker.is_active()) {
       var callback = taker.commit();
-      dispatch.run(function() {
-        callback(CLOSED);
-      });
+      schedule(callback, CLOSED);
     }
   }
 
