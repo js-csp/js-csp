@@ -359,3 +359,29 @@ describe("Process runner", function() {
     }
   });
 });
+
+describe("close", function() {
+  it("should correctly flush false to pending puts", function*() {
+    var ch = chan();
+    var count = 0;
+
+    go(function*() {
+      assert.equal((yield put(ch, 1)), false);
+      count += 1;
+      assert.equal(count, 1);
+    });
+    go(function*() {
+      assert.equal((yield put(ch, 2)), false);
+      count += 1;
+      assert.equal(count, 2);
+    });
+    go(function*() {
+      assert.equal((yield put(ch, 3)), false);
+      count += 1;
+      assert.equal(count, 3);
+    });
+
+    ch.close();
+    yield undefined;
+  });
+});

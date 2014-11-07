@@ -239,7 +239,6 @@ Channel.prototype.close = function() {
     }
   }
 
-  // TODO: Tests
   while (true) {
     var putter = this.puts.pop();
     if (putter === buffers.EMPTY) {
@@ -248,9 +247,7 @@ Channel.prototype.close = function() {
     if (putter.handler.is_active()) {
       var put_callback = putter.handler.commit();
       if (put_callback) {
-        dispatch.run(function() {
-          put_callback(false);
-        });
+        schedule(put_callback, false);
       }
     }
   }
