@@ -171,17 +171,30 @@ describe("Transducers", function() {
     it("should flush multiple pending puts when a value is taken off the buffer", function*() {
       var ch = chan(1, t.partition(3));
       var count = 0;
-      var inc = function() {
-        count += 1;
-      };
+
       yield put(ch, 1);
       yield put(ch, 1);
       yield put(ch, 1);
 
-      putAsync(ch, 1, inc);
-      putAsync(ch, 1, inc);
-      putAsync(ch, 1, inc);
+      go(function*() {
+        assert.equal(true, (yield put(ch, 1)));
+        count += 1;
+        assert.equal(count, 1);
+      });
+      go(function*() {
+        assert.equal(true, (yield put(ch, 1)));
+        count += 1;
+        assert.equal(count, 2);
+      });
+      go(function*() {
+        assert.equal(true, (yield put(ch, 1)));
+        count += 1;
+        assert.equal(count, 3);
+      });
+
       yield take(ch);
+      yield undefined;
+
       assert.equal(count, 3);
     });
   });

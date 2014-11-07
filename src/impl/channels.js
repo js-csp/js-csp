@@ -146,9 +146,7 @@ Channel.prototype._take = function(handler) {
       if (put_handler.is_active()) {
         callback = put_handler.commit();
         if (callback) {
-          dispatch.run(function() {
-            callback(true);
-          });
+          schedule(callback, true);
         }
         if (isReduced(this.xform.step(this.buf, putter.value))) {
           this.close();
