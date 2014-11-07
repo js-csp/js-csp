@@ -32,6 +32,12 @@ function isReduced(v) {
   return v && v.__transducers_reduced__;
 }
 
+function schedule(f, v) {
+  dispatch.run(function() {
+    f(v);
+  });
+}
+
 Channel.prototype._put = function(value, handler) {
   if (value === CLOSED) {
     throw new Error("Cannot put CLOSED on a channel.");
