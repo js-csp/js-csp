@@ -1,5 +1,9 @@
 # Changes to js-csp
 
+## 0.3.2
+- FIXED: Incorrect handling of multiple pending puts/takes is now fixed.
+- ADDED: Each goroutine now keeps a reference to its generator function, for debugging purpose.
+
 ## 0.3.1
 - FIXED: `alts`' at-most-once guarantee is no longer violated when there is an operation that:
   + Attempts to put on a closed channel.
