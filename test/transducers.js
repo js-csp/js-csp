@@ -108,19 +108,29 @@ describe("Transducers", function() {
       assert.equal((yield take(ch)), CLOSED);
     });
 
-    it("should flush multiple takes in one expansion", function* () {
+    it("should flush correct values to multiple takes in one expansion", function* () {
       var count = 0;
       var ch = chan(1, t.cat);
-      takeAsync(ch, function() {
+
+      go(function*() {
+        assert.equal(1, (yield take(ch)));
         count += 1;
+        assert.equal(count, 1);
       });
-      takeAsync(ch, function() {
+      go(function*() {
+        assert.equal(2, (yield take(ch)));
         count += 1;
+        assert.equal(count, 2);
       });
-      takeAsync(ch, function() {
+      go(function*() {
+        assert.equal(3, (yield take(ch)));
         count += 1;
+        assert.equal(count, 3);
       });
+
       yield put(ch, [1, 2, 3]);
+
+      yield undefined;
       assert.equal(count, 3);
     });
   });
@@ -161,17 +171,62 @@ describe("Transducers", function() {
     it("should flush multiple pending puts when a value is taken off the buffer", function*() {
       var ch = chan(1, t.partition(3));
       var count = 0;
-      var inc = function() {
-        count += 1;
-      };
+
       yield put(ch, 1);
       yield put(ch, 1);
       yield put(ch, 1);
 
-      putAsync(ch, 1, inc);
-      putAsync(ch, 1, inc);
-      putAsync(ch, 1, inc);
+      go(function*() {
+        assert.equal(true, (yield put(ch, 1)));
+        count += 1;
+        assert.equal(count, 1);
+      });
+      go(function*() {
+        assert.equal(true, (yield put(ch, 1)));
+        count += 1;
+        assert.equal(count, 2);
+      });
+      go(function*() {
+        assert.equal(true, (yield put(ch, 1)));
+        count += 1;
+        assert.equal(count, 3);
+      });
+
       yield take(ch);
+      yield undefined;
+
+      assert.equal(count, 3);
+    });
+  });
+
+  describe("partition -> cat (valve)", function() {
+    it("should correctly flush multiple pending takes with accumulated values when closing", function*() {
+      var ch = chan(1, t.compose(t.partition(4), t.cat));
+      var count = 0;
+
+      yield put(ch, 1);
+      yield put(ch, 2);
+      yield put(ch, 3);
+
+      go(function*() {
+        assert.equal((yield take(ch)), 1);
+        count += 1;
+        assert.equal(count, 1);
+      });
+      go(function*() {
+        assert.equal((yield take(ch)), 2);
+        count += 1;
+        assert.equal(count, 2);
+      });
+      go(function*() {
+        assert.equal((yield take(ch)), 3);
+        count += 1;
+        assert.equal(count, 3);
+      });
+
+      yield ch.close();
+      yield undefined;
+
       assert.equal(count, 3);
     });
   });

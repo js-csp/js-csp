@@ -32,6 +32,12 @@ function isReduced(v) {
   return v && v.__transducers_reduced__;
 }
 
+function schedule(f, v) {
+  dispatch.run(function() {
+    f(v);
+  });
+}
+
 Channel.prototype._put = function(value, handler) {
   if (value === CLOSED) {
     throw new Error("Cannot put CLOSED on a channel.");
@@ -71,9 +77,7 @@ Channel.prototype._put = function(value, handler) {
       if (taker.is_active()) {
         callback = taker.commit();
         value = this.buf.remove();
-        dispatch.run(function() {
-          callback(value);
-        });
+        schedule(callback, value);
       }
     }
     if (done) {
@@ -95,9 +99,7 @@ Channel.prototype._put = function(value, handler) {
     if (taker.is_active()) {
       handler.commit();
       callback = taker.commit();
-      dispatch.run(function() {
-        callback(value);
-      });
+      schedule(callback, value);
       return new Box(true);
     }
   }
@@ -142,9 +144,7 @@ Channel.prototype._take = function(handler) {
       if (put_handler.is_active()) {
         callback = put_handler.commit();
         if (callback) {
-          dispatch.run(function() {
-            callback(true);
-          });
+          schedule(callback, true);
         }
         if (isReduced(this.xform.step(this.buf, putter.value))) {
           this.close();
@@ -168,9 +168,7 @@ Channel.prototype._take = function(handler) {
     if (put_handler.is_active()) {
       callback = put_handler.commit();
       if (callback) {
-        dispatch.run(function() {
-          callback(true);
-        });
+        schedule(callback, true);
       }
       return new Box(putter.value);
     }
@@ -217,9 +215,7 @@ Channel.prototype.close = function() {
       if (taker.is_active()) {
         callback = taker.commit();
         var value = this.buf.remove();
-        dispatch.run(function() {
-          callback(value);
-        });
+        schedule(callback, value);
       }
     }
   }
@@ -231,13 +227,10 @@ Channel.prototype.close = function() {
     }
     if (taker.is_active()) {
       var callback = taker.commit();
-      dispatch.run(function() {
-        callback(CLOSED);
-      });
+      schedule(callback, CLOSED);
     }
   }
 
-  // TODO: Tests
   while (true) {
     var putter = this.puts.pop();
     if (putter === buffers.EMPTY) {
@@ -246,9 +239,7 @@ Channel.prototype.close = function() {
     if (putter.handler.is_active()) {
       var put_callback = putter.handler.commit();
       if (put_callback) {
-        dispatch.run(function() {
-          put_callback(false);
-        });
+        schedule(put_callback, false);
       }
     }
   }
