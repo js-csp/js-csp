@@ -219,9 +219,7 @@ Channel.prototype.close = function() {
       if (taker.is_active()) {
         callback = taker.commit();
         var value = this.buf.remove();
-        dispatch.run(function() {
-          callback(value);
-        });
+        schedule(callback, value);
       }
     }
   }
