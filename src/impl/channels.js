@@ -99,9 +99,7 @@ Channel.prototype._put = function(value, handler) {
     if (taker.is_active()) {
       handler.commit();
       callback = taker.commit();
-      dispatch.run(function() {
-        callback(value);
-      });
+      schedule(callback, value);
       return new Box(true);
     }
   }
@@ -170,9 +168,7 @@ Channel.prototype._take = function(handler) {
     if (put_handler.is_active()) {
       callback = put_handler.commit();
       if (callback) {
-        dispatch.run(function() {
-          callback(true);
-        });
+        schedule(callback, true);
       }
       return new Box(putter.value);
     }
