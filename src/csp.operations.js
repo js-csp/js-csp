@@ -173,7 +173,9 @@ function split(p, ch, trueBufferOrN, falseBufferOrN) {
         fch.close();
         break;
       }
-      yield put(p(value) ? tch : fch, value);
+      go(function*() {
+        yield put(p(value) ? tch : fch, value);
+      });
     }
   });
   return [tch, fch];
