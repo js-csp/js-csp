@@ -3,6 +3,8 @@
 var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
+var config = require("./config");
+var CLOSED = require("./channels").CLOSED;
 
 var FnHandler = function(f) {
   this.f = f;
@@ -30,10 +32,11 @@ function take_then_callback(channel, callback) {
   }
 }
 
-var Process = function(gen, opts, onFinish, creator) {
+var Process = function(gen, opts, onFinish) {
   this.gen = gen;
-  this.creatorFunc = creator;
+  this.creatorFunc = opts.creator;
   this.finished = false;
+  this.propagates = opts.propagate;
   this.onFinish = onFinish;
 };
 
@@ -47,13 +50,38 @@ var PUT = "put";
 var SLEEP = "sleep";
 var ALTS = "alts";
 
+var Throw = function(e) {
+  if(!(this instanceof Throw)) {
+    return new Throw(e);
+  }
+  if(typeof e === 'string') {
+    e = new Error(e);
+  }
+  this.error = e;
+  this.stacks = [];
+}
+
+var _defaultHandler;
+function setDefaultExceptionHandler(handler) {
+  _defaultHandler = handler;
+}
+
+function getDefaultExceptionHandler() {
+  return _defaultHandler;
+}
+
 // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
 // up the stack, but it means double queueing when the value is not
 // immediately available
-Process.prototype._continue = function(response) {
+Process.prototype._continue = function(response, frameErrorObj) {
   var self = this;
   dispatch.run(function() {
-    self.run(response);
+    if(response instanceof Throw) {
+      self._error(response, frameErrorObj);
+    }
+    else {
+      self.run(response);
+    }
   });
 };
 
@@ -62,12 +90,43 @@ Process.prototype._done = function(value) {
     this.finished = true;
     var onFinish = this.onFinish;
     if (typeof onFinish === "function") {
+      onFinish = onFinish.bind(this);
       dispatch.run(function() {
         onFinish(value);
       });
     }
   }
 };
+
+Process.prototype._error = function(response, frameErrorObj) {
+  var handler = getDefaultExceptionHandler();
+  if(this.propagates || handler) {
+    try {
+      // The process might catch the exception
+      var res = this.gen.throw(response.error);
+      res.done ? this._done(res) : this._continue(res);
+    }
+    catch(e) {
+      if(e !== response.error) {
+        throw e;
+      }
+
+      if(this.propagates) {
+        if(config.stackHistory) {
+          response.stacks.push(frameErrorObj);
+        }
+        this._done(response);
+      }
+      else {
+        handler(response);
+      }
+    }
+  }
+  else {
+    var res = this.gen.throw(response.error);
+    res.done ? this._done(res) : this._continue(res);
+  }
+}
 
 Process.prototype.run = function(response) {
   if (this.finished) {
@@ -96,9 +155,9 @@ Process.prototype.run = function(response) {
       break;
 
     case TAKE:
-      var channel = ins.data;
-      take_then_callback(channel, function(value) {
-        self._continue(value);
+      var data = ins.data;
+      take_then_callback(data.channel, function(value) {
+        self._continue(value, data.frameErrorObj);
       });
       break;
 
@@ -128,7 +187,15 @@ Process.prototype.run = function(response) {
 };
 
 function take(channel) {
-  return new Instruction(TAKE, channel);
+  var frameErrorObj;
+  if(config.stackHistory) {
+    frameErrorObj = new Error();
+  }
+
+  return new Instruction(TAKE, {
+    channel: channel,
+    frameErrorObj: frameErrorObj
+  });
 }
 
 function put(channel, value) {
@@ -157,3 +224,5 @@ exports.sleep = sleep;
 exports.alts = alts;
 
 exports.Process = Process;
+exports.Throw = Throw;
+exports.setDefaultExceptionHandler = setDefaultExceptionHandler;

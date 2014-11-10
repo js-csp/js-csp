@@ -5,8 +5,10 @@ var channels = require("./impl/channels");
 var select = require("./impl/select");
 var process = require("./impl/process");
 var timers = require("./impl/timers");
+var config = require("./impl/config");
+var dispatch = require("./impl/dispatch");
 
-function spawn(gen, opts, creator) {
+function spawn(gen, opts) {
   opts = opts || {};
   var ch = channels.chan(buffers.fixed(1));
   (new process.Process(gen, opts, function(value) {
@@ -17,13 +19,14 @@ function spawn(gen, opts, creator) {
         ch.close();
       });
     }
-  }, creator)).run();
+  })).run();
   return ch;
 };
 
 function go(f, opts) {
   opts = opts || {};
-  return spawn(f(), opts, f);
+  opts.creator = f;
+  return spawn(f(), opts);
 };
 
 function chan(bufferOrNumber, xform, exHandler) {
@@ -38,7 +41,6 @@ function chan(bufferOrNumber, xform, exHandler) {
   }
   return channels.chan(buf, xform, exHandler);
 };
-
 
 module.exports = {
   buffers: {
@@ -55,10 +57,14 @@ module.exports = {
 
   put: process.put,
   take: process.take,
+  takePropagate: process.takePropagate,
   sleep: process.sleep,
   alts: process.alts,
   putAsync: process.put_then_callback,
   takeAsync: process.take_then_callback,
+  Throw: process.Throw,
 
-  timeout: timers.timeout
+  timeout: timers.timeout,
+  stackHistory: config.setters.stackHistory,
+  setDefaultExceptionHandler: process.setDefaultExceptionHandler
 };
