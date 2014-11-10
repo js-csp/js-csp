@@ -22,7 +22,7 @@ function identity_chan(x) {
 // }));
 function g(f) {
   return function(done) {
-    go(f, [done]);
+    csp.spawn(f(done));
   };
 };
 

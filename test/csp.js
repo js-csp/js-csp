@@ -299,9 +299,9 @@ describe("alts", function() {
 
 describe("Goroutine", function() {
   it("should put returned value on output channel and close it", function*() {
-    var ch = go(function*(x) {
-      return x;
-    }, [42]);
+    var ch = go(function*() {
+      return 42;
+    });
     var value = yield take(ch);
     assert.equal(value, 42, "returned value is delivered");
     assert.equal(ch.is_closed(), true, "output channel is closed");
