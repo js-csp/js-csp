@@ -81,9 +81,11 @@ yield csp.put(ch, 43); // false
 Takes a value from the channel. "Returns" `csp.CLOSED` if channel is empty, and already closed.
 ```javascript
 var ch = csp.chan(1);
-yield csp.put(ch, 42); // true
+yield csp.put(ch, 42);
+yield csp.take(ch); // 42
+yield csp.take(ch); // csp.CLOSED
 ch.close()
-yield csp.put(ch, 43); // false
+yield csp.take(ch); // csp.CLOSED
 ```
 
 ### `yield alts(operations, options?)` ###
