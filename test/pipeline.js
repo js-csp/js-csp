@@ -103,7 +103,7 @@ describe('test-close', function() {
         pipeline(5, cout, t.map(identity), csp.operations.fromColl([1]), true);
 
         assert.equal(1, yield csp.take(cout));
-        assert.isNull(yield csp.take(cout));
+        assert.equal(csp.CLOSED, yield csp.take(cout));
 
         cout = csp.chan(1);
         pipeline(5, cout, t.map(identity), csp.operations.fromColl([1]), false);
