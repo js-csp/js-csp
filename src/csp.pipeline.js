@@ -2,18 +2,16 @@
 
 var csp = require('./csp.core');
 
-function pipelineInternal(n, to, xf, from, close, exHandler, taskFn) {
-  if (n < 0) {
+function pipelineInternal(n, to, from, close, taskFn) {
+  if (n <= 0) {
     throw new Error('n must be positive');
   }
-
   close = close === undefined ? true : close;
 
   var jobs = csp.chan(n);
   var results = csp.chan(n);
 
   for(var _ = 0; _ < n; _++) {
-
     csp.go(function* (taskFn, jobs, results) {
       while (true) {
         var job = yield csp.take(jobs);
@@ -22,10 +20,8 @@ function pipelineInternal(n, to, xf, from, close, exHandler, taskFn) {
           results.close();
           break;
         }
-
       }
     }, [taskFn, jobs, results]);
-
   }
 
   csp.go(function* (jobs, from, results) {
@@ -41,7 +37,6 @@ function pipelineInternal(n, to, xf, from, close, exHandler, taskFn) {
         yield csp.put(results, p);
       }
     }
-
   }, [jobs, from, results]);
 
   csp.go(function* (results, close, to) {
@@ -69,15 +64,15 @@ function pipelineInternal(n, to, xf, from, close, exHandler, taskFn) {
   return to;
 }
 
-function pipeline(to, af, from, close, exHandler) {
+function pipeline(to, xf, from, close, exHandler) {
 
-  function taskFn(job, results) {
+  function taskFn(job) {
     if (job === csp.CLOSED) {
       return null;
     } else {
       var v = job[0];
       var p = job[1];
-      var res = csp.chan(1, af, exHandler);
+      var res = csp.chan(1, xf, exHandler);
 
       csp.go(function* (res, v) {
         yield csp.put(res, v);
@@ -90,10 +85,10 @@ function pipeline(to, af, from, close, exHandler) {
     }
   }
 
-  return pipelineInternal(1, to, af, from, close, exHandler, taskFn);
+  return pipelineInternal(1, to, from, close, taskFn);
 }
 
-function pipelineAsync(n, to, af, from, close, exHandler) {
+function pipelineAsync(n, to, af, from, close) {
 
   function taskFn(job) {
     if (job === csp.CLOSED) {
@@ -108,7 +103,7 @@ function pipelineAsync(n, to, af, from, close, exHandler) {
     }
   }
 
-  return pipelineInternal(n, to, af, from, close, exHandler, taskFn);
+  return pipelineInternal(n, to, from, close, taskFn);
 }
 
 module.exports = {

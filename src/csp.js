@@ -2,9 +2,10 @@
 
 var csp = require("./csp.core");
 var operations = require("./csp.operations");
+var pipeline = require('./csp.pipeline');
 
 csp.operations = operations;
-csp.operations.pipeline = require('./csp.pipeline').pipeline;
-csp.operations.pipelineAsync = require('./csp.pipeline').pipelineAsync;
+csp.operations.pipeline = pipeline.pipeline;
+csp.operations.pipelineAsync = pipeline.pipelineAsync;
 
 module.exports = csp;
