@@ -83,16 +83,10 @@ npm install js-csp
 bower install js-csp
 ```
 
-Pre-built files for (old) browsers may be coming.
-
 ## TODO ##
 
-- Test operations (map, filter, reduce, pipe...) more thoroughly.
-- Use better name for functions.
-- Better code style?
 - Multiplexing, mixing, publishing/subscribing.
 - Add more documentation and examples.
-- Add browser builds and tests.
 - Add conversion functions that "de-IOC" promises and callback-based APIs (e.g. Web Workers).
 - Investigate error handling in goroutines:
   + Special `yield waitFor` that either returns a value or throws an error from the result channel.
