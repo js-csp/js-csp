@@ -55,6 +55,9 @@ module.exports = {
   goAsync: g,
   go: gg,
 
+  // f must be a generator function. For now assertions should be inside f's
+  // top-level, not functions f may call (that works but a failing test
+  // may break following tests).
   it: function(desc, f) {
     return mocha.it(desc, gg(f));
   },

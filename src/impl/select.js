@@ -69,6 +69,11 @@ exports.do_alts = function(operations, callback, options) {
     if (operation instanceof Array) {
       var value = operation[1];
       port = operation[0];
+      // We wrap this in a function to capture the value of "port",
+      // because js' closure captures vars by "references", not
+      // values. "let port" would have worked, but I don't want to
+      // raise the runtime requirement yet. TODO: So change this when
+      // most runtimes are modern enough.
       result = port._put(value, (function(port) {
         return new AltHandler(flag, function(ok) {
           callback(new AltResult(ok, port));
