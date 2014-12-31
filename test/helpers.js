@@ -31,14 +31,16 @@ describe("Test helpers", function() {
 
   it("should run with no sugar", function(done) {
     go(function*() {
-      assert.equal(running, true, "'beforeEach' hook was run");
-      done();
+      a.check(function() {
+        assert.equal(running, true, "'beforeEach' hook was run");
+      }, done);
     });
   });
 
   it("should run with 1 layer of sugar", a.goAsync(function*(done) {
-    assert.equal(running, true, "'beforeEach' hook was run");
-    done();
+    a.check(function() {
+      assert.equal(running, true, "'beforeEach' hook was run");
+    }, done);
   }));
 
   it("should run with 2 layers of sugar", a.go(function*() {

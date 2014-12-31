@@ -107,8 +107,9 @@ describe("put", function() {
       takeAsync(ch, function() {
         go(function*() {
           yield null;
-          assert.equal(count, 2);
-          done();
+          a.check(function() {
+            assert.equal(count, 2);
+          }, done);
         });
       });
     });

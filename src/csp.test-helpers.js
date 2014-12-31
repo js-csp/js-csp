@@ -18,6 +18,17 @@ function identity_chan(x) {
   return ch;
 }
 
+function check(f, done) {
+  return (function() {
+    try {
+      f();
+      done();
+    } catch(e) {
+      done(e);
+    }
+  })();
+}
+
 // it("", g(function*() {
 // }));
 function g(f) {
@@ -40,6 +51,7 @@ function gg(f) {
 
 module.exports = {
   identity_chan: identity_chan,
+  check: check,
   goAsync: g,
   go: gg,
 
