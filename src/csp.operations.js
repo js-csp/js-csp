@@ -622,7 +622,7 @@ function mix(out) {
       }
       var solos = state.solos;
       if (solos.indexOf(channel) > -1 ||
-          (solos.length && !(m.mutes.indexOf(channel) > -1))) {
+          (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))) {
         var stillOpen = yield put(out, value);
         if (!stillOpen) {
           break;
