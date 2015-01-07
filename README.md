@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ubolonton/js-csp.svg?branch=master)](https://travis-ci.org/ubolonton/js-csp)
+
 # js-csp
 Communicating sequential processes for Javascript (like Clojurescript core.async, or Go).
 
