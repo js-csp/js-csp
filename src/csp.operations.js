@@ -4,6 +4,7 @@ var Box = require("./impl/channels").Box;
 
 var csp = require("./csp.core"),
     go = csp.go,
+    spawn = csp.spawn,
     take = csp.take,
     put = csp.put,
     takeAsync = csp.takeAsync,
@@ -134,13 +135,13 @@ function* mapcat(f, src, dst) {
 
 function mapcatFrom(f, ch, bufferOrN) {
   var out = chan(bufferOrN);
-  go(mapcat, [f, ch, out]);
+  spawn(mapcat(f, ch, out));
   return out;
 }
 
 function mapcatInto(f, ch, bufferOrN) {
   var src = chan(bufferOrN);
-  go(mapcat, [f, src, ch]);
+  spawn(mapcat(f, src, ch))
   return src;
 }
 

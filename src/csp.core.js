@@ -6,9 +6,10 @@ var select = require("./impl/select");
 var process = require("./impl/process");
 var timers = require("./impl/timers");
 
-function spawn(gen, creator) {
+function spawn(gen, opts, creator) {
+  opts = opts || {};
   var ch = channels.chan(buffers.fixed(1));
-  (new process.Process(gen, function(value) {
+  (new process.Process(gen, opts, function(value) {
     if (value === channels.CLOSED) {
       ch.close();
     } else {
@@ -20,9 +21,9 @@ function spawn(gen, creator) {
   return ch;
 };
 
-function go(f, args) {
-  var gen = f.apply(null, args);
-  return spawn(gen, f);
+function go(f, opts) {
+  opts = opts || {};
+  return spawn(f(), opts, f);
 };
 
 function chan(bufferOrNumber, xform, exHandler) {

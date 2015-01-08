@@ -33,7 +33,7 @@ function check(f, done) {
 // }));
 function g(f) {
   return function(done) {
-    go(f, [done]);
+    csp.spawn(f(done));
   };
 };
 
