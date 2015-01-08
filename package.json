@@ -34,7 +34,8 @@
     "node": ">=0.11.6"
   },
   "scripts": {
-    "test": "node --harmony ./node_modules/.bin/gulp test"
+    "test": "node --harmony ./node_modules/.bin/gulp test",
+    "bundle": "node ./node_modules/.bin/gulp bundle"
   },
   "main": "./src/csp.js",
   "files": [

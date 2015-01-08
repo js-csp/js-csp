@@ -33,6 +33,8 @@ gulp.task("bundle:node", function() {
     .pipe(gulp.dest("./build/"));
 });
 
+gulp.task("bundle", ["bundle:node", "bundle:browser"]);
+
 // TODO: Test bundles
 gulp.task("test", function() {
   return gulp.src("test/*.js", {read: false})
