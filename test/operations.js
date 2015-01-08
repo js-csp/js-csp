@@ -301,10 +301,26 @@ describe("Operations", function() {
   });
 
   describe("mix", function() {
+    var in1;
+    var in2;
+    var out;
+    var take_out;
+    var mixer;
+
+    // Common data for `mix` tests.
+    beforeEach(function*() {
+      in1 = ops.fromColl([1, 2, 3]);
+      in2 = ops.fromColl([4, 5, 6]);
+      out = chan();
+      take_out = chan();
+
+      mixer = ops.mix(out);
+    });
+
     it("should work", function*() {
-      var out = chan();
-      var m = ops.mix(out);
-      var take_out = chan();
+      mixer.admix(in1);
+      mixer.admix(in2);
+
       go(function*() {
         for (var i = 0; i < 6; i++) {
           var value = yield take(out);
@@ -312,11 +328,7 @@ describe("Operations", function() {
         }
         take_out.close();
       });
-      var in1 = ops.fromColl([1, 2, 3]);
-      var in2 = ops.fromColl([4, 5, 6]);
-      ops.mix.add(m, in1);
-      ops.mix.add(m, in2);
-      ops.mix.toggle(m, [[in1, {solo: true}], [in2, {solo: true}]]);
+
       assert.deepEqual(
         [1, 2, 3, 4, 5, 6],
         (yield take(ops.into([], take_out))).sort()
