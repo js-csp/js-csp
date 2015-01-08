@@ -334,6 +334,46 @@ describe("Operations", function() {
         (yield take(ops.into([], take_out))).sort()
       );
     });
+
+    describe("#toggle", function() {
+      it("should solo", function*() {
+        mixer.admix(in1);
+        mixer.admix(in2);
+        mixer.toggle([[in1, {solo: true}]]);
+
+        go(function*() {
+          for (var i = 0; i < 3; i++) {
+            var value = yield take(out);
+            yield put(take_out, value);
+          }
+          take_out.close();
+        });
+
+        assert.deepEqual(
+          [1, 2, 3],
+          (yield take(ops.into([], take_out))).sort()
+        );
+      });
+
+      it("should mute", function*() {
+        mixer.admix(in1);
+        mixer.admix(in2);
+        mixer.toggle([[in1, {mute: true}]]);
+
+        go(function*() {
+          for (var i = 0; i < 3; i++) {
+            var value = yield take(out);
+            yield put(take_out, value);
+          }
+          take_out.close();
+        });
+
+        assert.deepEqual(
+          [4, 5, 6],
+          (yield take(ops.into([], take_out))).sort()
+        );
+      });
+    });
   });
 
   describe("pub-sub", function() {
