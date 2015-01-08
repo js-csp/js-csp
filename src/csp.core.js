@@ -21,6 +21,8 @@ function spawn(gen, creator) {
 };
 
 function go(f, args) {
+  args = args || [];
+
   var gen = f.apply(null, args);
   return spawn(gen, f);
 };
