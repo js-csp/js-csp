@@ -28,6 +28,12 @@ Returns a channel that contains the values obtained by applying `f` to each roun
 ### `merge(chs, bufferOrN?)` ###
 Returns a channel that contains values from all the source channels `chs`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when all the source channels have closed.
 
+### `pipeline(to, xf, from, close?, exHandler?)` ###
+Moves values from channel `from` to channel `to`, transforming them with the transducer `xf`. If `close?` is `true`, the `to` channel is closed when the `from` channel closes. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the `to` channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used.
+
+### `pipelineAsync(n, to, af, from, close?)` ###
+Moves values from channel `from` to channel `to`, using the asynchronous operation `af(value, channel)`. `af` should put a return value into the provided channel when done, and close it. At most `n` operations will be run at a time.
+
 ## Transforming ##
 
 These operations are deprecated. Use transducers instead.
