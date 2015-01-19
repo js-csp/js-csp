@@ -102,13 +102,13 @@ describe('pipeline-test-sizes', function() {
 describe('test-close', function() {
   it('should work', function*() {
     var cout = csp.chan(1);
-    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), true);
+    pipeline(cout, t.map(identity), csp.operations.fromColl([1]));
 
     assert.equal(1, yield csp.take(cout));
     assert.equal(csp.CLOSED, yield csp.take(cout));
 
     cout = csp.chan(1);
-    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), false);
+    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), true);
 
     assert.equal(1, yield csp.take(cout));
     yield csp.put(cout, 'more');
@@ -116,7 +116,7 @@ describe('test-close', function() {
     assert.equal('more', yield csp.take(cout));
 
     cout = csp.chan(1);
-    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), null);
+    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), true);
 
     assert.equal(1, yield csp.take(cout));
     yield csp.put(cout, 'more');

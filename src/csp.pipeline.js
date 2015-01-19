@@ -6,7 +6,6 @@ function pipelineInternal(n, to, from, close, taskFn) {
   if (n <= 0) {
     throw new Error('n must be positive');
   }
-  close = close === undefined ? true : close;
 
   var jobs = csp.chan(n);
   var results = csp.chan(n);
@@ -64,7 +63,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
   return to;
 }
 
-function pipeline(to, xf, from, close, exHandler) {
+function pipeline(to, xf, from, keepOpen, exHandler) {
 
   function taskFn(job) {
     if (job === csp.CLOSED) {
@@ -85,10 +84,10 @@ function pipeline(to, xf, from, close, exHandler) {
     }
   }
 
-  return pipelineInternal(1, to, from, close, taskFn);
+  return pipelineInternal(1, to, from, !keepOpen, taskFn);
 }
 
-function pipelineAsync(n, to, af, from, close) {
+function pipelineAsync(n, to, af, from, keepOpen) {
 
   function taskFn(job) {
     if (job === csp.CLOSED) {
@@ -103,7 +102,7 @@ function pipelineAsync(n, to, af, from, close) {
     }
   }
 
-  return pipelineInternal(n, to, from, close, taskFn);
+  return pipelineInternal(n, to, from, !keepOpen, taskFn);
 }
 
 module.exports = {
