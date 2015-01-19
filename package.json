@@ -1,6 +1,6 @@
 {
   "name": "js-csp",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
   "keywords": [
     "csp", "async", "concurrency", "channel",
