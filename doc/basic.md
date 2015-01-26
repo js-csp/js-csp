@@ -43,7 +43,7 @@ var ch = csp.go(function*(x) {
   return x;
 }, [42]);
 // Will "block" for 1 second then print 42;
-console.log((yield csp.take(chan)));
+console.log((yield csp.take(ch)));
 ```
 
 `yield go` would start the goroutine "immediately" while `go` would not start it until the next `yield`, or `return`.
@@ -59,7 +59,7 @@ function* id(x) {
 }
 var ch = csp.spawn(id(42));
 // Will "block" for 1 second then print 42;
-console.log((yield csp.take(chan)));
+console.log((yield csp.take(ch)));
 ```
 
 ## Channel operations ##
