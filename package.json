@@ -20,7 +20,12 @@
     "email": "ubolonton@gmail.com",
     "url": "https://github.com/ubolonton/js-csp/issues"
   },
-  "dependencies": {},
+  "dependencies": {
+    "babelify": "^5.0.3"
+  },
+  "browserify": {
+    "transform": ["babelify"]
+  },
   "devDependencies": {
     "browserify": "^6.0.2",
     "chai": "~1.9.0",
