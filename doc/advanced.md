@@ -1,18 +1,97 @@
-These functions are exposed through `csp.operations`.
+These functions are exposed through the `csp.operations` namespace.
 
 ## Conversion ##
+
+`js-csp` offers several convenience functions for working with channels and collections. Here they are:
 
 ### `onto(ch, coll, keepOpen?)` ###
 Puts values from the supplied array `coll` into the channel `ch`, closing it when done, unless `keepOpen` is `true`.
 
+```javascript
+var ch = csp.chan(),
+    coll = [0, 1, 2];
+
+// Notice that we're keeping the channel open
+csp.operations.onto(ch, coll, true);
+
+go(function*(){
+    var value = yield ch;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        console.log("Waiting for a value");
+        value = yield ch;
+    }
+    console.log("Channel closed!");
+});
+//=> "Got 0"
+//=> "Waiting for a value"
+//=> "Got 1"
+//=> "Waiting for a value"
+//=> "Got 2"
+//=> "Waiting for a value"
+```
+
 ### `fromColl(coll)` ###
 Returns a channel that contains the values from the supplied array `coll`. It is closed after the last value is delivered.
+
+```javascript
+var coll = [0, 1, 2],
+    ch = csp.operations.fromColl(coll);
+
+go(function*(){
+    var value = yield ch;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        console.log("Waiting for a value");
+        value = yield ch;
+    }
+    console.log("Channel closed!");
+});
+//=> "Got 0"
+//=> "Waiting for a value"
+//=> "Got 1"
+//=> "Waiting for a value"
+//=> "Got 2"
+//=> "Channel closed!"
+```
 
 ### `reduce(f, init, ch)` ###
 Returns a channel that contains a single value obtained by reducing `f` over all the values from the source channel `ch` with `init` as the starting value. The source channel must close for the new channel to deliver the value, after which it is closed. If the source channel closes without producing a value, `init` is put into the new channel.
 
+```javascript
+var ch = csp.chan(),
+    append = function(a, b) { return a + " " + b; };
+
+var reduceCh = csp.operations.reduce(append, "Hello", ch);
+
+csp.go(function*(){
+    yield csp.put(ch, "CSP");
+    yield csp.put(ch, "World");
+    console.log(yield reduceCh);
+});
+
+ch.close();
+//=> "Hello CSP World"
+```
+
 ### `into(coll, ch)` ###
 Returns a channel that contains a single array of values taken from `ch` appended to values from the supplied array `coll`. The source channel must close for the new channel to deliver the value, after which it is closed. If the source channel closes without producing a value, a copy of `coll` is put into the new channel.
+
+```javascript
+var ch = csp.chan(),
+    baseColl = [0, 1, 2];
+
+var intoCh = csp.operations.into(baseColl, ch);
+
+csp.go(function*(){
+    yield csp.put(ch, 3);
+    yield csp.put(ch, 4);
+    console.log(yield intoCh);
+});
+
+ch.close();
+//=> [0, 1, 2, 3, 4]
+```
 
 ## Flow Control ##
 
