@@ -225,7 +225,6 @@ var toCh = csp.chan(),
 
 function waitAndPut(value, ch) {
     setTimeout(function(){
-        console.log("PUTTING ", value);
         csp.putAsync(ch, value);
         ch.close();
     },
