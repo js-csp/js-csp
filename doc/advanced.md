@@ -251,6 +251,135 @@ csp.putAsync(fromCh, 1000);
 //=> "Got 3000"
 ```
 
+## High-level abstractions ##
+
+Channels and processes are a great substrate for async computation. However, `js-csp` offers several higher-level abstractions on top of them.
+
+### Mult ###
+
+When we have a channel whose values have to be broadcasted to many others, we can use `mult(ch)` for creating a mult(iple) of the supplied channel.
+Once we have the mult, we can attach channels to it using `mult.tap(m, ch, keepOpen?)` and detach them using `mult.untap(m, ch)`. Mults also support removing
+all tapped channels with `mult.untapAll(m)`.
+
+Every item put in the source channel is distributed to all taps, and all of them must accept it before the next item is distributed. For preventing slow
+takers from holding the mult, buffering should be used judiciously.
+
+Closed tapped channels are removed automatically from the mult.
+
+```javascript
+var sourceCh = csp.chan(),
+    mult = csp.operations.mult(sourceCh);
+
+// Let's create a couple of channels to tap to `mult`, notice that puts to `anotherCh` will "block" if there aren't any takers
+// because of it not being buffered
+var aCh = csp.chan(),
+    anotherCh = csp.chan(0);
+
+csp.go(function*(){
+    var value = yield aCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value, " in `aCh`");
+        value = yield aCh;
+    }
+});
+csp.go(function*(){
+    var value = yield anotherCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value, " in `anotherCh`");
+        console.log("Resting for 3 seconds");
+        yield csp.timeout(3000);
+        value = yield anotherCh;
+    }
+});
+
+// From this point on, values put into `sourceCh` will be broadcasted to `aCh` and `anotherCh`
+csp.operations.mult.tap(mult, aCh);
+csp.operations.mult.tap(mult, anotherCh);
+
+// Notice how values are only delivered when all the takers can receive them
+csp.putAsync(sourceCh, 1);
+csp.putAsync(sourceCh, 2);
+//=> "Got 1 in `aCh`"
+//=> "Got 1 in `anotherCh`"
+//=> "Resting for 3 seconds"
+//=> "Got 2 in `aCh`"
+//=> "Got 2 in `anotherCh`"
+//=> "Resting for 3 seconds"
+```
+
+### Pub-sub ###
+
+One could easily build a pub-sub abstraction on top of mults and taps but `js-csp` already implements it since it's a widely
+used communication mechanism. Instead of creating a mult from a source channel, we create a pub(lication) with `pub(ch, topicFn, bufferFn)`.
+The `topicFn` will be used to extract the "topic" of the values that are put in the source channel, and other channels can subscribe to
+the topics they are interested in with `pub.sub(p, topic, ch, keepOpen?)`.
+
+`pub.unsub(p, topic, ch)` allows us to unsubscribe channels from the given topic and `pub.unsubAll(p, topic)` to unsubscribes all channels from
+the given topic.
+
+```javascript
+var sourceCh = csp.chan(),
+    extractTopic = function(v) { return v.action; },
+    publication = csp.operations.pub(sourceCh, extractTopic);
+
+var ACTIONS = {
+    INC: "increment",
+    DOUBLE: "double"
+}
+
+// This channel will be used for logging published values
+var logCh = csp.chan();
+
+csp.operations.pub.sub(publication, ACTIONS.INC, logCh);
+csp.operations.pub.sub(publication, ACTIONS.DOUBLE, logCh);
+
+csp.go(function*(){
+    var value = yield logCh;
+    while (value !== csp.CLOSED) {
+        console.log("LOG: ", value);
+        value = yield logCh;
+    }
+});
+
+
+// This channel will receive the "increment" values
+var incCh = csp.chan();
+
+csp.operations.pub.sub(publication, ACTIONS.INC, incCh);
+
+csp.go(function*(){
+    var value = yield incCh;
+    while (value !== csp.CLOSED) {
+        console.log("INCREMENT: ", value.payload + 1);
+        value = yield incCh;
+    }
+});
+
+// This channel will receive the "double" values
+var doubleCh = csp.chan();
+
+csp.operations.pub.sub(publication, ACTIONS.DOUBLE, doubleCh);
+
+csp.go(function*(){
+    var value = yield doubleCh;
+    while (value !== csp.CLOSED) {
+        console.log("DOUBLE: ", value.payload * 2);
+        value = yield doubleCh;
+    }
+});
+
+// Notice how different channels receive only the values they are interested in
+csp.putAsync(sourceCh, { action: ACTIONS.INC, payload: 41 });
+//=> "LOG: { action: 'increment', payload: 41 }"
+//=> "INC: 42""
+csp.putAsync(sourceCh, { action: ACTIONS.DOUBLE, payload: 21 });
+//=> "LOG: { action: 'double', payload: 21 }"
+//=> "DOUBLE: 42""
+```
+
+### Mix ###
+
+
 ## Transforming ##
 
 These operations are deprecated. Use transducers instead.
