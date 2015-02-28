@@ -379,6 +379,101 @@ csp.putAsync(sourceCh, { action: ACTIONS.DOUBLE, payload: 21 });
 
 ### Mix ###
 
+As we learned, we can use the `merge` operation for piping the values put in multiple channels into a merged channel. This is great but there are situations in which
+we want to combine multiple channels into one with a fine-grained control over input channels. `js-csp` gives us the mix(er) abstraction, which allows us to control
+input channel's behaviour with respect to the output channel.
+
+We can create a mix(er) given the output channel with `mix(ch)`. Once we have a mixer we can add input channels into the mix using `mix.add(m, ch)`, remove them with `mix.remove(m, ch)`
+and remove every input channel with `mix.removeAll(m)`.
+
+The interesting part of the mixer is that we can mute, pause and listen exclusively to certain input channels:
+
+- Muting an input channel means that values will still be taken from it but they will not be forwarded to the output channel,
+  thus being discarded.
+- Pausing an input channel means that no values will be taken from it.
+- Soloing one or more input channels will cause the output channel to only receive the values from those channels. We can also
+  control the non-soloed channel behaviour with `mix.setSoloMode(m, mode)`, where `mode` can be either `mix.MUTE` or `mix.PAUSE`.
+  By default, non-soloed channels are muted.
+
+The states of the channels is controlled using `mix.toogle(m, updateStateList)`, where `updateStateList` is a list of [channel, state]
+pairs.
+
+```javascript
+var outCh = csp.chan(),
+    mix = csp.operations.mix(outCh);
+
+var inChan1 = csp.chan(),
+    inChan2 = csp.chan(),
+    inChan3 = csp.chan();
+
+csp.operations.mix.add(mix, inChan1);
+csp.operations.mix.add(mix, inChan2);
+csp.operations.mix.add(mix, inChan3);
+
+// Let's listen to values that `outCh` receives
+csp.go(function*(){
+    var value = yield outCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        value = yield outCh;
+    }
+});
+
+// By default, every value put in the input channels will come out in `outCh`
+csp.putAsync(inChan1, 1);
+//=> "Got 1"
+csp.putAsync(inChan2, 2);
+//=> "Got 2"
+csp.putAsync(inChan3, 3);
+//=> "Got 3"
+
+// Let's pause `inChan2` and see what happens
+csp.operations.mix.toggle(mix, [[inChan2, { pause: true }]]);
+
+csp.putAsync(inChan1, 1);
+//=> "Got 1"
+csp.putAsync(inChan2, 2); // `outCh` won't receive this value (yet)
+csp.putAsync(inChan3, 3);
+//=> "Got 3"
+
+csp.operations.mix.toggle(mix, [[inChan2, { pause: false }]]);
+//=> "Got 2"
+
+// Let's see how muting `inChan2` discards the values put into it
+csp.operations.mix.toggle(mix, [[inChan2, { mute: true }]]);
+
+csp.putAsync(inChan1, 1);
+//=> "Got 1"
+csp.putAsync(inChan2, 2); // `outCh` will never receive this value
+csp.putAsync(inChan3, 3);
+//=> "Got 3"
+
+csp.operations.mix.toggle(mix, [[inChan2, { mute: false }]]);
+
+// Let's see how solo-ing channels implies (by default) muting the rest
+csp.operations.mix.toggle(mix, [[inChan1, { solo: true }], [inChan2, { solo: true }]]);
+
+csp.putAsync(inChan1, 1);
+//=> "Got 1"
+csp.putAsync(inChan2, 2);
+//=> "Got 2"
+csp.putAsync(inChan3, 3); // `outCh` will never receive this value
+
+csp.operations.mix.toggle(mix, [[inChan1, { solo: false }], [inChan2, { solo: false }]]);
+
+// Let's see how we can configure the state of non-soloed channels to pause instead of mute
+csp.operations.mix.setSoloMode(mix, csp.operations.mix.PAUSE);
+csp.operations.mix.toggle(mix, [[inChan1, { solo: true }]]);
+
+csp.putAsync(inChan1, 1);
+//=> "Got 1"
+csp.putAsync(inChan2, 2); // `outCh` won't receive this value (yet)
+csp.putAsync(inChan3, 3); // `outCh` won't receive this value (yet)
+
+csp.operations.mix.toggle(mix, [[inChan1, { solo: false }]]);
+//=> "Got 2"
+//=> "Got 3"
+```
 
 ## Transforming ##
 
