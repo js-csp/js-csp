@@ -477,7 +477,11 @@ csp.operations.mix.toggle(mix, [[inChan1, { solo: false }]]);
 
 ## Transforming ##
 
-These operations are deprecated. Use transducers instead.
+These operations are deprecated. Use [transducers](https://github.com/jlongster/transducers.js) instead, they are context-independent and don't incur the overhead of
+creating intermediary channels for every transformation.
+
+### `map(f, chs, bufferOrN?)` ###
+Returns a channel that contains the values obtained by applying `f` to each round of values taken from the source channels `chs`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when any of the source channels closes.
 
 ### `mapFrom(f, ch)` ###
 Returns a channel that contains values produced by applying `f` to each value taken from the source channel `ch`.
