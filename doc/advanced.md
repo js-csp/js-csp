@@ -98,20 +98,158 @@ ch.close();
 ### `pipe(in, out, keepOpen?)` ###
 Supplies the target channel `out` with values taken from the source channel `in`. The target channel is closed when the source channel closes, unless `keepOpen` is `true`. Returns the target channel.
 
+```javascript
+var inCh = csp.chan(),
+    outCh = csp.chan();
+
+// Notice that we're keeping `outCh` open after `inCh` is closed
+csp.operations.pipe(inCh, outCh, true);
+
+csp.go(function*(){
+    var value = yield outCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        console.log("Waiting for a value");
+        value = yield outCh;
+    }
+    console.log("Channel closed!");
+});
+
+csp.putAsync(inCh, 0);
+//=> "Got 0"
+//=> "Waiting for a value"
+csp.putAsync(inCh, 1);
+//=> "Got 1"
+//=> "Waiting for a value"
+inCh.close();
+```
+
 ### `split(p, ch, trueBufferOrN?, falseBufferOrN?)` ###
 Returns an array of 2 channel. The first contains value from the source channel `ch` that satisfy the predicate `p`. The second contains the other values. The new channels are unbuffered, unless `trueBufferOrN`/`falseBufferOrN` are specified, Both channels are closed when the source channel closes.
 
-### `map(f, chs, bufferOrN?)` ###
-Returns a channel that contains the values obtained by applying `f` to each round of values taken from the source channels `chs`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when any of the source channels closes.
+```javascript
+var isEven = function(x) { return x % 2 === 0; },
+    ch = csp.chan();
+
+var chans = csp.operations.split(isEven, ch),
+    evenChan = chans[0],
+    oddChan = chans[1];
+
+csp.go(function*(){
+    var value = yield evenChan;
+    while (value !== csp.CLOSED) {
+        console.log("Even! ", value);
+        value = yield evenChan;
+    };
+});
+csp.go(function*(){
+    var value = yield oddChan;
+    while (value !== csp.CLOSED) {
+        console.log("Odd! ", value);
+        value = yield oddChan;
+    };
+});
+
+csp.operations.onto(ch, [1, 2, 3, 4]);
+//=> "Odd! 1"
+//=> "Even! 2"
+//=> "Odd! 3"
+//=> "Even! 4"
+```
 
 ### `merge(chs, bufferOrN?)` ###
 Returns a channel that contains values from all the source channels `chs`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when all the source channels have closed.
 
+```javascript
+var aCh = csp.chan(),
+    anotherCh = csp.chan(),
+    mergedCh = csp.operations.merge([aCh, anotherCh]);
+
+csp.go(function*(){
+    var value = yield mergedCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        value = yield mergedCh;
+    };
+});
+
+csp.putAsync(aCh, 0);
+//=> "Got 0"
+csp.putAsync(anotherCh, 1);
+//=> "Got 1"
+csp.putAsync(aCh, 2);
+//=> "Got 2"
+csp.putAsync(anotherCh, 3);
+//=> "Got 3"
+```
+
 ### `pipeline(to, xf, from, keepOpen?, exHandler?)` ###
 Moves values from channel `from` to channel `to`, transforming them with the transducer `xf`. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the `to` channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used. If `keepOpen?` is falsey, the `to` channel is closed when the `from` channel closes.
 
+```javascript
+var xducers = require("transducers.js");
+
+var fromCh = csp.chan(),
+    toCh = csp.chan(),
+    double = function(x) { return x * 2; }
+    xform = xducers.map(double);
+
+// Notice that we're keeping `toCh` open after `fromCh` is closed
+csp.operations.pipeline(toCh, xform, fromCh, true);
+
+csp.go(function*(){
+    var value = yield toCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        console.log("Waiting for a value");
+        value = yield toCh;
+    }
+    console.log("Channel closed!");
+});
+
+csp.putAsync(fromCh, 1);
+//=> "Got 2"
+//=> "Waiting for a value"
+csp.putAsync(fromCh, 2);
+//=> "Got 4"
+//=> "Waiting for a value"
+```
+
 ### `pipelineAsync(n, to, af, from, keepOpen?)` ###
 Moves values from channel `from` to channel `to`, using the asynchronous operation `af(value, channel)`. `af` should put a return value into the provided channel when done, and close it. At most `n` operations will be run at a time. If `keepOpen?` is falsey, the `to` channel is closed when the `from` channel closes.
+
+
+```javascript
+var toCh = csp.chan(),
+    fromCh = csp.chan();
+
+function waitAndPut(value, ch) {
+    setTimeout(function(){
+        console.log("PUTTING ", value);
+        csp.putAsync(ch, value);
+        ch.close();
+    },
+    value);
+};
+
+// Notice that we're keeping `toCh` open after `fromCh` is closed
+csp.operations.pipelineAsync(3, toCh, waitAndPut, fromCh, true);
+
+csp.go(function*(){
+    var value = yield toCh;
+    while (value !== csp.CLOSED) {
+        console.log("Got ", value);
+        value = yield toCh;
+    };
+});
+
+csp.putAsync(fromCh, 3000);
+csp.putAsync(fromCh, 2000);
+csp.putAsync(fromCh, 1000);
+//=> "Got 1000"
+//=> "Got 2000"
+//=> "Got 3000"
+```
 
 ## Transforming ##
 

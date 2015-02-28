@@ -82,10 +82,10 @@ csp.takeAsync(ch); // will "block"
 
 If a [transducer](https://github.com/jlongster/transducers.js) is specified, the channel must be buffered. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used.
 ```javascript
-var xducers = require("transducers-js");
+var xducers = require("transducers.js");
 
 // transducers execute from left to right when composed
-var xform = xducers.comp(
+var xform = xducers.compose(
           xducers.filter((v) => v !== 42),
           xducers.map((v) => v + 1)
     ),
