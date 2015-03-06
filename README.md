@@ -62,12 +62,13 @@ node --v8-options | grep harmony
 #### Chrome >= 28 ####
 Turn on an experimental flag. Look for "Enable Experimental JavaScript" at [chrome://flags](chrome://flags).
 
-#### Other ####
+#### Transpilation ####
 
 Use one of the js-to-js compilers:
-- [Facebook Regenerator](http://facebook.github.io/regenerator/).
+- [Facebook Regenerator](http://facebook.github.io/regenerator/)
 - [Google Closure Compiler](https://developers.google.com/closure/compiler/) with `--language_in ECMASCRIPT6 --language_out ECMASCRIPT3` flags.
 - [Google Traceur](https://github.com/google/traceur-compiler).
+- [Babel](babeljs.io).
 
 Or, if you use Python's Twisted:
 https://github.com/ubolonton/twisted-csp
@@ -84,6 +85,15 @@ npm install js-csp
 ```bash
 bower install js-csp
 ```
+
+## Using transforms with Browserify ##
+
+When using a transform with Browserify, it doesn't apply to the dependencies in the `node_modules` folder. In case you are using js-csp in an environment without ES6 generators, you would need to use one of the transpilers mentioned above to transpile the code.
+
+Since js-csp doesn't make any assumtion about the environment, there is no particular configuration in the `package.json` file for browserify. You can work around it in one of two ways:
+
+- Apply transforms globally: This will apply a transform to all your dependencies. While and ES6 to ES5 transpiler may work fine on all your dependencies, there might be strange errors. It will also be slow.
+- You can use [Viralify](https://www.npmjs.com/package/viralify). Viralify is a simple command line tool that lets you add transforms to package.json file of particular dependencies. For example, if you wanted to use the Babelify transform for js-csp you could run this command in the root of your project: `$ viralify . -p js-csp -t babelify`
 
 ## TODO ##
 
