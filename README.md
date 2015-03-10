@@ -85,17 +85,14 @@ npm install js-csp
 bower install js-csp
 ```
 
-## TODO ##
+## Contribution ##
 
-- Multiplexing, mixing, publishing/subscribing.
-- Add more documentation and examples.
-- Add conversion functions that "de-IOC" promises and callback-based APIs (e.g. Web Workers).
-- Investigate error handling in goroutines:
-  + Special `yield waitFor` that either returns a value or throws an error from the result channel.
-  + Exception propagation & stack capturing.
-- Explore how deep `yield`s (`yield*`) affect composability.
-- Deadlock detector.
-- Hands-on examples.
+Feel free to open issues for questions/discussions, or create pull requests for improvement.
+
+Some areas that need attention:
+- More documentation, examples, and maybe some visualization. Porting RxJS/Bacon examples may help.
+- Multiplexing, mixing, publishing/subscribing. These need to be tested more. The API could also be improved.
+- Deadlock detection.
 
 ## Inspiration ##
 
