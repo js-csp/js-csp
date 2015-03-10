@@ -13,3 +13,5 @@ Compile first by running
 ```bash
 gulp bundle:browser
 ```
+
+The Firebase example needs a real [Firebase](https://www.firebase.com) url, and works only in Firefox (as it uses Javascript features not yet available in other browsers).

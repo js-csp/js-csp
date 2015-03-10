@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>js-csp and Firebase</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="page-header">
+        <h1>Shared Whiteboard</h1>
+      </div>
+      <div class="pull-left controls-group">
+        <label>Color:</label>
+        <input id="color" value="#df4b26">
+      </div>
+      <button class="pull-right btn btn-primary" id="clear">
+        Clear Canvas
+      </button>
+      <div class="row-fluid">
+        <canvas id="tutorial" width="640" height="480" style="background:gray;">
+
+        </canvas>
+      </div>
+    </div>
+    <script type="text/javascript" src="../../build/csp.bundled.browser.js"></script>
+    <script src="https://cdn.firebase.com/js/client/2.1.1/firebase.js"></script>
+    <script type="text/javascript;version=1.8">
+    /* Put a real Firebase url here */
+    let _ref = new Firebase("");
+
+    let csp = require("csp");
+    let chan = csp.chan,
+        go = csp.go,
+        buffers = csp.buffers,
+        take = csp.take,
+        put = csp.put,
+        alts = csp.alts,
+        putAsync = csp.putAsync;
+
+    function fromEvent(element, eventName) {
+      let ch = chan(buffers.sliding(1));
+      element.addEventListener(eventName, function(event) {
+        putAsync(ch, event);
+      });
+      return ch;
+    }
+
+    function fromFirebase(ref, event) {
+      let ch = chan(8);
+      ref.on(event, function() {
+        putAsync(ch, Array.prototype.slice.apply(arguments));
+      });
+      return ch;
+    }
+
+    function coordinate(event, canvas) {
+      let rect = canvas.getBoundingClientRect();
+      return {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+      }
+    }
+
+    function takeUntil(input, signal, output) {
+      output = output || chan();
+      go(function*() {
+        let r;
+        while (input === (r = yield alts([input, signal])).channel) {
+          yield put(output, r.value);
+        }
+      });
+      return output;
+    }
+
+    let canvas = document.getElementById("tutorial");
+
+    let mouseDowns  = fromEvent(canvas, 'mousedown');
+    let mouseUps    = fromEvent(document, 'mouseup');
+    let mouseMoves  = fromEvent(canvas, 'mousemove');
+
+    go(function*() {
+      let clear = fromEvent(document.getElementById("clear"), "click");
+      while (csp.CLOSED !== (yield clear)) {
+        _ref.remove();
+      }
+    });
+
+    let mouseDrags = chan(8);
+    /* Generating drags */
+    go(function*() {
+      for (;;) {
+        let event = yield mouseDowns;
+        let drag = chan(8);
+        yield put(drag, event);
+        putAsync(mouseDrags, drag);
+        let r;
+        while (mouseMoves === (r = yield alts([mouseMoves, mouseUps])).channel) {
+          event = r.value;
+          yield put(drag, event);
+        }
+        drag.close();
+      }
+    });
+
+    /* Saving to firebase */
+    go(function*() {
+      for (;;) {
+        let drag = yield mouseDrags;
+        go(function*() {
+          let color = document.getElementById("color").value || "blue";
+          let _dragref = _ref.push({color: color});
+          let event;
+          while (csp.CLOSED !== (event = yield drag)) {
+            _dragref.ref().child("points").push(coordinate(event, canvas));
+          }
+        });
+      }
+    });
+
+    /* Drawing stuff coming from firebase */
+    go(function*() {
+      let lines = fromFirebase(_ref, "child_added");
+      let d;
+      while (csp.CLOSED !== (d = yield lines)) {
+        let [lineSnapshot, _] = d;
+        let color = lineSnapshot.child("color").val();
+        let points = fromFirebase(lineSnapshot.child("points").ref(), "child_added");
+        go(function*() {
+          let prevPoint;
+          let ctx = canvas.getContext('2d');
+          ctx.lineWidth = 3;
+          let d;
+          while (csp.CLOSED !== (d = yield points)) {
+            let [pointSnapshot, _] = d;
+            let point = pointSnapshot.val();
+            if (prevPoint) {
+              ctx.beginPath();
+              ctx.strokeStyle = color;
+              ctx.moveTo(prevPoint.x, prevPoint.y);
+              ctx.lineTo(point.x, point.y);
+              ctx.stroke();
+            }
+            prevPoint = point;
+          }
+        });
+      }
+    });
+
+    go(function*() {
+      let removed = fromFirebase(_ref, "child_removed");
+      while (csp.CLOSED !== (yield removed)) {
+        canvas.width = canvas.width;
+      }
+    });
+    </script>
+  </body>
+</html>
