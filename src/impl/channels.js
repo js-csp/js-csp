@@ -75,8 +75,8 @@ Channel.prototype._put = function(value, handler) {
         break;
       }
       if (taker.is_active()) {
-        callback = taker.commit();
         value = this.buf.remove();
+        callback = taker.commit();
         schedule(callback, value);
       }
     }
@@ -161,6 +161,7 @@ Channel.prototype._take = function(handler) {
   // for that).
   while (true) {
     putter = this.puts.pop();
+    value = putter.value;
     if (putter === buffers.EMPTY) {
       break;
     }
@@ -170,7 +171,7 @@ Channel.prototype._take = function(handler) {
       if (callback) {
         schedule(callback, true);
       }
-      return new Box(putter.value);
+      return new Box(value);
     }
   }
 
