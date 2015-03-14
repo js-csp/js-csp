@@ -40,6 +40,10 @@ function chan(bufferOrNumber, xform, exHandler) {
   return channels.chan(buf, xform, exHandler);
 };
 
+function promiseChan(xform, exHandler){
+    return chan(buffers.promise(), xform, exHandler);
+};
+
 
 module.exports = {
   buffers: {
@@ -52,6 +56,7 @@ module.exports = {
   spawn: spawn,
   go: go,
   chan: chan,
+  promiseChan: promiseChan,
   DEFAULT: select.DEFAULT,
   CLOSED: channels.CLOSED,
 
