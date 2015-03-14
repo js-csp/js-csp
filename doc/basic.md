@@ -78,6 +78,28 @@ csp.takeAsync(ch, function(v) { console.log("Got ", v) });
 csp.takeAsync(ch); // will "block"
 ```
 
+### `buffers.promise()` ###
+
+Creates a promise buffer. A promise buffer can take exactly one value that all consumers will receive. Once the
+firt value is put, subsequent puts will succeed but the items will be dropped.
+```javascript
+var ch = csp.chan(csp.buffers.promise());
+
+csp.putAsync(ch, 42);
+csp.putAsync(ch, "Will be discarded");
+
+csp.takeAsync(ch, function(v) { console.log("Got ", v) });
+//=> "Got 42"
+csp.takeAsync(ch, function(v) { console.log("Got ", v) });
+//=> "Got 42"
+csp.takeAsync(ch, function(v) { console.log("Got ", v) });
+//=> "Got 42"
+
+ch.close();
+csp.takeAsync(ch, function(v) { console.log(ch === csp.CLOSED); });
+//=> "true"
+```
+
 ### Transducers
 
 If a [transducer](https://github.com/jlongster/transducers.js) is specified, the channel must be buffered. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used.

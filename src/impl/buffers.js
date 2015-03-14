@@ -14,6 +14,8 @@ function acopy(src, src_start, dst, dst_start, length) {
   }
 }
 
+function noop() {};
+
 var EMPTY = {
   toString: function() {
     return "[object EMPTY]";
@@ -91,6 +93,8 @@ RingBuffer.prototype.cleanup = function(predicate) {
   }
 };
 
+RingBuffer.prototype.close = noop;
+
 var FixedBuffer = function(buf,  n) {
   this.buf = buf;
   this.n = n;
@@ -114,6 +118,7 @@ FixedBuffer.prototype.count = function() {
   return this.buf.length;
 };
 
+FixedBuffer.prototype.close = noop;
 
 var DroppingBuffer = function(buf, n) {
   this.buf = buf;
@@ -138,6 +143,7 @@ DroppingBuffer.prototype.count = function() {
   return this.buf.length;
 };
 
+DroppingBuffer.prototype.close = noop;
 
 var SlidingBuffer = function(buf, n) {
   this.buf = buf;
@@ -163,6 +169,35 @@ SlidingBuffer.prototype.count = function() {
   return this.buf.length;
 };
 
+SlidingBuffer.prototype.close = noop;
+
+var PromiseBuffer = function PromiseBuffer() {
+    this.val = EMPTY;
+};
+
+PromiseBuffer.prototype.count = function() {
+    return (this.val === EMPTY) ? 0 : 1;
+};
+
+PromiseBuffer.prototype.add = function(item) {
+    if (this.val === EMPTY) {
+        this.val = item;
+    }
+};
+
+PromiseBuffer.prototype.is_full = function() {
+    return false;
+};
+
+PromiseBuffer.prototype.remove = function() {
+    if (this.val !== EMPTY) {
+        return this.val;
+    }
+};
+
+PromiseBuffer.prototype.close = function() {
+    this.val = EMPTY;
+};
 
 var ring = exports.ring = function ring_buffer(n) {
   return new RingBuffer(0, 0, 0, new Array(n));
@@ -186,6 +221,10 @@ exports.dropping = function dropping_buffer(n) {
 
 exports.sliding = function sliding_buffer(n) {
   return new SlidingBuffer(ring(n), n);
+};
+
+exports.promise = function promise_buffer() {
+  return new PromiseBuffer();
 };
 
 exports.EMPTY = EMPTY;
