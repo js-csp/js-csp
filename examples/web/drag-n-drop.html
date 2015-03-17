@@ -32,20 +32,10 @@
     var csp = require("csp");
     var chan = csp.chan,
         go = csp.go,
-        buffers = csp.buffers,
         put = csp.put,
         alts = csp.alts,
         mult = csp.operations.mult;
-        putAsync = csp.putAsync;
-
-
-    function fromEvent(element, eventName) {
-      var ch = chan(buffers.sliding(1));
-      element.addEventListener(eventName, function(event) {
-        putAsync(ch, event);
-      });
-      return ch;
-    }
+        fromEvent = csp.experiments.fromEvent;
 
     var dragTarget = document.getElementById("dragTarget");
 

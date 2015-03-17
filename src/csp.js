@@ -8,4 +8,6 @@ csp.operations = operations;
 csp.operations.pipeline = pipeline.pipeline;
 csp.operations.pipelineAsync = pipeline.pipelineAsync;
 
+csp.experiments = require("./csp.experiments");
+
 module.exports = csp;

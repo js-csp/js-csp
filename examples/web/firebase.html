@@ -35,19 +35,10 @@
     let csp = require("csp");
     let chan = csp.chan,
         go = csp.go,
-        buffers = csp.buffers,
-        take = csp.take,
         put = csp.put,
         alts = csp.alts,
+        fromEvent = csp.experiments.fromEvent;
         putAsync = csp.putAsync;
-
-    function fromEvent(element, eventName) {
-      let ch = chan(buffers.sliding(1));
-      element.addEventListener(eventName, function(event) {
-        putAsync(ch, event);
-      });
-      return ch;
-    }
 
     function fromFirebase(ref, event) {
       let ch = chan(8);
