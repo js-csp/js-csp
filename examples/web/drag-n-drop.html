@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <title>js-csp</title>
+    <script type="text/javascript" src="../../build/csp.bundled.browser.js"></script>
+  </head>
+  <body>
+    <style>
+      #dragTarget {
+        width: 200px;
+        height: 200px;
+        background-image: url('./U Meo.JPG');
+        background-size: cover;
+        position: absolute;
+        cursor: move;
+        font-weight: bold;
+      }
+    </style>
+    <div id="dragTarget">Drag Me!</div>
+    <div class="container">
+      <div class="page-header">
+        <h1>js-csp Drag and Drop Example</h1>
+        <p class="lead">Example to show coordinating events to perform drag and drop</p>
+      </div>
+    </div>
+    <script type="text/javascript">
+    var csp = require("csp");
+    var chan = csp.chan,
+        go = csp.go,
+        buffers = csp.buffers,
+        put = csp.put,
+        alts = csp.alts,
+        mult = csp.operations.mult;
+        putAsync = csp.putAsync;
+
+
+    function fromEvent(element, eventName) {
+      var ch = chan(buffers.sliding(1));
+      element.addEventListener(eventName, function(event) {
+        putAsync(ch, event);
+      });
+      return ch;
+    }
+
+    var dragTarget = document.getElementById("dragTarget");
+
+    var mouseDownsMult = mult(fromEvent(dragTarget, "mousedown"));
+    var mouseMoves = fromEvent(document, "mousemove");
+    var mouseUps = fromEvent(dragTarget, "mouseup");
+
+    var mouseDrags = chan();
+    go(function*() {
+      while (true) {
+        /* Wait for a mouse-down to start a drag */
+        /* XXX: This is awkward. Make buffers.sliding(0) work instead, then use it with fromEvent */
+        var mouseDowns = mult.tap(mouseDownsMult, chan());
+        var event = yield mouseDowns;
+        mult.untap(mouseDownsMult, mouseDowns);
+        /* Initial position and offsets */
+        var rect = dragTarget.getBoundingClientRect();
+        var left = rect.left, top = rect.top;
+        var startX = event.clientX,
+            startY = event.clientY;
+        /* Generate offsets until a mouse-up */
+        var r;
+        while (mouseMoves === (r = yield alts([mouseMoves, mouseUps])).channel) {
+          event = r.value;
+          event.preventDefault();
+          yield put(mouseDrags, {
+            x: event.clientX - startX + left,
+            y: event.clientY - startY + top
+          });
+        }
+      }
+    });
+
+    go(function*() {
+      while (true) {
+        var coord = yield mouseDrags;
+        dragTarget.style.left = coord.x + "px";
+        dragTarget.style.top = coord.y + "px";
+      }
+    });
+    </script>
+  </body>
+</html>
