@@ -3,12 +3,21 @@
     <meta charset="UTF-8"></meta>
     <title>Events</title>
     <script type="text/javascript" src="../../build/csp.bundled.browser.js"></script>
+    <style>
+      #field {
+        background-color: #DDD;
+        width: 50%;
+        height: 50%;
+      }
+    </style>
   </head>
   <body>
-    <div id="display">
+    Mouse coordinates (if it's moving): <span id="display"></span>
+    <div id="field">
     </div>
     <script type="text/javascript">
-    var csp = require("csp");
+    var csp = require("csp"),
+        fromEvent = csp.experiments.fromEvent;
 
     var el = document.getElementById("display");
     function show(text) {
@@ -16,32 +25,22 @@
       console.log(text);
     }
 
-    function noOp() {};
-
-    function firehose(element, eventName) {
-      var ch = csp.chan(csp.buffers.dropping(1));
-      element.addEventListener(eventName, function(event) {
-        csp.putAsync(ch, event, noOp);
-      });
-      return ch;
-    }
-
-    var moves = firehose(document.body, "mousemove");
+    var moves = fromEvent(document.getElementById("field"), "mousemove");
 
     csp.go(function*() {
-      for (;;) {
+      while (true) {
         var event = yield csp.take(moves);
-        show(event.x + ":" + event.y);
+        show(event.clientX + ":" + event.clientY);
 
-        for (;;) {
+        while (true) {
           var result = yield csp.alts([moves, csp.timeout(50)]);
           var value = result.value;
           if (value === csp.CLOSED) {
-            show("STOP");
+            show("");
             break;
           }
           event = value;
-          show(event.x + ":" + event.y);
+          show(event.clientX + ":" + event.clientY);
         }
       }
     });
