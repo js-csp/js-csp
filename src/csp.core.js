@@ -40,17 +40,23 @@ function chan(bufferOrNumber, xform, exHandler) {
   return channels.chan(buf, xform, exHandler);
 };
 
+function promiseChan(xform, exHandler){
+    return chan(buffers.promise(), xform, exHandler);
+};
+
 
 module.exports = {
   buffers: {
     fixed: buffers.fixed,
     dropping: buffers.dropping,
-    sliding: buffers.sliding
+    sliding: buffers.sliding,
+    promise: buffers.promise
   },
 
   spawn: spawn,
   go: go,
   chan: chan,
+  promiseChan: promiseChan,
   DEFAULT: select.DEFAULT,
   CLOSED: channels.CLOSED,
 
