@@ -24,7 +24,6 @@
     var $display = $("#display");
     function show(text) {
       $display.text(text);
-      console.log(text);
     }
 
     var $input = $("#query");
@@ -34,9 +33,7 @@
 
     function request(term) {
       var url = "http://en.wikipedia.org/w/api.php?action=opensearch&format=json&search=" + term + "&callback=gotData";
-      /* $("script#request").remove(); */
       $("<script>").attr({
-        /* id: "request", */
         type: "text/javascript",
         src: url
       }).appendTo("body");
@@ -51,7 +48,6 @@
     }
 
     function gotData(data) {
-      // console.log(data);
       csp.putAsync(result, data, noOp);
     }
 
@@ -64,7 +60,6 @@
       for (;;) {
         var event = yield csp.take(keydowns);
         count ++;
-        console.log(count);
         yield csp.put(input, query());
       }
     });
@@ -82,7 +77,6 @@
         });
       }
     });
-
     </script>
   </body>
 </html>
