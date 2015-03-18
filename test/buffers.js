@@ -96,6 +96,7 @@ describe("Promise buffer", function() {
   it("should work", function() {
     var b = buffers.promise();
     assert.equal(b.count(), 0, "new buffer is empty");
+    assert.equal(b.remove(), buffers.EMPTY, "popping empty buffer gives EMPTY");
 
     b.add("1");
     assert.equal(b.count(), 1);
@@ -117,6 +118,6 @@ describe("Promise buffer", function() {
     assert.equal(b.count(), 1);
 
     b.close();
-    assert.equal(b.remove(), null, "promise buffer returns null after closing it");
+    assert.equal(b.remove(), buffers.EMPTY, "promise buffer returns EMPTY after closing it");
   });
 });

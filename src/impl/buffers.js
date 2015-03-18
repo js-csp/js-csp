@@ -172,31 +172,29 @@ SlidingBuffer.prototype.count = function() {
 SlidingBuffer.prototype.close = noop;
 
 var PromiseBuffer = function PromiseBuffer() {
-    this.val = EMPTY;
+  this.val = EMPTY;
 };
 
 PromiseBuffer.prototype.count = function() {
-    return (this.val === EMPTY) ? 0 : 1;
+  return (this.val === EMPTY) ? 0 : 1;
 };
 
 PromiseBuffer.prototype.add = function(item) {
-    if (this.val === EMPTY) {
-        this.val = item;
-    }
+  if (this.val === EMPTY) {
+    this.val = item;
+  }
 };
 
 PromiseBuffer.prototype.is_full = function() {
-    return false;
+  return false;
 };
 
 PromiseBuffer.prototype.remove = function() {
-    if (this.val !== EMPTY) {
-        return this.val;
-    }
+  return this.val;
 };
 
 PromiseBuffer.prototype.close = function() {
-    this.val = EMPTY;
+  this.val = EMPTY;
 };
 
 var ring = exports.ring = function ring_buffer(n) {
