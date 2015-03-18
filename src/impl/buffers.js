@@ -93,8 +93,6 @@ RingBuffer.prototype.cleanup = function(predicate) {
   }
 };
 
-RingBuffer.prototype.close = noop;
-
 var FixedBuffer = function(buf,  n) {
   this.buf = buf;
   this.n = n;
