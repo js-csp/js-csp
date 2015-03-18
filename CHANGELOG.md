@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.3.4
+- ADDED: Single-write multi-read behavior is now supported via promise buffers and promise channels.
+
 ## 0.3.3
 - ADDED: Pipelining functions `pipeline` and `pipelineAsync`.
 - FIXED: `mix` now properly handles solos and mutes.
