@@ -476,44 +476,257 @@ csp.operations.mix.toggle(mix, [[inChan1, { solo: false }]]);
 
 ## Transforming ##
 
-These operations are deprecated. Use [transducers](https://github.com/jlongster/transducers.js) instead, they are context-independent and don't incur the overhead of
-creating intermediary channels for every transformation.
+The functions listed in this section are deprecated.
 
-### `map(f, chs, bufferOrN?)` ###
+Use [transducers](https://github.com/jlongster/transducers.js) instead, they are context-independent and don't incur the overhead of
+creating intermediary channels for every transformation. In the examples below, we'll see transudcer counterparts of the deprecated
+functions.
+
+Note that creating channels with transducers requires us to specify either a buffer size or a buffer instance.
+
+### Mapping ###
+
+We can transform the values put into a channel creating it with a mapping transducer. All the values put on the channel will be transformed with the
+mapping function and takers will receive the transformed value.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var inc = function(x) { return x + 1; },
+    ch = csp.chan(1, xducers.map(inc));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 41);
+//=> "Got 42"
+```
+
+#### `map(f, chs, bufferOrN?)` ####
 Returns a channel that contains the values obtained by applying `f` to each round of values taken from the source channels `chs`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when any of the source channels closes.
 
-### `mapFrom(f, ch)` ###
+#### `mapFrom(f, ch)` ####
 Returns a channel that contains values produced by applying `f` to each value taken from the source channel `ch`.
 
-### `mapInto(f, ch)` ###
+#### `mapInto(f, ch)` ####
 Returns a channel that applies `f` to each received value before putting it into the target channel `ch`. When the channel is closed, it closes the target channel.
 
-### `filterFrom(p, ch, bufferOrN?)` ###
+### Filtering ###
+
+We can filter the values put into a channel creating it with a filtering transducer. The values will be put in the channel only if they return `true` when testing them
+with the predicate.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var isEven = function(x) { return x % 2 === 0; },
+    ch = csp.chan(1, xducers.filter(isEven));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 41); // this value will not be put into the channel
+csp.putAsync(ch, 42);
+//=> "Got 42"
+```
+
+#### `filterFrom(p, ch, bufferOrN?)` ####
 Returns a channel that contains values from the source channel `ch` satisfying the predicate `p`. Other values will be discarded. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel is closes.
 
-### `filterInto(p, ch)` ###
+#### `filterInto(p, ch)` ####
 Returns a channel that puts received values satisfying predicate `p` into the target channel `ch`, discarding the rest. When it is closed, it closes the target channel.
 
-### `removeFrom(p, ch, bufferOrN?)` ###
+### Removing ###
+
+Removing is the opposite of filtering, we can remove the values put into a channel creating it with a removing transducer. The values will not be put in the channel if they
+return `true` when testing them with the predicate.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var isEven = function(x) { return x % 2 === 0; },
+    ch = csp.chan(1, xducers.remove(isEven));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 42); // this value will not be put into the channel
+csp.putAsync(ch, 43);
+//=> "Got 43"
+```
+
+#### `removeFrom(p, ch, bufferOrN?)` ####
 Like `filterFrom`, but keeps the the values not satisfying the predicate.
 
-### `removeInto(p, ch)` ###
+#### `removeInto(p, ch)` ####
 Like `filterInt`, but keeps the the values not satisfying the predicate.
 
-### `mapcatFrom(f, ch, bufferOrN?)` ###
+### Flattening ###
+
+Sometimes we have a function that, given a value, returns an array of results. If we want each of the values of the result array to be flattened and
+put in the channel one by one, we can use the mapcatting transducer. mapcat stands for "map and concat".
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var dupe = function(x) { return [x, x]; },
+    ch = csp.chan(1, xducers.mapcat(dupe));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 42);
+//=> "Got 42"
+//=> "Got 42"
+```
+
+#### `mapcatFrom(f, ch, bufferOrN?)` ####
 Returns a channel that contains values from arrays, each of which is obtained by applying `f` to each value the source channel `ch`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes
 
-### `mapcatInto(f, ch, bufferOrN?)` ###
+#### `mapcatInto(f, ch, bufferOrN?)` ####
 Returns a channel that applies `f` to each received value to get an array, then puts each value from that array into the target channel `ch`. The new channel is unbuffered, unless `bufferOrN` is specified. When it is closed, it closes the target channel.
 
-### `take(n, ch, bufferOrN?)` ###
+### Taking ###
+
+If we want to limit the number of values that can be put into a channel we can use a taking transducer. After we have put the amount of values that the taking
+transducer will accept, the channel will be closed.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var ch = csp.chan(1, xducers.take(1));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 42);
+//=> "Got 42"
+
+console.log(ch.closed);
+//=> true
+```
+
+#### `take(n, ch, bufferOrN?)` ####
 Returns a channel that contains at most `n` values from the source channel `ch`. It is closed when `n` values have been delivered, or when the source channel closes. The new channel is unbuffered, unless `bufferOrN` is specified.
 
-### `unique(ch, bufferOrN?)` ###
+### Avoiding consecutive duplicates ###
+
+If we want to avoid consecutive duplicate values in a channel we can use a deduping transducer. If we try to put the same value more than once only the first value will
+be really put in the channel.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var ch = csp.chan(1, xducers.dedupe());
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 42);
+//=> "Got 42"
+
+csp.putAsync(ch, 42);
+csp.putAsync(ch, 42);
+csp.putAsync(ch, 42);
+
+csp.putAsync(ch, 43);
+//=> "Got 43"
+```
+
+#### `unique(ch, bufferOrN?)` ####
 Returns a channel that contains values from the source channel `ch`, dropping consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
 
-### `partition(n, ch, bufferOrN?)` ###
+### Partitioning ###
+
+If we want to partition the values put in a channel in chunks of `n` elements, we can create a channel with a partitioning transducer. The takers will not receive values
+until `n` values have been put into the channel. When `n` values have been put, a taker will receive an array with such elements. If less than `n` values have been put
+and the channel is closed, a pending take will receive an array of the elements put so far.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var ch = csp.chan(1, xducers.partition(2));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 0);
+csp.putAsync(ch, 1);
+//=> "Got [0, 1]"
+
+csp.putAsync(ch, 2);
+ch.close();
+//=> "Got [2]"
+```
+
+If we want to partition sequences of values that return `true` for a certain predicate and those who return `false`, we can create a channel with a `partitionBy` transducer. Whenever the
+values we put into a channel go from returning `true` to `false`, a take will receive the previous values that returned `true` in an array. The same is true when going from `false` to `true`. As with the previous example, if we close the channel a take will receive the elements put so far.
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var isEven = function(x) { return x % 2 === 0; },
+    ch = csp.chan(1, xducers.partitionBy(isEven));
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+// Evens
+csp.putAsync(ch, 2);
+csp.putAsync(ch, 4);
+
+// Odds
+csp.putAsync(ch, 5);
+//=> "Got [2, 4]"
+csp.putAsync(ch, 7);
+
+// Evens again
+csp.putAsync(ch, 8);
+//=> "Got [5, 7]"
+
+ch.close();
+//=> "Got [8]"
+```
+
+#### `partition(n, ch, bufferOrN?)` ####
 Returns a channel that contains values from the source channel `ch` grouped into arrays of size `n`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes. The last array's length is less than `n` if there are not enough values from the source channel.
 
-### `partitionBy(f, ch, bufferOrN?)` ###
+#### `partitionBy(f, ch, bufferOrN?)` ####
 Returns a channel that contains values from the source channel `ch` grouped into arrays of consecutive duplicates. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when the source channel closes.
+
+### Composing transformations ###
+
+Transducers by themselves are very powerful and allow us to transform the values put into a channel in interesting ways. One great property of transducers
+is that they can be composed into another transducer to create more complex transformations. Let's see an example of transducer composition:
+
+```javascript
+var csp = require("js-csp"),
+    xducers = require("transucers.js");
+
+var inc = function(x) { return x + 1; },
+    isEven = function(x) { return x % 2 === 0; },
+    xform = xducers.compose(
+        xducers.map(inc),
+        xducers.filter(isEven),
+        xducers.take(2)
+    ),
+    ch = csp.chan(1, xform);
+
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+csp.takeAsync(ch, function(v) { console.log("Got", v); });
+
+csp.putAsync(ch, 2);
+csp.putAsync(ch, 5);
+//=> "Got 6"
+csp.putAsync(ch, 8);
+csp.putAsync(ch, 11);
+//=> "Got 12"
+
+console.log(ch.closed);
+//=> true
+```
