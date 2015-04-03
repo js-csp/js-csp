@@ -81,7 +81,7 @@ csp.takeAsync(ch); // will "block"
 ### `buffers.promise()` ###
 
 Creates a promise buffer. A promise buffer can take exactly one value that all consumers will receive. Once the
-firt value is put, subsequent puts will succeed but the items will be dropped.
+first value is put, subsequent puts will succeed but the items will be dropped.
 
 For creating channels with promise buffers a `promiseChan(transducer?, exHandler?)` convenience function is provided.
 ```javascript
