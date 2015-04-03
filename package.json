@@ -27,7 +27,7 @@
     "gulp": "^3.8.10",
     "gulp-mocha": "^1.1.1",
     "mocha": "~1.17.1",
-    "transducers.js": "^0.2.3",
+    "transducers.js": "^0.3.0",
     "vinyl-source-stream": "^1.0.0"
   },
   "engines": {
