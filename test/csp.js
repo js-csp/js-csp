@@ -9,6 +9,7 @@ var csp = require("../src/csp"),
     chan = csp.chan,
     promiseChan = csp.promiseChan,
     go = csp.go,
+    goloop = csp.goloop,
     put = csp.put,
     take = csp.take,
     putAsync = csp.putAsync,
@@ -416,6 +417,27 @@ describe("Goroutine", function() {
     }, [CLOSED]);
     var value = yield take(ch);
     assert.equal(value, CLOSED, "CLOSED is delivered");
+    assert.equal(ch.is_closed(), true, "output channel is closed");
+  });
+});
+
+describe("Goloop", function() {
+  var iterations = 1000;
+  it("should write to channel "+iterations+" times and close it", function*() {
+    var ch = chan();
+    goloop(function*(recur, i) {
+      if (i < iterations) {
+        yield put(ch, i);
+        recur(i+1);
+      } else {
+        ch.close();
+      }
+    }, [0]);
+    var values = [];
+    while ((value = yield take(ch)) !== CLOSED) {
+      values.push(value);
+    }
+    assert.equal(values.length, iterations, "returned 10 values");
     assert.equal(ch.is_closed(), true, "output channel is closed");
   });
 });

@@ -27,6 +27,22 @@ function go(f, args) {
   return spawn(gen, f);
 };
 
+function goloop(f, args) {
+  var recurring;
+  var recur = function() {
+    args = Array.prototype.slice.call(arguments);
+    args.unshift(recur);
+    recurring = true;
+  }
+  recur.apply(null, args);
+  return go(function* () {
+    while (recurring) {
+      recurring = false;
+      yield* f.apply(null, args);
+    }
+  });
+};
+
 function chan(bufferOrNumber, xform, exHandler) {
   var buf;
   if (bufferOrNumber === 0) {
@@ -55,6 +71,7 @@ module.exports = {
 
   spawn: spawn,
   go: go,
+  goloop: goloop,
   chan: chan,
   promiseChan: promiseChan,
   DEFAULT: select.DEFAULT,
