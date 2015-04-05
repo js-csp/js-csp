@@ -1,5 +1,9 @@
 # Changes to js-csp
 
+## 0.4.0
+
+- CHANGED: Official [transducer protocol](https://github.com/cognitect-labs/transducers-js/issues/20) is now supported, instead of the old protocol.
+
 ## 0.3.4
 - ADDED: Single-write multi-read behavior is now supported via promise buffers and promise channels.
 
