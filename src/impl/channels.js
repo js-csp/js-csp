@@ -29,7 +29,7 @@ var Channel = function(takes, puts, buf, xform) {
 };
 
 function isReduced(v) {
-  return v && v.__transducers_reduced__;
+  return v && v["@@transducer/reduced"];
 }
 
 function schedule(f, v) {
@@ -65,7 +65,7 @@ Channel.prototype._put = function(value, handler) {
   // value.
   if (this.buf && !this.buf.is_full()) {
     handler.commit();
-    var done = isReduced(this.xform.step(this.buf, value));
+    var done = isReduced(this.xform["@@transducer/step"](this.buf, value));
     while (true) {
       if (this.buf.count() === 0) {
         break;
@@ -146,7 +146,7 @@ Channel.prototype._take = function(handler) {
         if (callback) {
           schedule(callback, true);
         }
-        if (isReduced(this.xform.step(this.buf, putter.value))) {
+        if (isReduced(this.xform["@@transducer/step"](this.buf, putter.value))) {
           this.close();
         }
       }
@@ -205,7 +205,7 @@ Channel.prototype.close = function() {
   // TODO: Duplicate code. Make a "_flush" function or something
   if (this.buf) {
     this.buf.close();
-    this.xform.result(this.buf);
+    this.xform["@@transducer/result"](this.buf);
     while (true) {
       if (this.buf.count() === 0) {
         break;
@@ -269,15 +269,15 @@ function handleEx(buf, exHandler, e) {
 function AddTransformer() {
 }
 
-AddTransformer.prototype.init = function() {
+AddTransformer.prototype["@@transducer/init"] = function() {
   throw new Error('init not available');
 };
 
-AddTransformer.prototype.result = function(v) {
+AddTransformer.prototype["@@transducer/result"] = function(v) {
   return v;
 };
 
-AddTransformer.prototype.step = function(buffer, input) {
+AddTransformer.prototype["@@transducer/step"] = function(buffer, input) {
   buffer.add(input);
   return buffer;
 };
@@ -286,17 +286,16 @@ AddTransformer.prototype.step = function(buffer, input) {
 function handleException(exHandler) {
   return function(xform) {
     return {
-      step: function(buffer, input) {
+      "@@transducer/step": function(buffer, input) {
         try {
-          return xform.step(buffer, input);
+          return xform["@@transducer/step"](buffer, input);
         } catch (e) {
           return handleEx(buffer, exHandler, e);
         }
       },
-
-      result: function(buffer) {
+      "@@transducer/result": function(buffer) {
         try {
-          return xform.result(buffer);
+          return xform["@@transducer/result"](buffer);
         } catch (e) {
           return handleEx(buffer, exHandler, e);
         }
