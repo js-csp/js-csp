@@ -164,7 +164,7 @@ console.log((yield csp.take(ch)));
 
 ## Channel operations ##
 
-These operations (except for `close`) must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
+Note that `put` and `take` operations must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
 
 ### `yield put(ch, value)` ###
 
@@ -185,6 +185,25 @@ yield csp.put(ch, 42);
 yield csp.take(ch); // 42
 ch.close()
 yield csp.take(ch); // csp.CLOSED
+```
+
+### `offer(ch, value)` ###
+
+Put a value in a channel iff it's possible to do so immediately. Returns `true` if channel received the value, `undefined` otherwise.
+```javascript
+var ch = csp.chan(1);
+csp.offer(ch, 42); // true
+csp.offer(ch, 43); // undefined
+```
+
+### `poll(ch)` ###
+
+Take a value from a channel iff it it's possible to do so immediately. Returns value if succesful, `undefined` otherwise.
+```javascript
+var ch = csp.chan(1);
+csp.poll(ch);      // undefined
+csp.offer(ch, 42); // true
+csp.poll(ch);      // 42
 ```
 
 ### `yield alts(operations, options?)` ###

@@ -4,12 +4,17 @@ var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
 
-var FnHandler = function(f) {
+var FnHandler = function(f, blockable) {
   this.f = f;
+  this.blockable = blockable;
 };
 
 FnHandler.prototype.is_active = function() {
   return true;
+};
+
+FnHandler.prototype.is_blockable = function() {
+  return this.blockable;
 };
 
 FnHandler.prototype.commit = function() {
@@ -17,14 +22,14 @@ FnHandler.prototype.commit = function() {
 };
 
 function put_then_callback(channel, value, callback) {
-  var result = channel._put(value, new FnHandler(callback));
+  var result = channel._put(value, new FnHandler(callback, true));
   if (result && callback) {
     callback(result.value);
   }
 }
 
 function take_then_callback(channel, callback) {
-  var result = channel._take(new FnHandler(callback));
+  var result = channel._take(new FnHandler(callback, true));
   if (result) {
     callback(result.value);
   }
@@ -138,6 +143,20 @@ function put(channel, value) {
   });
 }
 
+function poll(channel) {
+  var result = channel._take(new FnHandler(function(){}, false));
+  if (result) {
+    return result.value;
+  }
+}
+
+function offer(channel, value) {
+  var result = channel._put(value, new FnHandler(function(){}, false));
+  if (result) {
+    return true;
+  }
+}
+
 function sleep(msecs) {
   return new Instruction(SLEEP, msecs);
 }
@@ -153,6 +172,8 @@ exports.put_then_callback = put_then_callback;
 exports.take_then_callback = take_then_callback;
 exports.put = put;
 exports.take = take;
+exports.offer = offer;
+exports.poll = poll;
 exports.sleep = sleep;
 exports.alts = alts;
 exports.Instruction = Instruction;

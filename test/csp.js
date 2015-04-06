@@ -13,6 +13,8 @@ var csp = require("../src/csp"),
     take = csp.take,
     putAsync = csp.putAsync,
     takeAsync = csp.takeAsync,
+    offer = csp.offer,
+    poll = csp.poll,
     alts = csp.alts,
     timeout = csp.timeout,
     CLOSED = csp.CLOSED;
@@ -211,6 +213,24 @@ describe("take", function() {
 
       assert.equal((yield take(ch)), CLOSED);
     });
+  });
+});
+
+describe("offer and poll", function() {
+  mocha.it("should succeed if they can complete immediately", function() {
+    var ch = chan(2);
+    assert.equal(offer(ch, 42), true);
+    assert.equal(offer(ch, 43), true);
+    assert.equal(offer(ch, 44), undefined);
+    assert.equal(poll(ch), 42);
+    assert.equal(poll(ch), 43);
+    assert.equal(poll(ch), undefined);
+  });
+
+  mocha.it("should fail if they can't complete immediately", function() {
+    var ch = chan();
+    assert.equal(poll(ch), undefined);
+    assert.equal(offer(ch, 44), undefined);
   });
 });
 
