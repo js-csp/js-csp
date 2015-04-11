@@ -155,5 +155,5 @@ exports.put = put;
 exports.take = take;
 exports.sleep = sleep;
 exports.alts = alts;
-
+exports.Instruction = Instruction;
 exports.Process = Process;
