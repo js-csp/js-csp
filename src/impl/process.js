@@ -4,9 +4,8 @@ var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
 
-var FnHandler = function(f, blockable) {
+var FnHandler = function(f) {
   this.f = f;
-  this.blockable = blockable;
 };
 
 FnHandler.prototype.is_active = function() {
@@ -14,7 +13,7 @@ FnHandler.prototype.is_active = function() {
 };
 
 FnHandler.prototype.is_blockable = function() {
-  return this.blockable;
+  return !!this.f;
 };
 
 FnHandler.prototype.commit = function() {
@@ -144,14 +143,14 @@ function put(channel, value) {
 }
 
 function poll(channel) {
-  var result = channel._take(new FnHandler(function(){}, false));
+  var result = channel._take(new FnHandler());
   if (result) {
     return result.value;
   }
 }
 
 function offer(channel, value) {
-  var result = channel._put(value, new FnHandler(function(){}, false));
+  var result = channel._put(value, new FnHandler());
   if (result) {
     return true;
   } else {
