@@ -68,6 +68,7 @@ module.exports = {
   alts: process.alts,
   putAsync: process.put_then_callback,
   takeAsync: process.take_then_callback,
+  NO_VALUE: process.NO_VALUE,
 
   timeout: timers.timeout
 };

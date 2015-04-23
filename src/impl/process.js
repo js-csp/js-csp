@@ -4,6 +4,8 @@ var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
 
+var NO_VALUE = {};
+
 var FnHandler = function(f) {
   this.f = f;
 };
@@ -143,13 +145,23 @@ function put(channel, value) {
 }
 
 function poll(channel) {
+  if (channel.closed) {
+      return NO_VALUE;
+  }
+
   var result = channel._take(new FnHandler());
   if (result) {
     return result.value;
+  } else {
+      return NO_VALUE;
   }
 }
 
 function offer(channel, value) {
+  if (channel.closed) {
+      return false;
+  }
+
   var result = channel._put(value, new FnHandler());
   if (result) {
     return true;
@@ -179,3 +191,4 @@ exports.sleep = sleep;
 exports.alts = alts;
 exports.Instruction = Instruction;
 exports.Process = Process;
+exports.NO_VALUE = NO_VALUE;

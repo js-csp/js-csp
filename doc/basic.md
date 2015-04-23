@@ -189,7 +189,7 @@ yield csp.take(ch); // csp.CLOSED
 
 ### `offer(ch, value)` ###
 
-Put a value in a channel iff it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish between closed channels from ready channels.
+Put a value in a channel iff it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish closed from ready channels.
 ```javascript
 var ch = csp.chan(1);
 csp.offer(ch, 42); // true
@@ -198,10 +198,10 @@ csp.offer(ch, 43); // false
 
 ### `poll(ch)` ###
 
-Take a value from a channel iff it it's possible to do so immediately. Returns value if succesful, `undefined` otherwise.
+Take a value from a channel iff it it's possible to do so immediately. Returns value if succesful, `NO_VALUE` otherwise. Unlike `take`, `poll` cannot distinguish closed from ready channels.
 ```javascript
 var ch = csp.chan(1);
-csp.poll(ch);      // undefined
+csp.poll(ch);      // csp.NO_VALUE
 csp.offer(ch, 42); // true
 csp.poll(ch);      // 42
 ```
@@ -251,3 +251,4 @@ Close a channel.
 
 - `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal `null` for now.
 - `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.
+- `csp.NO_VALUE`: Returned when using `poll` on a channel that is either closed or has no values to take right away.
