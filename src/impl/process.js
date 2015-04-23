@@ -23,14 +23,14 @@ FnHandler.prototype.commit = function() {
 };
 
 function put_then_callback(channel, value, callback) {
-  var result = channel._put(value, new FnHandler(callback, true));
+  var result = channel._put(value, new FnHandler(callback));
   if (result && callback) {
     callback(result.value);
   }
 }
 
 function take_then_callback(channel, callback) {
-  var result = channel._take(new FnHandler(callback, true));
+  var result = channel._take(new FnHandler(callback));
   if (result) {
     callback(result.value);
   }
