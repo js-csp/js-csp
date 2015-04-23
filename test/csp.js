@@ -221,7 +221,7 @@ describe("offer and poll", function() {
     var ch = chan(2);
     assert.equal(offer(ch, 42), true);
     assert.equal(offer(ch, 43), true);
-    assert.equal(offer(ch, 44), undefined);
+    assert.equal(offer(ch, 44), false);
     assert.equal(poll(ch), 42);
     assert.equal(poll(ch), 43);
     assert.equal(poll(ch), undefined);
@@ -230,7 +230,7 @@ describe("offer and poll", function() {
   mocha.it("should fail if they can't complete immediately", function() {
     var ch = chan();
     assert.equal(poll(ch), undefined);
-    assert.equal(offer(ch, 44), undefined);
+    assert.equal(offer(ch, 44), false);
   });
 });
 

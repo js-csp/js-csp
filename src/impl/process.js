@@ -154,6 +154,8 @@ function offer(channel, value) {
   var result = channel._put(value, new FnHandler(function(){}, false));
   if (result) {
     return true;
+  } else {
+    return false;
   }
 }
 
