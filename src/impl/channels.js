@@ -167,6 +167,7 @@ Channel.prototype._take = function(handler) {
     }
     put_handler = putter.handler;
     if (put_handler.is_active()) {
+      handler.commit();
       callback = put_handler.commit();
       if (callback) {
         schedule(callback, true);

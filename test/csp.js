@@ -19,6 +19,12 @@ var csp = require("../src/csp"),
 
 var do_alts = require("../src/impl/select").do_alts;
 
+function closed(chanCons) {
+  var ch = chanCons();
+  ch.close();
+  return ch;
+}
+
 describe("put", function() {
   describe("that is immediate", function() {
     it("should return true if value is taken", function*() {
@@ -215,6 +221,64 @@ describe("take", function() {
 });
 
 describe("alts", function() {
+  function takeReadyFromPut(v) {
+    var ch = chan();
+    putAsync(ch, v);
+    return ch;
+  }
+
+  function takeReadyFromBuf(v) {
+    var ch = chan(1);
+    putAsync(ch, v);
+    return ch;
+  }
+
+  function noOp() {}
+
+  function putReadyByTake() {
+    var ch = chan();
+    takeAsync(ch, noOp);
+    return ch;
+  }
+
+  function putReadyByBuf() {
+    var ch = chan(1);
+    return ch;
+  }
+
+  // To help with testing once-only (i.e. commit logic is correct).
+  function once(desc, f, ops) {
+    it("should commit correctly after " + desc, function*() {
+      var count = 0;
+      function inc() {
+        count ++;
+      }
+
+      var l = ops.length;
+      var chs = new Array(l);
+      for (var i = 0; i < l; i ++) {
+        var op = ops[i];
+        if (op instanceof Array) {
+          chs[i] = op[0];
+        } else {
+          chs[i] = op;
+        }
+      }
+
+      // We want to test that an immediately-available-due-to-closed
+      // operation deactivates previously registered operations.
+      // Therefore we use "priority" to make sure an already-ready
+      // operation that comes last does not short-circuit do_alts.
+      do_alts(ops, inc, {priority: true});
+
+      yield* f.apply(this, chs);
+      // One more turn for async operations scheduled by f above.
+      yield null;
+
+      assert.equal(count, 1);
+    });
+  }
+
   it("should work with identity channel", function*() {
     var ch = a.identity_chan(42);
     var r = yield alts([ch]);
@@ -323,71 +387,29 @@ describe("alts", function() {
   });
 
   describe("synchronization (at most once guarantee)", function() {
-    it("should work correctly when taking from a closed channel", function*() {
-      var count = 0;
-      function inc() {
-        count++;
-      }
+    once("taking from a queued put", function*(ch1, ch2) {
+      putAsync(ch1, 2);
+    }, [chan(), takeReadyFromPut(1)]);
 
-      var ch1 = chan();
-      var ch2 = chan();
+    once("taking from the buffer", function*(ch1, ch2) {
+      putAsync(ch1, 2);
+    }, [chan(), takeReadyFromBuf(1)]);
 
-      ch1.close();
+    once("taking from a closed channel", function*(ch1, ch2) {
+      putAsync(ch1, 2);
+    }, [chan(), closed(chan)]);
 
-      // We want to test that an immediately-available-due-to-closed
-      // operation deactivates previously registered operations.
-      // Therefore we use "priority" to ensure ch1 is registered after
-      // ch2.
-      do_alts([ch2, ch1], inc, {priority: true});
+    once("putting to a queued take", function*(ch1, ch2) {
+      takeAsync(ch1, noOp);
+    }, [[chan(), 1], [putReadyByTake(), 2]]);
 
-      var ch = go(function*() {
-        // This put should be answered by ch2-closing, not by
-        // ch2-taking above, which should have been deactivated
-        assert.equal((yield put(ch2, 1)), false);
-      });
+    once("putting to the buffer", function*(ch1, ch2) {
+      takeAsync(ch1, noOp);
+    }, [[chan(), 1], [putReadyByBuf(), 2]]);
 
-      // Let the above goroutine register its put
-      yield null;
-      // Now close ch2 to ensure that goroutine will be able to finish
-      ch2.close();
-      // Then wait for it
-      yield ch;
-
-      assert.equal(count, 1);
-    });
-
-    it("should work correctly when putting into a closed channel", function*() {
-      var count = 0;
-      function inc() {
-        count++;
-      }
-
-      var ch1 = chan();
-      var ch2 = chan();
-
-      ch1.close();
-
-      // We want to test that an immediately-available-due-to-closed
-      // operation deactivates previously registered operations.
-      // Therefore we use "priority" to ensure ch1 is registered after
-      // ch2.
-      do_alts([[ch2, 2], [ch1, 1]], inc, {priority: true});
-
-      var ch = go(function*() {
-        // This put should be answered by ch2-closing, not by
-        // ch2-putting above, which should have been deactivated
-        assert.equal((yield take(ch2)), CLOSED);
-      });
-
-      // Let the above goroutine register its take
-      yield null;
-      // Now close ch2 to ensure that goroutine will be able to finish
-      ch2.close();
-      // Then wait for it
-      yield ch;
-
-      assert.equal(count, 1);
-    });
+    once("putting to a closed channel", function*(ch1, ch2) {
+      takeAsync(ch1, noOp);
+    }, [[chan(), 1], [closed(chan), 2]]);
   });
 });
 
