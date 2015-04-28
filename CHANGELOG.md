@@ -1,5 +1,9 @@
 # Changes to js-csp
 
+## 0.4.1
+
+- FIXED: When a take is fulfilled by a waiting put, it now correctly invalidates other operations belonging to the same `alts`.
+
 ## 0.4.0
 
 - CHANGED: Official [transducer protocol](https://github.com/cognitect-labs/transducers-js/issues/20) is now supported, instead of the old protocol.
