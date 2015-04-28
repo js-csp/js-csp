@@ -41,8 +41,7 @@ describe("put", function() {
     });
 
     it("should return false if channel is already closed", function*() {
-      var ch = chan();
-      ch.close();
+      var ch = closed(chan);
       assert.equal((yield put(ch, 42)), false);
     });
 
@@ -162,14 +161,12 @@ describe("take", function() {
     });
 
     it("should return false if channel is already closed", function*() {
-      var ch = chan();
-      ch.close();
+      var ch = closed(chan);
       assert.equal((yield take(ch)), CLOSED);
     });
 
     it("should return false if promise channel is already closed", function*() {
-      var ch = promiseChan();
-      ch.close();
+      var ch = closed(promiseChan);
       assert.equal((yield take(ch)), CLOSED);
     });
   });
@@ -446,8 +443,7 @@ describe("Process runner", function() {
   // TODO: See if this is sufficiently large for all the runtimes (js
   // can't query stack depth)
   var LIMIT = 25000;
-  var ch = chan();
-  ch.close();
+  var ch = closed(chan);
 
   it("should not blow the stack on repeated takes from a closed channel", function*() {
     for (var i = 0; i < LIMIT; i++) {
