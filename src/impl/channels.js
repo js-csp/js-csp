@@ -6,7 +6,7 @@ var dispatch = require("./dispatch");
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
 
-var CLOSED = null;
+var CLOSED = Object('csp::CLOSED');
 
 var Box = function(value) {
   this.value = value;

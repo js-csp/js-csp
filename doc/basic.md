@@ -230,5 +230,5 @@ Close a channel.
 
 ## Special values ##
 
-- `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal `null` for now.
+- `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal to `Object('csp::CLOSED')`.
 - `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.
