@@ -7,7 +7,6 @@ var a = require("../src/csp.test-helpers"),
 
 var csp = require("../src/csp"),
     chan = csp.chan,
-    promiseChan = csp.promiseChan,
     go = csp.go,
     put = csp.put,
     take = csp.take,
@@ -44,13 +43,6 @@ describe("put", function() {
       var ch = closed(chan);
       assert.equal((yield put(ch, 42)), false);
     });
-
-    it("should always return true when putting to a promise channel", function*() {
-      var ch = promiseChan();
-      assert.equal((yield put(ch, 42)), true);
-      assert.equal((yield put(ch, 43)), true);
-      assert.equal((yield put(ch, 44)), true);
-    });
   });
 
   describe("that is parked", function() {
@@ -82,15 +74,6 @@ describe("put", function() {
 
     //   assert.equal(buffered, true, "pending put is buffered once the buffer is not full again");
     // });
-
-    it("should return true if value is then taken from promise channel", function*() {
-      var ch = promiseChan();
-      go(function*() {
-        yield timeout(5);
-        yield take(ch);
-      });
-      assert.equal((yield put(ch, 42)), true);
-    });
 
     it("should return false if channel is then closed", function*() {
       var ch = chan();
@@ -154,19 +137,8 @@ describe("take", function() {
       assert.equal((yield take(ch)), 42);
     });
 
-    it("should return correct value that was first put in promise channel", function*() {
-      var ch = promiseChan();
-      yield put(ch, 42);
-      assert.equal((yield take(ch)), 42);
-    });
-
     it("should return false if channel is already closed", function*() {
       var ch = closed(chan);
-      assert.equal((yield take(ch)), CLOSED);
-    });
-
-    it("should return false if promise channel is already closed", function*() {
-      var ch = closed(promiseChan);
       assert.equal((yield take(ch)), CLOSED);
     });
   });
@@ -181,31 +153,8 @@ describe("take", function() {
       assert.equal((yield take(ch)), 42);
     });
 
-    it("should return correct value if it is then delivered to promise channel", function*() {
-      var ch = promiseChan();
-      go(function*() {
-        yield timeout(5);
-        yield put(ch, 42);
-        yield put(ch, 43);
-        yield put(ch, 44);
-      });
-      assert.equal((yield take(ch)), 42);
-      assert.equal((yield take(ch)), 42);
-    });
-
     it("should return CLOSED if channel is then closed", function*() {
       var ch = chan();
-
-      go(function*() {
-        yield timeout(5);
-        ch.close();
-      });
-
-      assert.equal((yield take(ch)), CLOSED);
-    });
-
-    it("should return CLOSED if promise channel is then closed", function*() {
-      var ch = promiseChan();
 
       go(function*() {
         yield timeout(5);
@@ -499,30 +448,6 @@ describe("close", function() {
 
   it("should correctly flush CLOSED to pending takes", function*() {
     var ch = chan();
-    var count = 0;
-
-    go(function*() {
-      assert.equal((yield take(ch)), CLOSED);
-      count += 1;
-      assert.equal(count, 1);
-    });
-    go(function*() {
-      assert.equal((yield take(ch)), CLOSED);
-      count += 1;
-      assert.equal(count, 2);
-    });
-    go(function*() {
-      assert.equal((yield take(ch)), CLOSED);
-      count += 1;
-      assert.equal(count, 3);
-    });
-
-    ch.close();
-    yield undefined;
-  });
-
-  it("should correctly flush CLOSED to pending takes from promise channel", function*() {
-    var ch = promiseChan();
     var count = 0;
 
     go(function*() {
