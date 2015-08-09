@@ -209,7 +209,6 @@ Channel.prototype.close = function() {
 
   // TODO: Duplicate code. Make a "_flush" function or something
   if (this.buf) {
-    this.buf.close();
     this.xform["@@transducer/result"](this.buf);
     while (true) {
       if (this.buf.count() === 0) {
