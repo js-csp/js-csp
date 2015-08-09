@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.5.0
+- REMOVED: Promise buffers and channels are removed.
+
 ## 0.4.2
 - ADDED: `offer` and `poll` are added as non-blocking counterparts of `put` and `take`.
 
