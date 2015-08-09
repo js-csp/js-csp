@@ -6,8 +6,9 @@ var Channel = require("./channels").Channel;
 
 var NO_VALUE = {};
 
-var FnHandler = function(f) {
+var FnHandler = function(blockable, f) {
   this.f = f;
+  this.blockable = blockable;
 };
 
 FnHandler.prototype.is_active = function() {
@@ -15,7 +16,7 @@ FnHandler.prototype.is_active = function() {
 };
 
 FnHandler.prototype.is_blockable = function() {
-  return !!this.f;
+  return this.blockable;
 };
 
 FnHandler.prototype.commit = function() {
@@ -23,14 +24,14 @@ FnHandler.prototype.commit = function() {
 };
 
 function put_then_callback(channel, value, callback) {
-  var result = channel._put(value, new FnHandler(callback));
+  var result = channel._put(value, new FnHandler(true, callback));
   if (result && callback) {
     callback(result.value);
   }
 }
 
 function take_then_callback(channel, callback) {
-  var result = channel._take(new FnHandler(callback));
+  var result = channel._take(new FnHandler(true, callback));
   if (result) {
     callback(result.value);
   }
@@ -146,23 +147,23 @@ function put(channel, value) {
 
 function poll(channel) {
   if (channel.closed) {
-      return NO_VALUE;
+    return NO_VALUE;
   }
 
-  var result = channel._take(new FnHandler());
+  var result = channel._take(new FnHandler(false));
   if (result) {
     return result.value;
   } else {
-      return NO_VALUE;
+    return NO_VALUE;
   }
 }
 
 function offer(channel, value) {
   if (channel.closed) {
-      return false;
+    return false;
   }
 
-  var result = channel._put(value, new FnHandler());
+  var result = channel._put(value, new FnHandler(false));
   if (result) {
     return true;
   } else {

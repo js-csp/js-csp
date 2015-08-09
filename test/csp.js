@@ -221,7 +221,9 @@ describe("take", function() {
 });
 
 describe("offer and poll", function() {
-  mocha.it("should succeed if they can complete immediately", function() {
+  function noOp() {};
+
+  mocha.it("should succeed if they can be completed immediately by a buffer", function() {
     var ch = chan(2);
     assert.equal(offer(ch, 42), true);
     assert.equal(offer(ch, 43), true);
@@ -229,6 +231,16 @@ describe("offer and poll", function() {
     assert.equal(poll(ch), 42);
     assert.equal(poll(ch), 43);
     assert.equal(poll(ch), NO_VALUE);
+  });
+
+  mocha.it("should succeed if they can be completed immediately by a pending operation", function() {
+    var putCh = chan();
+    putAsync(putCh, 42);
+    assert.equal(poll(putCh), 42);
+
+    var takeCh = chan();
+    takeAsync(takeCh, noOp);
+    assert.equal(offer(takeCh, 42), true);
   });
 
   mocha.it("should fail if they can't complete immediately", function() {
@@ -244,13 +256,13 @@ describe("offer and poll", function() {
     assert.equal(offer(ch, 44), false);
   });
 
-  mocha.it("should fail if there are pending operations on a channel", function() {
+  mocha.it("should fail if there are pending same-direction operations on a channel", function() {
     var putCh = chan();
     putAsync(putCh, 42);
     assert.equal(offer(putCh, 44), false);
 
     var takeCh = chan();
-    takeAsync(takeCh);
+    takeAsync(takeCh, noOp);
     assert.equal(poll(takeCh), NO_VALUE);
   });
 });
