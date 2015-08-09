@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.4.2
+- ADDED: `offer` and `poll` are added as non-blocking counterparts of `put` and `take`.
+
 ## 0.4.1
 
 - FIXED: When a take is fulfilled by a waiting put, it now correctly invalidates other operations belonging to the same `alts`.
