@@ -4,12 +4,18 @@ var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
 
+var NO_VALUE = {};
+
 var FnHandler = function(f) {
   this.f = f;
 };
 
 FnHandler.prototype.is_active = function() {
   return true;
+};
+
+FnHandler.prototype.is_blockable = function() {
+  return !!this.f;
 };
 
 FnHandler.prototype.commit = function() {
@@ -138,6 +144,32 @@ function put(channel, value) {
   });
 }
 
+function poll(channel) {
+  if (channel.closed) {
+      return NO_VALUE;
+  }
+
+  var result = channel._take(new FnHandler());
+  if (result) {
+    return result.value;
+  } else {
+      return NO_VALUE;
+  }
+}
+
+function offer(channel, value) {
+  if (channel.closed) {
+      return false;
+  }
+
+  var result = channel._put(value, new FnHandler());
+  if (result) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 function sleep(msecs) {
   return new Instruction(SLEEP, msecs);
 }
@@ -153,7 +185,10 @@ exports.put_then_callback = put_then_callback;
 exports.take_then_callback = take_then_callback;
 exports.put = put;
 exports.take = take;
+exports.offer = offer;
+exports.poll = poll;
 exports.sleep = sleep;
 exports.alts = alts;
 exports.Instruction = Instruction;
 exports.Process = Process;
+exports.NO_VALUE = NO_VALUE;

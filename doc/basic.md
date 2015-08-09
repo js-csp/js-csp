@@ -164,7 +164,7 @@ console.log((yield csp.take(ch)));
 
 ## Channel operations ##
 
-These operations (except for `close`) must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
+Note that `put` and `take` operations must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
 
 ### `yield put(ch, value)` ###
 
@@ -185,6 +185,25 @@ yield csp.put(ch, 42);
 yield csp.take(ch); // 42
 ch.close()
 yield csp.take(ch); // csp.CLOSED
+```
+
+### `offer(ch, value)` ###
+
+Put a value in a channel iff it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish closed from ready channels.
+```javascript
+var ch = csp.chan(1);
+csp.offer(ch, 42); // true
+csp.offer(ch, 43); // false
+```
+
+### `poll(ch)` ###
+
+Take a value from a channel iff it it's possible to do so immediately. Returns value if succesful, `NO_VALUE` otherwise. Unlike `take`, `poll` cannot distinguish closed from ready channels.
+```javascript
+var ch = csp.chan(1);
+csp.poll(ch);      // csp.NO_VALUE
+csp.offer(ch, 42); // true
+csp.poll(ch);      // 42
 ```
 
 ### `yield alts(operations, options?)` ###
@@ -232,3 +251,4 @@ Close a channel.
 
 - `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal `null` for now.
 - `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.
+- `csp.NO_VALUE`: Returned when using `poll` on a channel that is either closed or has no values to take right away.

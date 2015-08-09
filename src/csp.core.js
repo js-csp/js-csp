@@ -62,10 +62,13 @@ module.exports = {
 
   put: process.put,
   take: process.take,
+  offer: process.offer,
+  poll: process.poll,
   sleep: process.sleep,
   alts: process.alts,
   putAsync: process.put_then_callback,
   takeAsync: process.take_then_callback,
+  NO_VALUE: process.NO_VALUE,
 
   timeout: timers.timeout
 };

@@ -13,9 +13,12 @@ var csp = require("../src/csp"),
     take = csp.take,
     putAsync = csp.putAsync,
     takeAsync = csp.takeAsync,
+    offer = csp.offer,
+    poll = csp.poll,
     alts = csp.alts,
     timeout = csp.timeout,
-    CLOSED = csp.CLOSED;
+    CLOSED = csp.CLOSED,
+    NO_VALUE = csp.NO_VALUE;
 
 var do_alts = require("../src/impl/select").do_alts;
 
@@ -214,6 +217,41 @@ describe("take", function() {
 
       assert.equal((yield take(ch)), CLOSED);
     });
+  });
+});
+
+describe("offer and poll", function() {
+  mocha.it("should succeed if they can complete immediately", function() {
+    var ch = chan(2);
+    assert.equal(offer(ch, 42), true);
+    assert.equal(offer(ch, 43), true);
+    assert.equal(offer(ch, 44), false);
+    assert.equal(poll(ch), 42);
+    assert.equal(poll(ch), 43);
+    assert.equal(poll(ch), NO_VALUE);
+  });
+
+  mocha.it("should fail if they can't complete immediately", function() {
+    var ch = chan();
+    assert.equal(poll(ch), NO_VALUE);
+    assert.equal(offer(ch, 44), false);
+  });
+
+  mocha.it("should fail if they are performed on a closed channel", function() {
+    var ch = chan();
+    ch.close();
+    assert.equal(poll(ch), NO_VALUE);
+    assert.equal(offer(ch, 44), false);
+  });
+
+  mocha.it("should fail if there are pending operations on a channel", function() {
+    var putCh = chan();
+    putAsync(putCh, 42);
+    assert.equal(offer(putCh, 44), false);
+
+    var takeCh = chan();
+    takeAsync(takeCh);
+    assert.equal(poll(takeCh), NO_VALUE);
   });
 });
 
