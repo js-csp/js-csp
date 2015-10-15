@@ -76,6 +76,11 @@ Process.prototype._done = function(value) {
   }
 };
 
+var _handlers = [
+  handleInstruction,
+  handleChannel
+];
+
 Process.prototype.run = function(response) {
   if (this.finished) {
     return;
@@ -91,48 +96,88 @@ Process.prototype.run = function(response) {
   }
 
   var ins = iter.value;
+
+  var isHandle = false;
+
+  var handlers = _handlers;
+  var handlersLength = handlers.length;
+  var i;
+  var handle;
+
+  for (i = 0; i < handlersLength; i++) {
+    handle = handlers[i];
+
+    if (isHandle = handle.call(this, ins)) {
+      return;
+    }
+  }
+
+  if (!isHandle) {
+    this._continue(ins);
+  }
+};
+
+/**
+ * Allow to add custom handler for yield expression
+ * @param handler
+ */
+function addYieldHandler(handler) {
+  if (handler) {
+    _handlers.push(handler);
+  }
+}
+
+function handleInstruction(ins) {
   var self = this;
 
   if (ins instanceof Instruction) {
     switch (ins.op) {
-    case PUT:
-      var data = ins.data;
-      put_then_callback(data.channel, data.value, function(ok) {
-        self._continue(ok);
-      });
-      break;
+      case PUT:
+        var data = ins.data;
+        put_then_callback(data.channel, data.value, function (ok) {
+          self._continue(ok);
+        });
+        break;
 
-    case TAKE:
-      var channel = ins.data;
-      take_then_callback(channel, function(value) {
-        self._continue(value);
-      });
-      break;
+      case TAKE:
+        var channel = ins.data;
+        take_then_callback(channel, function (value) {
+          self._continue(value);
+        });
+        break;
 
-    case SLEEP:
-      var msecs = ins.data;
-      dispatch.queue_delay(function() {
-        self.run(null);
-      }, msecs);
-      break;
+      case SLEEP:
+        var msecs = ins.data;
+        dispatch.queue_delay(function () {
+          self.run(null);
+        }, msecs);
+        break;
 
-    case ALTS:
-      select.do_alts(ins.data.operations, function(result) {
-        self._continue(result);
-      }, ins.data.options);
-      break;
+      case ALTS:
+        select.do_alts(ins.data.operations, function (result) {
+          self._continue(result);
+        }, ins.data.options);
+        break;
     }
+    return true;
+  } else {
+    return false;
   }
-  else if(ins instanceof Channel) {
+}
+
+function handleChannel(ins) {
+  var self = this;
+
+  if(ins instanceof Channel) {
     var channel = ins;
-    take_then_callback(channel, function(value) {
+    take_then_callback(channel, function (value) {
       self._continue(value);
     });
+    return true;
+  } else {
+    return false;
   }
-  else {
-    this._continue(ins);
-  }
-};
+}
 
 function take(channel) {
   return new Instruction(TAKE, channel);
@@ -190,6 +235,7 @@ exports.offer = offer;
 exports.poll = poll;
 exports.sleep = sleep;
 exports.alts = alts;
+exports.addYieldHandler = addYieldHandler;
 exports.Instruction = Instruction;
 exports.Process = Process;
 exports.NO_VALUE = NO_VALUE;
