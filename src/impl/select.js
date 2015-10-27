@@ -11,6 +11,10 @@ AltHandler.prototype.is_active = function() {
   return this.flag.value;
 };
 
+AltHandler.prototype.is_blockable = function() {
+  return true;
+};
+
 AltHandler.prototype.commit = function() {
   this.flag.value = false;
   return this.f;

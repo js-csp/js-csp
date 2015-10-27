@@ -91,33 +91,3 @@ describe("Sliding buffer", function() {
     assert(buffers.EMPTY === b.remove(), "popping empty buffer gives EMPTY");
   });
 });
-
-describe("Promise buffer", function() {
-  it("should work", function() {
-    var b = buffers.promise();
-    assert.equal(b.count(), 0, "new buffer is empty");
-    assert.equal(b.remove(), buffers.EMPTY, "popping empty buffer gives EMPTY");
-
-    b.add("1");
-    assert.equal(b.count(), 1);
-
-    b.add("2");
-    assert.equal(b.count(), 1, "promise buffer drops puts after the first one");
-    assert.equal(b.is_full(), false, "promise buffer is never full");
-    assert.doesNotThrow(function() {
-      b.add("3");
-    }, "promise buffer always accepts push");
-    assert.equal(b.count(), 1);
-
-    assert.equal(b.remove(), "1", "promise buffer always returns oldest item");
-    assert.equal(b.is_full(), false);
-    assert.equal(b.count(), 1);
-
-    assert.equal(b.remove(), "1", "promise buffer keeps returning oldest item");
-    assert.equal(b.is_full(), false);
-    assert.equal(b.count(), 1);
-
-    b.close();
-    assert.equal(b.remove(), buffers.EMPTY, "promise buffer returns EMPTY after closing it");
-  });
-});

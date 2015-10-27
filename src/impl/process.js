@@ -4,12 +4,19 @@ var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
 
-var FnHandler = function(f) {
+var NO_VALUE = {};
+
+var FnHandler = function(blockable, f) {
   this.f = f;
+  this.blockable = blockable;
 };
 
 FnHandler.prototype.is_active = function() {
   return true;
+};
+
+FnHandler.prototype.is_blockable = function() {
+  return this.blockable;
 };
 
 FnHandler.prototype.commit = function() {
@@ -17,14 +24,14 @@ FnHandler.prototype.commit = function() {
 };
 
 function put_then_callback(channel, value, callback) {
-  var result = channel._put(value, new FnHandler(callback));
+  var result = channel._put(value, new FnHandler(true, callback));
   if (result && callback) {
     callback(result.value);
   }
 }
 
 function take_then_callback(channel, callback) {
-  var result = channel._take(new FnHandler(callback));
+  var result = channel._take(new FnHandler(true, callback));
   if (result) {
     callback(result.value);
   }
@@ -138,6 +145,32 @@ function put(channel, value) {
   });
 }
 
+function poll(channel) {
+  if (channel.closed) {
+    return NO_VALUE;
+  }
+
+  var result = channel._take(new FnHandler(false));
+  if (result) {
+    return result.value;
+  } else {
+    return NO_VALUE;
+  }
+}
+
+function offer(channel, value) {
+  if (channel.closed) {
+    return false;
+  }
+
+  var result = channel._put(value, new FnHandler(false));
+  if (result) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 function sleep(msecs) {
   return new Instruction(SLEEP, msecs);
 }
@@ -153,7 +186,10 @@ exports.put_then_callback = put_then_callback;
 exports.take_then_callback = take_then_callback;
 exports.put = put;
 exports.take = take;
+exports.offer = offer;
+exports.poll = poll;
 exports.sleep = sleep;
 exports.alts = alts;
 exports.Instruction = Instruction;
 exports.Process = Process;
+exports.NO_VALUE = NO_VALUE;

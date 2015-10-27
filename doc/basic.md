@@ -78,29 +78,6 @@ csp.takeAsync(ch, function(v) { console.log("Got ", v) });
 csp.takeAsync(ch); // will "block"
 ```
 
-### `buffers.promise()` ###
-
-Creates a promise buffer. A promise buffer can take exactly one value that all consumers will receive. Once the
-first value is put, subsequent puts will succeed but the items will be dropped.
-
-For creating channels with promise buffers a `promiseChan(transducer?, exHandler?)` convenience function is provided.
-```javascript
-var ch = csp.promiseChan(); // equivalent to csp.chan(csp.buffers.promise())
-
-csp.putAsync(ch, 42);
-csp.putAsync(ch, "Will be discarded");
-
-csp.takeAsync(ch, function(v) { console.log("Got ", v) });
-//=> "Got 42"
-csp.takeAsync(ch, function(v) { console.log("Got ", v) });
-//=> "Got 42"
-csp.takeAsync(ch, function(v) { console.log("Got ", v) });
-//=> "Got 42"
-
-ch.close();
-csp.takeAsync(ch, function(v) { console.log(ch === csp.CLOSED); });
-//=> "true"
-```
 
 ### Transducers
 
@@ -164,7 +141,7 @@ console.log((yield csp.take(ch)));
 
 ## Channel operations ##
 
-These operations (except for `close`) must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
+Note that `put` and `take` operations must be prefixed with `yield`, and must be used inside goroutines, not normal functions. This makes sense, since these are (potentially) "blocking" operations.
 
 ### `yield put(ch, value)` ###
 
@@ -185,6 +162,25 @@ yield csp.put(ch, 42);
 yield csp.take(ch); // 42
 ch.close()
 yield csp.take(ch); // csp.CLOSED
+```
+
+### `offer(ch, value)` ###
+
+Put a value in a channel iff it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish closed from ready channels.
+```javascript
+var ch = csp.chan(1);
+csp.offer(ch, 42); // true
+csp.offer(ch, 43); // false
+```
+
+### `poll(ch)` ###
+
+Take a value from a channel iff it it's possible to do so immediately. Returns value if succesful, `NO_VALUE` otherwise. Unlike `take`, `poll` cannot distinguish closed from ready channels.
+```javascript
+var ch = csp.chan(1);
+csp.poll(ch);      // csp.NO_VALUE
+csp.offer(ch, 42); // true
+csp.poll(ch);      // 42
 ```
 
 ### `yield alts(operations, options?)` ###
@@ -232,3 +228,4 @@ Close a channel.
 
 - `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal to `Object('csp::CLOSED')`.
 - `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.
+- `csp.NO_VALUE`: Returned when using `poll` on a channel that is either closed or has no values to take right away.

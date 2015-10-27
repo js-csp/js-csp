@@ -104,7 +104,7 @@ Channel.prototype._put = function(value, handler) {
     }
   }
 
-  // No buffer, full buffer, no pending takes. Queue this put now.
+  // No buffer, full buffer, no pending takes. Queue this put now if blockable.
   if (this.dirty_puts > MAX_DIRTY) {
     this.puts.cleanup(function(putter) {
       return putter.handler.is_active();
@@ -113,10 +113,12 @@ Channel.prototype._put = function(value, handler) {
   } else {
     this.dirty_puts ++;
   }
-  if (this.puts.length >= MAX_QUEUE_SIZE) {
-    throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
+  if (handler.is_blockable()) {
+    if (this.puts.length >= MAX_QUEUE_SIZE) {
+        throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
+    }
+    this.puts.unbounded_unshift(new PutBox(handler, value));
   }
-  this.puts.unbounded_unshift(new PutBox(handler, value));
   return null;
 };
 
@@ -181,7 +183,7 @@ Channel.prototype._take = function(handler) {
     return new Box(CLOSED);
   }
 
-  // No buffer, empty buffer, no pending puts. Queue this take now.
+  // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
   if (this.dirty_takes > MAX_DIRTY) {
     this.takes.cleanup(function(handler) {
       return handler.is_active();
@@ -190,10 +192,12 @@ Channel.prototype._take = function(handler) {
   } else {
     this.dirty_takes ++;
   }
-  if (this.takes.length >= MAX_QUEUE_SIZE) {
-    throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
+  if (handler.is_blockable()) {
+    if (this.takes.length >= MAX_QUEUE_SIZE) {
+      throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
+    }
+    this.takes.unbounded_unshift(handler);
   }
-  this.takes.unbounded_unshift(handler);
   return null;
 };
 
@@ -205,7 +209,6 @@ Channel.prototype.close = function() {
 
   // TODO: Duplicate code. Make a "_flush" function or something
   if (this.buf) {
-    this.buf.close();
     this.xform["@@transducer/result"](this.buf);
     while (true) {
       if (this.buf.count() === 0) {
