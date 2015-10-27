@@ -53,6 +53,7 @@ module.exports = {
   chan: chan,
   DEFAULT: select.DEFAULT,
   CLOSED: channels.CLOSED,
+  isClosedToken: channels.isClosedToken,
 
   put: process.put,
   take: process.take,
