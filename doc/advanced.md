@@ -491,7 +491,7 @@ mapping function and takers will receive the transformed value.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var inc = function(x) { return x + 1; },
     ch = csp.chan(1, xducers.map(inc));
@@ -518,7 +518,7 @@ with the predicate.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var isEven = function(x) { return x % 2 === 0; },
     ch = csp.chan(1, xducers.filter(isEven));
@@ -543,7 +543,7 @@ return `true` when testing them with the predicate.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var isEven = function(x) { return x % 2 === 0; },
     ch = csp.chan(1, xducers.remove(isEven));
@@ -568,7 +568,7 @@ put in the channel one by one, we can use the mapcatting transducer. mapcat stan
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var dupe = function(x) { return [x, x]; },
     ch = csp.chan(1, xducers.mapcat(dupe));
@@ -594,7 +594,7 @@ transducer will accept, the channel will be closed.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var ch = csp.chan(1, xducers.take(1));
 
@@ -617,7 +617,7 @@ be really put in the channel.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var ch = csp.chan(1, xducers.dedupe());
 
@@ -646,7 +646,7 @@ and the channel is closed, a pending take will receive an array of the elements 
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var ch = csp.chan(1, xducers.partition(2));
 
@@ -667,7 +667,7 @@ values we put into a channel go from returning `true` to `false`, a take will re
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var isEven = function(x) { return x % 2 === 0; },
     ch = csp.chan(1, xducers.partitionBy(isEven));
@@ -706,7 +706,7 @@ is that they can be composed into another transducer to create more complex tran
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var inc = function(x) { return x + 1; },
     isEven = function(x) { return x % 2 === 0; },
