@@ -7,13 +7,13 @@ const webpack = require('webpack');
 module.exports = {
   context: ROOT,
   entry: {
-    csp: path.join(ROOT, 'src', 'csp')
+    csp: path.join(ROOT, 'src', 'csp'),
   },
   output: {
     path: path.join(ROOT, 'build'),
     filename: '[name].min.js',
     libraryTarget: 'umd',
-    library: '[name]'
+    library: '[name]',
   },
   externals: {},
   resolve: {
@@ -28,9 +28,9 @@ module.exports = {
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        loader: 'babel-loader'
+        loader: 'babel-loader',
       },
-    ]
+    ],
   },
   devtool: false,
   plugins: [
@@ -52,5 +52,5 @@ module.exports = {
       },
       sourceMap: false,
     }),
-  ]
+  ],
 };

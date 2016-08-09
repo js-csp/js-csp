@@ -2,6 +2,9 @@ import has from 'lodash/get';
 import { Box } from './channels';
 
 class AltHandler {
+  flag: Box;
+  f: Function;
+
   constructor(flag, f) {
     this.f = f;
     this.flag = flag;

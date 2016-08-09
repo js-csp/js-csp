@@ -1,5 +1,3 @@
-"use strict";
-
 var buffers = require("./impl/buffers");
 var channels = require("./impl/channels");
 var select = require("./impl/select");

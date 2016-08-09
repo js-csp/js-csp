@@ -79,9 +79,11 @@ Some areas that need attention:
 
 ### Development
 
+These commands are supposed to run separately
 ```bash
 $ npm run test:watch
 $ npm run test:lint # for code quality checking
+$ npm run flow:watch # to stop server after you are done run npm run flow:stop
 ```
 
 ### Production

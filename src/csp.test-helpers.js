@@ -1,24 +1,16 @@
-"use strict";
+import mocha from 'mocha';
+import { chan, go as goroutine, put, take } from './csp';
 
-var csp = require("./csp");
-var chan = csp.chan;
-var go = csp.go;
-var put = csp.put;
-var take = csp.take;
-
-var mocha = require("mocha");
-var it = mocha.it;
-
-function identity_chan(x) {
+export function identity_chan(x) {
   var ch = chan(1);
-  go(function*() {
+  goroutine(function*() {
     yield put(ch, x);
     ch.close();
   });
   return ch;
 }
 
-function check(f, done) {
+export function check(f, done) {
   return (function() {
     try {
       f();
@@ -29,17 +21,17 @@ function check(f, done) {
   })();
 }
 
-function g(f) {
+export function goAsync(f) {
   return function(done) {
-    go(f, [done]);
+    goroutine(f, [done]);
   };
 };
 
-function gg(f) {
+export function go(f) {
   return function (done) {
-    go(function *() {
+    goroutine(function *() {
       try {
-        var ch = go(f, []);
+        var ch = goroutine(f, []);
         yield take(ch);
         done();
       } catch(e) {
@@ -49,32 +41,11 @@ function gg(f) {
   };
 }
 
-module.exports = {
-  identity_chan: identity_chan,
-  check: check,
-  goAsync: g,
-  go: gg,
-
-  // f must be a generator function. For now assertions should be inside f's
-  // top-level, not functions f may call (that works but a failing test
-  // may break following tests).
-  it: function(desc, f) {
-    return mocha.it(desc, gg(f));
-  },
-
-  beforeEach: function(f) {
-    return mocha.beforeEach(gg(f));
-  },
-
-  afterEach: function(f) {
-    return mocha.afterEach(gg(f));
-  },
-
-  before: function(f) {
-    return mocha.before(gg(f));
-  },
-
-  after: function(f) {
-    return mocha.after(gg(f));
-  }
-};
+// f must be a generator function. For now assertions should be inside f's
+// top-level, not functions f may call (that works but a failing test
+// may break following tests).
+export const it = (desc, f) => mocha.it(desc, go(f));
+export const beforeEach = (f) => mocha.beforeEach(go(f));
+export const afterEach = (f) => mocha.afterEach(go(f));
+export const before = (f) => mocha.before(go(f));
+export const after = (f) => mocha.after(go(f));
