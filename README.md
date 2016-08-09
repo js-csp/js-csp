@@ -45,30 +45,7 @@ There are more under [examples](examples/) directory.
 
 This is a very close port of Clojurescript's [core.async](https://github.com/clojure/core.async). The most significant difference is that the IOC logic is encapsulated using generators (`yield`) instead of macros. Therefore resources on `core.async` or Go channels are also helpful.
 
-## Supported runtimes ##
-js-csp requires ES6 generators.
-
-#### Firefox >= 27 ####
-
-Earlier versions of Firefox either had ES6 generators turned off, or supported only old style generators.
-
-#### Node.JS >= 0.11.6 ####
-
-Run with `--harmony` or `--harmony-generators` flag. Check support using
-```bash
-node --v8-options | grep harmony
-```
-
-#### Chrome >= 28 ####
-Turn on an experimental flag. Look for "Enable Experimental JavaScript" at [chrome://flags](chrome://flags).
-
 #### Other ####
-
-Use one of the js-to-js compilers:
-- [Babel](http://babeljs.io/docs/learn-es6/#generators)
-- [Facebook Regenerator](http://facebook.github.io/regenerator/).
-- [Google Closure Compiler](https://developers.google.com/closure/compiler/) with `--language_in ECMASCRIPT6 --language_out ECMASCRIPT3` flags.
-- [Google Traceur](https://github.com/google/traceur-compiler).
 
 Or, if you use Python's Twisted:
 https://github.com/ubolonton/twisted-csp

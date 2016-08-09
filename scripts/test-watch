@@ -1,0 +1,6 @@
+#!/bin/bash
+if [ -z "${NODE_ENV}" ]; then
+  export NODE_ENV=${1:-test}
+fi
+
+mocha --watch --reporter progress --compilers js:./compiler './test/**/*.js'
