@@ -1,4 +1,4 @@
-"use strict";
+require('babel-register');
 
 // http://talks.golang.org/2013/advconc.slide#6
 var csp = require("../../src/csp");

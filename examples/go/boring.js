@@ -1,4 +1,4 @@
-"use strict";
+require('babel-register');
 
 var csp = require("../../src/csp");
 

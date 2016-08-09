@@ -1,4 +1,4 @@
-"use strict";
+require('babel-register');
 
 // http://talks.golang.org/2012/concurrency.slide#39
 // Daisy-chain
