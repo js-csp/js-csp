@@ -1,58 +1,58 @@
-"use strict";
+import has from 'lodash/get';
+import { Box } from './channels';
 
-var Box = require("./channels").Box;
+class AltHandler {
+  constructor(flag, f) {
+    this.f = f;
+    this.flag = flag;
+  }
 
-var AltHandler = function(flag, f) {
-  this.f = f;
-  this.flag = flag;
-};
+  is_active() {
+    return this.flag.value;
+  }
 
-AltHandler.prototype.is_active = function() {
-  return this.flag.value;
-};
+  is_blockable() {
+    return true;
+  }
 
-AltHandler.prototype.is_blockable = function() {
-  return true;
-};
+  commit() {
+    this.flag.value = false;
+    return this.f;
+  }
+}
 
-AltHandler.prototype.commit = function() {
-  this.flag.value = false;
-  return this.f;
-};
-
-var AltResult = function(value, channel) {
-  this.value = value;
-  this.channel = channel;
-};
+class AltResult {
+  constructor(value, channel) {
+    this.value = value;
+    this.channel = channel;
+  }
+}
 
 function rand_int(n) {
   return Math.floor(Math.random() * (n + 1));
 }
 
 function random_array(n) {
-  var a = new Array(n);
-  var i;
+  const a = new Array(n);
+  let i;
+
   for (i = 0; i < n; i++) {
     a[i] = 0;
   }
   for (i = 1; i < n; i++) {
-    var j = rand_int(i);
+    const j = rand_int(i);
     a[i] = a[j];
     a[j] = i;
   }
   return a;
 }
 
-var hasOwnProperty = Object.prototype.hasOwnProperty;
-
-var DEFAULT = {
-  toString: function() {
-    return "[object DEFAULT]";
-  }
+export const DEFAULT = {
+  toString: () => '[object DEFAULT]',
 };
 
 // TODO: Accept a priority function or something
-exports.do_alts = function(operations, callback, options) {
+export const do_alts = (operations, callback, options) => {
   var length = operations.length;
   // XXX Hmm
   if (length === 0) {
@@ -65,10 +65,11 @@ exports.do_alts = function(operations, callback, options) {
   }
 
   var flag = new Box(true);
+  var result;
 
   for (var i = 0; i < length; i++) {
     var operation = operations[priority ? i : indexes[i]];
-    var port, result;
+    var port;
     // XXX Hmm
     if (operation instanceof Array) {
       var value = operation[1];
@@ -98,14 +99,10 @@ exports.do_alts = function(operations, callback, options) {
     }
   }
 
-  if (!(result instanceof Box)
-      && options
-      && hasOwnProperty.call(options, "default")) {
+  if (!(result instanceof Box) && has(options, 'default')) {
     if (flag.value) {
       flag.value = false;
-      callback(new AltResult(options["default"], DEFAULT));
+      callback(new AltResult(options.default, DEFAULT));
     }
   }
 };
-
-exports.DEFAULT = DEFAULT;

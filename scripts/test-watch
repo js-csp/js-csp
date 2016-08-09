@@ -3,4 +3,4 @@ if [ -z "${NODE_ENV}" ]; then
   export NODE_ENV=${1:-test}
 fi
 
-mocha --watch --reporter progress --compilers js:./compiler './test/**/*.js'
+mocha --watch --reporter progress -t 10000 --compilers js:./compiler './test/**/*.js'

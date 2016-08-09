@@ -29,8 +29,6 @@ function check(f, done) {
   })();
 }
 
-// it("", g(function*() {
-// }));
 function g(f) {
   return function(done) {
     go(f, [done]);
@@ -38,15 +36,17 @@ function g(f) {
 };
 
 function gg(f) {
-  return g(function*(done) {
-    try {
-      var ch = go(f, []);
-      yield take(ch);
-      done();
-    } catch(e) {
-      done(e);
-    }
-  });
+  return function (done) {
+    go(function *() {
+      try {
+        var ch = go(f, []);
+        yield take(ch);
+        done();
+      } catch(e) {
+        done(e);
+      }
+    })
+  };
 }
 
 module.exports = {
