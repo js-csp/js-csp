@@ -276,7 +276,7 @@ describe("alts", function() {
   }
 
   it("should work with identity channel", function*() {
-    var ch = a.identity_chan(42);
+    var ch = a.identityChan(42);
     var r = yield alts([ch]);
     assert.equal(r.value, 42);
     assert.equal(r.channel, ch);

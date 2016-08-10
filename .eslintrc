@@ -12,6 +12,7 @@
     "no-param-reassign": 0,
     "mocha/no-exclusive-tests": 2,
     "global-require": 0,
+    "func-names": 0,
     "no-underscore-dangle": 0,
     "import/no-extraneous-dependencies": 0,
     "import/no-named-as-default": 0,
