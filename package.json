@@ -76,10 +76,11 @@
     "flow:status": "flow status; test $? -eq 0 -o $? -eq 2",
     "flow:watch": "npm run flow:status && chokidar './src/**/*.js' './test/**/*.js' -c 'npm run flow:status'",
     "flow:stop": "flow stop",
-    "build:lib": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
+    "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
     "build:browser": "webpack --config webpack.config.js",
-    "build": "npm run build:lib && npm run build:browser",
-    "prepublish": "npm run build"
+    "build": "npm run build:node && npm run build:browser",
+    "prepublish": "npm run build:node",
+    "publish": "npm run build:node && npm run build:browser"
   },
   "engines": {
     "node": ">= 4.1.0",
