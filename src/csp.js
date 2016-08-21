@@ -1,11 +1,8 @@
-"use strict";
+const pipeline = require('./csp.pipeline');
 
-var csp = require("./csp.core");
-var operations = require("./csp.operations");
-var pipeline = require('./csp.pipeline');
+exports = module.exports = require('./csp.core');
 
-csp.operations = operations;
-csp.operations.pipeline = pipeline.pipeline;
-csp.operations.pipelineAsync = pipeline.pipelineAsync;
+exports.operations = require('./csp.operations');
 
-module.exports = csp;
+exports.operations.pipeline = pipeline.pipeline;
+exports.operations.pipelineAsync = pipeline.pipelineAsync;
