@@ -1,6 +1,6 @@
 {
   "name": "js-csp",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
   "keywords": [
     "csp",
@@ -79,8 +79,8 @@
     "flow:stop": "flow stop",
     "build:lib": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
     "build:browser": "webpack --config webpack.config.js",
-    "build": "npm run build:lib && npm run build:node",
-    "prebulish": "npm run build"
+    "build": "npm run build:lib && npm run build:browser",
+    "prepublish": "npm run build"
   },
   "engines": {
     "node": ">= 4.1.0",
