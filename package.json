@@ -1,6 +1,6 @@
 {
   "name": "js-csp",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
   "keywords": [
     "csp",
@@ -51,7 +51,6 @@
     "babel-runtime": "^6.11.6",
     "eslint": "^3.2.2",
     "eslint-config-airbnb": "^10.0.0",
-    "eslint-import-resolver-babel-module-alias": "^1.5.1",
     "eslint-import-resolver-webpack": "^0.4.0",
     "eslint-loader": "^1.5.0",
     "eslint-plugin-flowtype": "^2.4.0",
@@ -77,10 +76,11 @@
     "flow:status": "flow status; test $? -eq 0 -o $? -eq 2",
     "flow:watch": "npm run flow:status && chokidar './src/**/*.js' './test/**/*.js' -c 'npm run flow:status'",
     "flow:stop": "flow stop",
-    "build:lib": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
+    "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
     "build:browser": "webpack --config webpack.config.js",
-    "build": "npm run build:lib && npm run build:node",
-    "prebulish": "npm run build"
+    "build": "npm run build:node && npm run build:browser",
+    "prepublish": "npm run build:node",
+    "publish": "npm run build:node && npm run build:browser"
   },
   "engines": {
     "node": ">= 4.1.0",
