@@ -1,12 +1,11 @@
-"use strict";
+// @flow
+import dispatch from './dispatch';
+import channels from './channels';
 
-var dispatch = require("./dispatch");
-var channels = require("./channels");
+export const timeout = (msecs: number) => {
+  const chan = channels.chan();
 
-exports.timeout = function timeout_channel(msecs) {
-  var chan = channels.chan();
-  dispatch.queue_delay(function() {
-    chan.close();
-  }, msecs);
+  dispatch.queue_delay(() => chan.close(), msecs);
+
   return chan;
 };

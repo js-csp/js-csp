@@ -6,7 +6,7 @@
     "Nguyễn Tuấn Anh <ubolonton@gmail.com>"
   ],
   "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
-  "main": "./src/csp.js",
+  "main": "./build/csp.min.js",
   "moduleType": [
     "node"
   ],

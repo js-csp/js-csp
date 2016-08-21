@@ -1,0 +1,2 @@
+#!/bin/bash
+esw -w './src/**/*-test.js' './test/**/*.js'

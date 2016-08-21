@@ -1,0 +1,19 @@
+[ignore]
+.*/build/.*
+.*/lib/.*
+.*/node_modules/fbjs/.*
+
+[include]
+
+[libs]
+flow/bom.js.flow
+flow/core.js.flow
+flow/dom.js.flow
+flow/node.js.flow
+
+[options]
+module.system=haste
+
+esproposal.class_static_fields=enable
+esproposal.class_instance_fields=enable
+suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe
