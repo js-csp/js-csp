@@ -79,8 +79,7 @@
     "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
     "build:browser": "webpack --config webpack.config.js",
     "build": "npm run build:node && npm run build:browser",
-    "prepublish": "npm run build:node",
-    "publish": "npm run build:node && npm run build:browser"
+    "prepublish": "npm run build"
   },
   "engines": {
     "node": ">= 4.1.0",
@@ -88,6 +87,12 @@
   },
   "main": "./lib/csp.js",
   "module": "./src/csp.js",
+  "jsnext:main": "./src/csp.js",
+  "browserify": {
+    "transform": [
+      "loose-envify"
+    ]
+  },
   "files": [
     "src",
     "README.md",
