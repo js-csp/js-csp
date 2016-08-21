@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.6.0
+- CHANGED: Improved build tools (babel, webpack, eslint).
+
 ## 0.5.0
 - REMOVED: Promise buffers and channels are removed.
 
