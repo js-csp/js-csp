@@ -1,0 +1,7 @@
+--recursive
+
+--require babel-register
+--require jsdom-global/register
+--require regenerator-runtime/runtime
+
+--timeout 10000
