@@ -1,6 +1,0 @@
-#!/bin/bash
-if [ -z "${NODE_ENV}" ]; then
-  export NODE_ENV=${1:-test}
-fi
-
-istanbul cover ./node_modules/.bin/_mocha -- -t 10000 --compilers js:./compiler './test/**/*.js'
