@@ -125,7 +125,7 @@ inCh.close();
 ```
 
 ### `split(p, ch, trueBufferOrN?, falseBufferOrN?)` ###
-Returns an array of 2 channel. The first contains value from the source channel `ch` that satisfy the predicate `p`. The second contains the other values. The new channels are unbuffered, unless `trueBufferOrN`/`falseBufferOrN` are specified, Both channels are closed when the source channel closes.
+Returns an array of 2 channels. The first contains values from the source channel `ch` that satisfy the predicate `p`. The second contains the other values. The new channels are unbuffered, unless `trueBufferOrN`/`falseBufferOrN` are specified, Both channels are closed when the source channel closes.
 
 ```javascript
 var isEven = function(x) { return x % 2 === 0; },
@@ -479,7 +479,7 @@ csp.operations.mix.toggle(mix, [[inChan1, { solo: false }]]);
 The functions listed in this section are deprecated.
 
 Use [transducers](https://github.com/jlongster/transducers.js) instead, they are context-independent and don't incur the overhead of
-creating intermediary channels for every transformation. In the examples below, we'll see transudcer counterparts of the deprecated
+creating intermediary channels for every transformation. In the examples below, we'll see transducer counterparts of the deprecated
 functions.
 
 Note that creating channels with transducers requires us to specify either a buffer size or a buffer instance.
@@ -491,7 +491,7 @@ mapping function and takers will receive the transformed value.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var inc = function(x) { return x + 1; },
     ch = csp.chan(1, xducers.map(inc));
@@ -518,7 +518,7 @@ with the predicate.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var isEven = function(x) { return x % 2 === 0; },
     ch = csp.chan(1, xducers.filter(isEven));
@@ -543,7 +543,7 @@ return `true` when testing them with the predicate.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var isEven = function(x) { return x % 2 === 0; },
     ch = csp.chan(1, xducers.remove(isEven));
@@ -568,7 +568,7 @@ put in the channel one by one, we can use the mapcatting transducer. mapcat stan
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var dupe = function(x) { return [x, x]; },
     ch = csp.chan(1, xducers.mapcat(dupe));
@@ -594,7 +594,7 @@ transducer will accept, the channel will be closed.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var ch = csp.chan(1, xducers.take(1));
 
@@ -617,7 +617,7 @@ be really put in the channel.
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var ch = csp.chan(1, xducers.dedupe());
 
@@ -646,7 +646,7 @@ and the channel is closed, a pending take will receive an array of the elements 
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var ch = csp.chan(1, xducers.partition(2));
 
@@ -667,7 +667,7 @@ values we put into a channel go from returning `true` to `false`, a take will re
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var isEven = function(x) { return x % 2 === 0; },
     ch = csp.chan(1, xducers.partitionBy(isEven));
@@ -706,7 +706,7 @@ is that they can be composed into another transducer to create more complex tran
 
 ```javascript
 var csp = require("js-csp"),
-    xducers = require("transucers.js");
+    xducers = require("transducers.js");
 
 var inc = function(x) { return x + 1; },
     isEven = function(x) { return x % 2 === 0; },
