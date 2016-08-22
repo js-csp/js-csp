@@ -1,6 +1,6 @@
 {
   "name": "js-csp",
-  "version": "0.6.3",
+  "version": "0.6.4",
   "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
   "keywords": [
     "csp",
@@ -62,7 +62,7 @@
     "transducers.js": "^0.3.2",
     "webpack": "^2.1.0-beta.20"
   },
-  "peerDependencies": {
+  "dependencies": {
     "lodash": "^4.14.2"
   },
   "scripts": {
