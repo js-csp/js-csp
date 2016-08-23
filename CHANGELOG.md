@@ -1,4 +1,7 @@
 # Changes to js-csp
+## 0.6.5
+- FIXED: Fix missing babel-runtime dependencies for node.
+- CHANGED: Improve npm script for publishing package.
 
 ## 0.6.0
 - CHANGED: Improved build tools (babel, webpack, eslint).
