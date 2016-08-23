@@ -515,6 +515,9 @@ describe("close", function() {
       count += 1;
       assert.equal(count, 3);
     });
+    go(function*() {
+      assert.ok(csp.isClosedToken(yield take(ch)));
+    });
 
     ch.close();
     yield undefined;

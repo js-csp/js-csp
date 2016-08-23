@@ -226,6 +226,7 @@ Close a channel.
 
 ## Special values ##
 
-- `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal `null` for now.
+- `csp.CLOSED`: Returned when taking from a closed channel. Cannot be put on a channel. Equal to `Symbol.for('@@csp/CLOSED')` when Symbols are supported, falls back to `Object('@@csp/CLOSED')` otherwise.
+- `csp.isClosedToken`: Helper function for working across realms in environments that don't support `Symbol.for`. `csp.isClosedToken(value)` on a closed channel returns true even in non-ES6 environments, whereas `value === csp.CLOSED` only does so in those where `Symbol.for` is natively supported.
 - `csp.DEFAULT`: If an `alts` returns immediately when no operation is ready, the key `channel` of the result holds this value instead of a channel.
 - `csp.NO_VALUE`: Returned when using `poll` on a channel that is either closed or has no values to take right away.

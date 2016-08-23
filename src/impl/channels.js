@@ -6,7 +6,28 @@ var dispatch = require("./dispatch");
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
 
-var CLOSED = null;
+var CLOSED = (function() {
+  var closedToken;
+  try {
+    closedToken = Symbol.for('@@csp/CLOSED');
+  } catch(e) {
+    closedToken = Object('@@csp/CLOSED');
+  }
+  return closedToken;
+})();
+
+var toString = Function.prototype.call.bind(Object.prototype.toString);
+
+var isClosedToken;
+if (typeof CLOSED === 'symbol') {
+  isClosedToken = function(value) {
+    return value === CLOSED;
+  };
+} else {
+  isClosedToken = function(value) {
+    return value == CLOSED && toString(value) === '[object String]';
+  };
+}
 
 var Box = function(value) {
   this.value = value;
@@ -115,7 +136,7 @@ Channel.prototype._put = function(value, handler) {
   }
   if (handler.is_blockable()) {
     if (this.puts.length >= MAX_QUEUE_SIZE) {
-        throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
+      throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
     }
     this.puts.unbounded_unshift(new PutBox(handler, value));
   }
@@ -328,3 +349,4 @@ exports.chan = function(buf, xform, exHandler) {
 exports.Box = Box;
 exports.Channel = Channel;
 exports.CLOSED = CLOSED;
+exports.isClosedToken = isClosedToken;
