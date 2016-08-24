@@ -520,3 +520,29 @@ describe("close", function() {
     yield undefined;
   });
 });
+
+describe("addYieldHandler", function() {
+  it("should add custom yield handler", function*() {
+    csp.addYieldHandler(function(ins) {
+      var self = this;
+      if(ins instanceof Promise) {
+        ins.then(function( val ) {
+          self._continue( val );
+        });
+        return true;
+      } else {
+        return false;
+      }
+    });
+    var ch = chan();
+    go(function* () {
+      var val;
+      val = yield new Promise(function(resolve) {
+        setTimeout(function() {
+          resolve('value from promise');
+        }, 50);
+      });
+      assert.equal( val, 'value from promise' );
+    })
+  })
+});
