@@ -13,11 +13,11 @@ class AltHandler {
     this.flag = flag;
   }
 
-  is_active() {
+  isActive() {
     return this.flag.value;
   }
 
-  is_blockable() {
+  isBlockable() {
     return true;
   }
 

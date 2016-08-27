@@ -47,7 +47,7 @@ Channel.prototype._put = function(value, handler) {
   // immediately, which would have short-circuited to prevent this to
   // be ever register anyway. The same thing goes for the active check
   // in "_take".
-  if (!handler.is_active()) {
+  if (!handler.isActive()) {
     return null;
   }
 
@@ -72,7 +72,7 @@ Channel.prototype._put = function(value, handler) {
       if (taker === buffers.EMPTY) {
         break;
       }
-      if (taker.is_active()) {
+      if (taker.isActive()) {
         value = this.buf.remove();
         callback = taker.commit();
         schedule(callback, value);
@@ -94,7 +94,7 @@ Channel.prototype._put = function(value, handler) {
     if (taker === buffers.EMPTY) {
       break;
     }
-    if (taker.is_active()) {
+    if (taker.isActive()) {
       handler.commit();
       callback = taker.commit();
       schedule(callback, value);
@@ -105,13 +105,13 @@ Channel.prototype._put = function(value, handler) {
   // No buffer, full buffer, no pending takes. Queue this put now if blockable.
   if (this.dirty_puts > MAX_DIRTY) {
     this.puts.cleanup(function(putter) {
-      return putter.handler.is_active();
+      return putter.handler.isActive();
     });
     this.dirty_puts = 0;
   } else {
     this.dirty_puts ++;
   }
-  if (handler.is_blockable()) {
+  if (handler.isBlockable()) {
     if (this.puts.length >= MAX_QUEUE_SIZE) {
         throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
     }
@@ -121,7 +121,7 @@ Channel.prototype._put = function(value, handler) {
 };
 
 Channel.prototype._take = function(handler) {
-  if (!handler.is_active()) {
+  if (!handler.isActive()) {
     return null;
   }
 
@@ -141,7 +141,7 @@ Channel.prototype._take = function(handler) {
         break;
       }
       put_handler = putter.handler;
-      if (put_handler.is_active()) {
+      if (put_handler.isActive()) {
         callback = put_handler.commit();
         if (callback) {
           schedule(callback, true);
@@ -166,7 +166,7 @@ Channel.prototype._take = function(handler) {
       break;
     }
     put_handler = putter.handler;
-    if (put_handler.is_active()) {
+    if (put_handler.isActive()) {
       handler.commit();
       callback = put_handler.commit();
       if (callback) {
@@ -184,13 +184,13 @@ Channel.prototype._take = function(handler) {
   // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
   if (this.dirty_takes > MAX_DIRTY) {
     this.takes.cleanup(function(handler) {
-      return handler.is_active();
+      return handler.isActive();
     });
     this.dirty_takes = 0;
   } else {
     this.dirty_takes ++;
   }
-  if (handler.is_blockable()) {
+  if (handler.isBlockable()) {
     if (this.takes.length >= MAX_QUEUE_SIZE) {
       throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
     }
@@ -216,7 +216,7 @@ Channel.prototype.close = function() {
       if (taker === buffers.EMPTY) {
         break;
       }
-      if (taker.is_active()) {
+      if (taker.isActive()) {
         callback = taker.commit();
         var value = this.buf.remove();
         schedule(callback, value);
@@ -229,7 +229,7 @@ Channel.prototype.close = function() {
     if (taker === buffers.EMPTY) {
       break;
     }
-    if (taker.is_active()) {
+    if (taker.isActive()) {
       var callback = taker.commit();
       schedule(callback, CLOSED);
     }
@@ -240,7 +240,7 @@ Channel.prototype.close = function() {
     if (putter === buffers.EMPTY) {
       break;
     }
-    if (putter.handler.is_active()) {
+    if (putter.handler.isActive()) {
       var put_callback = putter.handler.commit();
       if (put_callback) {
         schedule(put_callback, false);

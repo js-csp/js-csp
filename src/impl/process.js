@@ -10,11 +10,11 @@ var FnHandler = function(blockable, f) {
   this.blockable = blockable;
 };
 
-FnHandler.prototype.is_active = function() {
+FnHandler.prototype.isActive = function() {
   return true;
 };
 
-FnHandler.prototype.is_blockable = function() {
+FnHandler.prototype.isBlockable = function() {
   return this.blockable;
 };
 

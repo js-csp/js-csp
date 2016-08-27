@@ -26,8 +26,8 @@ function mapFrom(f, ch) {
     },
     _take: function(handler) {
       var result = ch._take({
-        is_active: function() {
-          return handler.is_active();
+        isActive: function() {
+          return handler.isActive();
         },
         commit: function() {
           var take_cb = handler.commit();

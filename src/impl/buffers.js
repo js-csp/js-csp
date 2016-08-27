@@ -1,5 +1,7 @@
 // @flow
-export const EMPTY = () => '[Function EMPTY]';
+export const EMPTY = () => ({
+  toString: () => '[Function EMPTY]',
+});
 
 
 class RingBuffer {
@@ -117,6 +119,7 @@ class SlidingBuffer {
   }
 }
 
+
 /**
  * Returns a buffer that is considered "full" when it reaches size n,
  * but still accepts additional items, effectively allow overflowing.
@@ -125,7 +128,7 @@ class SlidingBuffer {
  * running the transduced step function, while still allowing a
  * transduced step to expand into multiple "essence" steps.
  */
-export const ring = () => new RingBuffer();
-export const fixed = (n: number) => new FixedBuffer(ring(), n);
-export const dropping = (n: number) => new DroppingBuffer(ring(), n);
-export const sliding = (n: number) => new SlidingBuffer(ring(), n);
+export const ring = (): RingBuffer => new RingBuffer();
+export const fixed = (n: number): FixedBuffer => new FixedBuffer(ring(), n);
+export const dropping = (n: number): DroppingBuffer => new DroppingBuffer(ring(), n);
+export const sliding = (n: number): SlidingBuffer => new SlidingBuffer(ring(), n);
