@@ -1,6 +1,6 @@
 import { run, queueDelay } from './dispatch';
+import { doAlts } from './select';
 
-var select = require("./select");
 var Channel = require("./channels").Channel;
 
 var NO_VALUE = {};
@@ -116,7 +116,7 @@ Process.prototype.run = function(response) {
       break;
 
     case ALTS:
-      select.doAlts(ins.data.operations, function(result) {
+      doAlts(ins.data.operations, function(result) {
         self._continue(result);
       }, ins.data.options);
       break;

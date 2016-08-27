@@ -1,6 +1,5 @@
 import { run } from './dispatch';
-
-var buffers = require("./buffers");
+import * as buffers from './buffers';
 
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
@@ -62,7 +61,7 @@ Channel.prototype._put = function(value, handler) {
   // Soak the value through the buffer first, even if there is a
   // pending taker. This way the step function has a chance to act on the
   // value.
-  if (this.buf && !this.buf.is_full()) {
+  if (this.buf && !this.buf.isFull()) {
     handler.commit();
     var done = isReduced(this.xform["@@transducer/step"](this.buf, value));
     while (true) {
@@ -116,7 +115,7 @@ Channel.prototype._put = function(value, handler) {
     if (this.puts.length >= MAX_QUEUE_SIZE) {
         throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
     }
-    this.puts.unbounded_unshift(new PutBox(handler, value));
+    this.puts.unshift(new PutBox(handler, value));
   }
   return null;
 };
@@ -134,7 +133,7 @@ Channel.prototype._take = function(handler) {
     // We need to check pending puts here, other wise they won't
     // be able to proceed until their number reaches MAX_DIRTY
     while (true) {
-      if (this.buf.is_full()) {
+      if (this.buf.isFull()) {
         break;
       }
       putter = this.puts.pop();
@@ -195,7 +194,7 @@ Channel.prototype._take = function(handler) {
     if (this.takes.length >= MAX_QUEUE_SIZE) {
       throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
     }
-    this.takes.unbounded_unshift(handler);
+    this.takes.unshift(handler);
   }
   return null;
 };

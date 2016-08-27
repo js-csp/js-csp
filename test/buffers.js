@@ -1,5 +1,5 @@
-var assert = require("chai").assert;
-var buffers = require("../src/impl/buffers");
+import { assert } from 'chai';
+import * as buffers from './../src/impl/buffers';
 
 describe("Fixed buffer", function() {
   it("should work", function() {
@@ -11,10 +11,10 @@ describe("Fixed buffer", function() {
 
     b.add("2");
     assert.equal(b.count(), 2);
-    assert.equal(b.is_full(), true, "buffer is full");
+    assert.equal(b.isFull(), true, "buffer is full");
 
     assert.equal(b.remove(), "1");
-    assert.equal(b.is_full(), false);
+    assert.equal(b.isFull(), false);
     assert.equal(b.count(), 1);
 
     assert.equal(b.remove(), "2");
@@ -27,16 +27,16 @@ describe("Fixed buffer", function() {
     b.add("1");
     b.add("2");
 
-    assert.equal(b.is_full(), true, "buffer is full");
+    assert.equal(b.isFull(), true, "buffer is full");
     b.add("3");
-    assert.equal(b.is_full(), true, "buffer is full (1 item overflowing)");
+    assert.equal(b.isFull(), true, "buffer is full (1 item overflowing)");
     b.add("4");
-    assert.equal(b.is_full(), true, "buffer is full (2 items overflowing)");
+    assert.equal(b.isFull(), true, "buffer is full (2 items overflowing)");
     b.remove();
     b.remove();
-    assert.equal(b.is_full(), true, "buffer is full (without overflowing)");
+    assert.equal(b.isFull(), true, "buffer is full (without overflowing)");
     b.remove();
-    assert.equal(b.is_full(), false, "buffer is again not full");
+    assert.equal(b.isFull(), false, "buffer is again not full");
   });
 });
 
@@ -50,14 +50,14 @@ describe("Dropping buffer", function() {
 
     b.add("2");
     assert.equal(b.count(), 2);
-    assert.equal(b.is_full(), false, "dropping buffer is never full");
+    assert.equal(b.isFull(), false, "dropping buffer is never full");
     assert.doesNotThrow(function() {
       b.add("3");
     }, "dropping buffer accepts always accept push");
     assert.equal(b.count(), 2);
 
     assert.equal(b.remove(), "1", "dropping buffer keeps old items");
-    assert.equal(b.is_full(), false);
+    assert.equal(b.isFull(), false);
     assert.equal(b.count(), 1);
 
     assert.equal(b.remove(), "2", "dropping buffer drops newest item");
@@ -76,14 +76,14 @@ describe("Sliding buffer", function() {
 
     b.add("2");
     assert.equal(b.count(), 2);
-    assert.equal(b.is_full(), false, "sliding buffer is never full");
+    assert.equal(b.isFull(), false, "sliding buffer is never full");
     assert.doesNotThrow(function() {
       b.add("3");
     }, "sliding buffer always accepts push");
     assert.equal(b.count(), 2);
 
     assert.equal(b.remove(), "2", "sliding buffer drops oldest item");
-    assert.equal(b.is_full(), false);
+    assert.equal(b.isFull(), false);
     assert.equal(b.count(), 1);
 
     assert.equal(b.remove(), "3", "sliding buffer keeps newest item");

@@ -1,4 +1,5 @@
-var buffers = require("./impl/buffers");
+import * as buffers from './impl/buffers';
+
 var channels = require("./impl/channels");
 var select = require("./impl/select");
 var process = require("./impl/process");
