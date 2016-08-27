@@ -1,6 +1,5 @@
-"use strict";
+import { run, queueDelay } from './dispatch';
 
-var dispatch = require("./dispatch");
 var select = require("./select");
 var Channel = require("./channels").Channel;
 
@@ -59,7 +58,7 @@ var ALTS = "alts";
 // immediately available
 Process.prototype._continue = function(response) {
   var self = this;
-  dispatch.run(function() {
+  run(function() {
     self.run(response);
   });
 };
@@ -69,7 +68,7 @@ Process.prototype._done = function(value) {
     this.finished = true;
     var onFinish = this.onFinish;
     if (typeof onFinish === "function") {
-      dispatch.run(function() {
+      run(function() {
         onFinish(value);
       });
     }
@@ -111,7 +110,7 @@ Process.prototype.run = function(response) {
 
     case SLEEP:
       var msecs = ins.data;
-      dispatch.queue_delay(function() {
+      queueDelay(function() {
         self.run(null);
       }, msecs);
       break;

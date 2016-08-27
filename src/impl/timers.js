@@ -1,11 +1,11 @@
 // @flow
-import dispatch from './dispatch';
+import { queueDelay } from './dispatch';
 import channels from './channels';
 
-export const timeout = (msecs: number) => {
+export const timeout = (msecs: number) => { // eslint-disable-line
   const chan = channels.chan();
 
-  dispatch.queue_delay(() => chan.close(), msecs);
+  queueDelay(() => chan.close(), msecs);
 
   return chan;
 };

@@ -1,7 +1,6 @@
-"use strict";
+import { run } from './dispatch';
 
 var buffers = require("./buffers");
-var dispatch = require("./dispatch");
 
 var MAX_DIRTY = 64;
 var MAX_QUEUE_SIZE = 1024;
@@ -33,7 +32,7 @@ function isReduced(v) {
 }
 
 function schedule(f, v) {
-  dispatch.run(function() {
+  run(function() {
     f(v);
   });
 }
