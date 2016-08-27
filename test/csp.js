@@ -19,7 +19,7 @@ var csp = require("../src/csp"),
     CLOSED = csp.CLOSED,
     NO_VALUE = csp.NO_VALUE;
 
-var do_alts = require("../src/impl/select").do_alts;
+var doAlts = require("../src/impl/select").doAlts;
 
 function closed(chanCons) {
   var ch = chanCons();
@@ -264,8 +264,8 @@ describe("alts", function() {
       // We want to test that an immediately-available-due-to-closed
       // operation deactivates previously registered operations.
       // Therefore we use "priority" to make sure an already-ready
-      // operation that comes last does not short-circuit do_alts.
-      do_alts(ops, inc, {priority: true});
+      // operation that comes last does not short-circuit doAlts.
+      doAlts(ops, inc, {priority: true});
 
       yield* f.apply(this, chs);
       // One more turn for async operations scheduled by f above.

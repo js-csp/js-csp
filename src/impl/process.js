@@ -116,7 +116,7 @@ Process.prototype.run = function(response) {
       break;
 
     case ALTS:
-      select.do_alts(ins.data.operations, function(result) {
+      select.doAlts(ins.data.operations, function(result) {
         self._continue(result);
       }, ins.data.options);
       break;
