@@ -106,6 +106,6 @@ function pipelineAsync(n, to, af, from, keepOpen) {
 }
 
 module.exports = {
-  pipeline: pipeline,
-  pipelineAsync: pipelineAsync
+  pipeline,
+  pipelineAsync,
 };

@@ -1,37 +1,31 @@
 import * as buffers from './impl/buffers';
+import * as channels from './impl/channels';
+import * as process from './impl/process';
+import * as select from './impl/select';
+import * as timers from './impl/timers';
 
-var channels = require("./impl/channels");
-var select = require("./impl/select");
-var process = require("./impl/process");
-var timers = require("./impl/timers");
+const spawn = (gen, creator) => {
+  const ch = channels.chan(buffers.fixed(1));
 
-function spawn(gen, creator) {
-  var ch = channels.chan(buffers.fixed(1));
-  (new process.Process(gen, function(value) {
+  (new process.Process(gen, (value) => {
     if (value === channels.CLOSED) {
       ch.close();
     } else {
-      process.put_then_callback(ch, value, function(ok) {
-        ch.close();
-      });
+      process.putThenCallback(ch, value, () => ch.close());
     }
   }, creator)).run();
+
   return ch;
 };
 
-function go(f, args) {
-  args = args || [];
+const go = (f, args = []) => spawn(f(...args), f);
 
-  var gen = f.apply(null, args);
-  return spawn(gen, f);
-};
-
-function chan(bufferOrNumber, xform, exHandler) {
-  var buf;
+const chan = (bufferOrNumber, xform, exHandler) => {
+  let buf;
   if (bufferOrNumber === 0) {
     bufferOrNumber = null;
   }
-  if (typeof bufferOrNumber === "number") {
+  if (typeof bufferOrNumber === 'number') {
     buf = buffers.fixed(bufferOrNumber);
   } else {
     buf = bufferOrNumber;
@@ -44,12 +38,12 @@ module.exports = {
   buffers: {
     fixed: buffers.fixed,
     dropping: buffers.dropping,
-    sliding: buffers.sliding
+    sliding: buffers.sliding,
   },
 
-  spawn: spawn,
-  go: go,
-  chan: chan,
+  spawn,
+  go,
+  chan,
   DEFAULT: select.DEFAULT,
   CLOSED: channels.CLOSED,
 
@@ -59,9 +53,9 @@ module.exports = {
   poll: process.poll,
   sleep: process.sleep,
   alts: process.alts,
-  putAsync: process.put_then_callback,
-  takeAsync: process.take_then_callback,
+  putAsync: process.putThenCallback,
+  takeAsync: process.takeThenCallback,
   NO_VALUE: process.NO_VALUE,
 
-  timeout: timers.timeout
+  timeout: timers.timeout,
 };

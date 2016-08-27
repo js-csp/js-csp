@@ -416,7 +416,7 @@ describe("Goroutine", function() {
     }, [42]);
     var value = yield take(ch);
     assert.equal(value, 42, "returned value is delivered");
-    assert.equal(ch.is_closed(), true, "output channel is closed");
+    assert.equal(ch.isClosed(), true, "output channel is closed");
   });
 
   it("should leave yielded normal values untouched", function*() {
@@ -434,7 +434,7 @@ describe("Goroutine", function() {
     }, [CLOSED]);
     var value = yield take(ch);
     assert.equal(value, CLOSED, "CLOSED is delivered");
-    assert.equal(ch.is_closed(), true, "output channel is closed");
+    assert.equal(ch.isClosed(), true, "output channel is closed");
   });
 });
 

@@ -1,10 +1,11 @@
 // @flow
-export const EMPTY = () => ({
-  toString: () => '[Function EMPTY]',
+export const EMPTY: Function = (): Object => ({
+  toString(): string {
+    return '[object EMPTY]';
+  },
 });
 
-
-class RingBuffer {
+export class RingBuffer {
   _array: Function[];
 
   constructor() {
@@ -32,8 +33,7 @@ class RingBuffer {
   }
 }
 
-
-class FixedBuffer {
+export class FixedBuffer {
   _buffer: RingBuffer;
   _n: number;
 
@@ -59,8 +59,7 @@ class FixedBuffer {
   }
 }
 
-
-class DroppingBuffer {
+export class DroppingBuffer {
   _buffer: RingBuffer;
   _n: number;
 
@@ -88,8 +87,7 @@ class DroppingBuffer {
   }
 }
 
-
-class SlidingBuffer {
+export class SlidingBuffer {
   _buffer: RingBuffer;
   _n: number;
 
@@ -118,7 +116,6 @@ class SlidingBuffer {
     return this._buffer.size();
   }
 }
-
 
 /**
  * Returns a buffer that is considered "full" when it reaches size n,

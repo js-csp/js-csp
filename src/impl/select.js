@@ -4,11 +4,11 @@ import range from 'lodash/range';
 import shuffle from 'lodash/shuffle';
 import { Box } from './channels';
 
-class AltHandler {
+export class AltHandler {
   flag: Box;
   f: Function;
 
-  constructor(flag, f) {
+  constructor(flag: Box, f: Function) {
     this.f = f;
     this.flag = flag;
   }
@@ -17,29 +17,30 @@ class AltHandler {
     return this.flag.value;
   }
 
-  isBlockable() {
+  isBlockable(): boolean {
     return true;
   }
 
-  commit() {
+  commit(): Function {
     this.flag.value = false;
     return this.f;
   }
 }
 
-class AltResult {
-  // TODO: Fix this
+export class AltResult {
   value: Object;
   channel: Object;
 
-  constructor(value, channel) {
+  constructor(value: Object, channel: Object) {
     this.value = value;
     this.channel = channel;
   }
 }
 
-export const DEFAULT = {
-  toString: () => '[object DEFAULT]',
+export const DEFAULT: Object = {
+  toString(): string {
+    return '[object DEFAULT]';
+  },
 };
 
 // TODO: Accept a priority function or something

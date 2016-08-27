@@ -1,328 +1,317 @@
 import { run } from './dispatch';
-import * as buffers from './buffers';
+import { ring as ringBuffer, EMPTY as EMPTY_BUFFER } from './buffers';
 
-var MAX_DIRTY = 64;
-var MAX_QUEUE_SIZE = 1024;
+export const MAX_DIRTY = 64;
+export const MAX_QUEUE_SIZE = 1024;
+export const CLOSED = null;
 
-var CLOSED = null;
+const isReduced = (v) => v && v['@@transducer/reduced'];
+const schedule = (f, v) => run(() => f(v));
 
-var Box = function(value) {
-  this.value = value;
-};
+export class Box {
+  value: any;
 
-var PutBox = function(handler, value) {
-  this.handler = handler;
-  this.value = value;
-};
-
-var Channel = function(takes, puts, buf, xform) {
-  this.buf = buf;
-  this.xform = xform;
-  this.takes = takes;
-  this.puts = puts;
-
-  this.dirty_takes = 0;
-  this.dirty_puts = 0;
-  this.closed = false;
-};
-
-function isReduced(v) {
-  return v && v["@@transducer/reduced"];
+  constructor(value: any) {
+    this.value = value;
+  }
 }
 
-function schedule(f, v) {
-  run(function() {
-    f(v);
-  });
+export class PutBox {
+  constructor(handler, value) {
+    this.handler = handler;
+    this.value = value;
+  }
 }
 
-Channel.prototype._put = function(value, handler) {
-  if (value === CLOSED) {
-    throw new Error("Cannot put CLOSED on a channel.");
+export class Channel {
+  constructor(takes, puts, buf, xform) {
+    this.buf = buf;
+    this.xform = xform;
+    this.takes = takes;
+    this.puts = puts;
+
+    this.dirty_takes = 0;
+    this.dirty_puts = 0;
+    this.closed = false;
   }
 
-  // TODO: I'm not sure how this can happen, because the operations
-  // are registered in 1 tick, and the only way for this to be inactive
-  // is for a previous operation in the same alt to have returned
-  // immediately, which would have short-circuited to prevent this to
-  // be ever register anyway. The same thing goes for the active check
-  // in "_take".
-  if (!handler.isActive()) {
-    return null;
-  }
+  _put(value, handler) {
+    if (value === CLOSED) {
+      throw new Error('Cannot put CLOSED on a channel.');
+    }
 
-  if (this.closed) {
-    handler.commit();
-    return new Box(false);
-  }
+    // TODO: I'm not sure how this can happen, because the operations
+    // are registered in 1 tick, and the only way for this to be inactive
+    // is for a previous operation in the same alt to have returned
+    // immediately, which would have short-circuited to prevent this to
+    // be ever register anyway. The same thing goes for the active check
+    // in "_take".
+    if (!handler.isActive()) {
+      return null;
+    }
 
-  var taker, callback;
+    if (this.closed) {
+      handler.commit();
+      return new Box(false);
+    }
 
-  // Soak the value through the buffer first, even if there is a
-  // pending taker. This way the step function has a chance to act on the
-  // value.
-  if (this.buf && !this.buf.isFull()) {
-    handler.commit();
-    var done = isReduced(this.xform["@@transducer/step"](this.buf, value));
-    while (true) {
-      if (this.buf.count() === 0) {
-        break;
+    // Soak the value through the buffer first, even if there is a
+    // pending taker. This way the step function has a chance to act on the
+    // value.
+    if (this.buf && !this.buf.isFull()) {
+      handler.commit();
+      const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
+
+      for (;;) {
+        if (this.buf.count() === 0) {
+          break;
+        }
+        const taker = this.takes.pop();
+        if (taker === EMPTY_BUFFER) {
+          break;
+        }
+        if (taker.isActive()) {
+          schedule(taker.commit(), this.buf.remove());
+        }
       }
-      taker = this.takes.pop();
-      if (taker === buffers.EMPTY) {
+      if (done) {
+        this.close();
+      }
+      return new Box(true);
+    }
+
+    // Either the buffer is full, in which case there won't be any
+    // pending takes, or we don't have a buffer, in which case this loop
+    // fulfills the first of them that is active (note that we don't
+    // have to worry about transducers here since we require a buffer
+    // for that).
+    for (;;) {
+      const taker = this.takes.pop();
+      if (taker === EMPTY_BUFFER) {
         break;
       }
       if (taker.isActive()) {
-        value = this.buf.remove();
-        callback = taker.commit();
+        handler.commit();
+        const callback = taker.commit();
         schedule(callback, value);
+        return new Box(true);
       }
     }
-    if (done) {
-      this.close();
-    }
-    return new Box(true);
-  }
 
-  // Either the buffer is full, in which case there won't be any
-  // pending takes, or we don't have a buffer, in which case this loop
-  // fulfills the first of them that is active (note that we don't
-  // have to worry about transducers here since we require a buffer
-  // for that).
-  while (true) {
-    taker = this.takes.pop();
-    if (taker === buffers.EMPTY) {
-      break;
+    // No buffer, full buffer, no pending takes. Queue this put now if blockable.
+    if (this.dirty_puts > MAX_DIRTY) {
+      this.puts.cleanup((putter) => putter.handler.isActive());
+      this.dirty_puts = 0;
+    } else {
+      this.dirty_puts ++;
     }
-    if (taker.isActive()) {
-      handler.commit();
-      callback = taker.commit();
-      schedule(callback, value);
-      return new Box(true);
+    if (handler.isBlockable()) {
+      if (this.puts.length >= MAX_QUEUE_SIZE) {
+        throw new Error(`No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`);
+      }
+      this.puts.unshift(new PutBox(handler, value));
     }
-  }
-
-  // No buffer, full buffer, no pending takes. Queue this put now if blockable.
-  if (this.dirty_puts > MAX_DIRTY) {
-    this.puts.cleanup(function(putter) {
-      return putter.handler.isActive();
-    });
-    this.dirty_puts = 0;
-  } else {
-    this.dirty_puts ++;
-  }
-  if (handler.isBlockable()) {
-    if (this.puts.length >= MAX_QUEUE_SIZE) {
-        throw new Error("No more than " + MAX_QUEUE_SIZE + " pending puts are allowed on a single channel.");
-    }
-    this.puts.unshift(new PutBox(handler, value));
-  }
-  return null;
-};
-
-Channel.prototype._take = function(handler) {
-  if (!handler.isActive()) {
     return null;
   }
 
-  var putter, put_handler, callback, value;
-
-  if (this.buf && this.buf.count() > 0) {
-    handler.commit();
-    value = this.buf.remove();
-    // We need to check pending puts here, other wise they won't
-    // be able to proceed until their number reaches MAX_DIRTY
-    while (true) {
-      if (this.buf.isFull()) {
-        break;
-      }
-      putter = this.puts.pop();
-      if (putter === buffers.EMPTY) {
-        break;
-      }
-      put_handler = putter.handler;
-      if (put_handler.isActive()) {
-        callback = put_handler.commit();
-        if (callback) {
-          schedule(callback, true);
-        }
-        if (isReduced(this.xform["@@transducer/step"](this.buf, putter.value))) {
-          this.close();
-        }
-      }
+  _take(handler) {
+    if (!handler.isActive()) {
+      return null;
     }
-    return new Box(value);
-  }
 
-  // Either the buffer is empty, in which case there won't be any
-  // pending puts, or we don't have a buffer, in which case this loop
-  // fulfills the first of them that is active (note that we don't
-  // have to worry about transducers here since we require a buffer
-  // for that).
-  while (true) {
-    putter = this.puts.pop();
-    value = putter.value;
-    if (putter === buffers.EMPTY) {
-      break;
-    }
-    put_handler = putter.handler;
-    if (put_handler.isActive()) {
+    if (this.buf && this.buf.count() > 0) {
       handler.commit();
-      callback = put_handler.commit();
-      if (callback) {
-        schedule(callback, true);
+      const value = this.buf.remove();
+      // We need to check pending puts here, other wise they won't
+      // be able to proceed until their number reaches MAX_DIRTY
+      for (;;) {
+        if (this.buf.isFull()) {
+          break;
+        }
+
+        const putter = this.puts.pop();
+        if (putter === EMPTY_BUFFER) {
+          break;
+        }
+
+        const putHandler = putter.handler;
+        if (putHandler.isActive()) {
+          const callback = putHandler.commit();
+          if (callback) {
+            schedule(callback, true);
+          }
+
+          if (isReduced(this.xform['@@transducer/step'](this.buf, putter.value))) {
+            this.close();
+          }
+        }
       }
       return new Box(value);
     }
-  }
 
-  if (this.closed) {
-    handler.commit();
-    return new Box(CLOSED);
-  }
+    // Either the buffer is empty, in which case there won't be any
+    // pending puts, or we don't have a buffer, in which case this loop
+    // fulfills the first of them that is active (note that we don't
+    // have to worry about transducers here since we require a buffer
+    // for that).
+    for (;;) {
+      const putter = this.puts.pop();
+      const value = putter.value;
 
-  // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
-  if (this.dirty_takes > MAX_DIRTY) {
-    this.takes.cleanup(function(handler) {
-      return handler.isActive();
-    });
-    this.dirty_takes = 0;
-  } else {
-    this.dirty_takes ++;
-  }
-  if (handler.isBlockable()) {
-    if (this.takes.length >= MAX_QUEUE_SIZE) {
-      throw new Error("No more than " + MAX_QUEUE_SIZE + " pending takes are allowed on a single channel.");
+      if (putter === EMPTY_BUFFER) {
+        break;
+      }
+
+      const putHandler = putter.handler;
+
+      if (putHandler.isActive()) {
+        handler.commit();
+        const callback = putHandler.commit();
+        if (callback) {
+          schedule(callback, true);
+        }
+        return new Box(value);
+      }
     }
-    this.takes.unshift(handler);
-  }
-  return null;
-};
 
-Channel.prototype.close = function() {
-  if (this.closed) {
-    return;
-  }
-  this.closed = true;
+    if (this.closed) {
+      handler.commit();
+      return new Box(CLOSED);
+    }
 
-  // TODO: Duplicate code. Make a "_flush" function or something
-  if (this.buf) {
-    this.xform["@@transducer/result"](this.buf);
-    while (true) {
-      if (this.buf.count() === 0) {
-        break;
+    // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
+    if (this.dirty_takes > MAX_DIRTY) {
+      this.takes.cleanup((_handler) => _handler.isActive());
+      this.dirty_takes = 0;
+    } else {
+      this.dirty_takes ++;
+    }
+
+    if (handler.isBlockable()) {
+      if (this.takes.length >= MAX_QUEUE_SIZE) {
+        throw new Error(`No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`);
       }
-      taker = this.takes.pop();
-      if (taker === buffers.EMPTY) {
-        break;
+
+      this.takes.unshift(handler);
+    }
+    return null;
+  }
+
+  close() {
+    if (this.closed) return;
+
+    this.closed = true;
+
+    // TODO: Duplicate code. Make a "_flush" function or something
+    if (this.buf) {
+      this.xform['@@transducer/result'](this.buf);
+
+      for (;;) {
+        if (this.buf.count() === 0) break;
+
+        const taker = this.takes.pop();
+
+        if (taker === EMPTY_BUFFER) break;
+
+        if (taker.isActive()) {
+          schedule(taker.commit(), this.buf.remove());
+        }
       }
+    }
+
+    for (;;) {
+      const taker = this.takes.pop();
+
+      if (taker === EMPTY_BUFFER) break;
+
       if (taker.isActive()) {
-        callback = taker.commit();
-        var value = this.buf.remove();
-        schedule(callback, value);
+        schedule(taker.commit(), CLOSED);
+      }
+    }
+
+    for (;;) {
+      const putter = this.puts.pop();
+
+      if (putter === EMPTY_BUFFER) break;
+
+      if (putter.handler.isActive()) {
+        const pulCallback = putter.handler.commit();
+
+        if (pulCallback) {
+          schedule(pulCallback, false);
+        }
       }
     }
   }
 
-  while (true) {
-    var taker = this.takes.pop();
-    if (taker === buffers.EMPTY) {
-      break;
-    }
-    if (taker.isActive()) {
-      var callback = taker.commit();
-      schedule(callback, CLOSED);
-    }
+  isClosed() {
+    return this.closed;
   }
-
-  while (true) {
-    var putter = this.puts.pop();
-    if (putter === buffers.EMPTY) {
-      break;
-    }
-    if (putter.handler.isActive()) {
-      var put_callback = putter.handler.commit();
-      if (put_callback) {
-        schedule(put_callback, false);
-      }
-    }
-  }
-};
-
-
-Channel.prototype.is_closed = function() {
-  return this.closed;
-};
-
-function defaultHandler(e) {
-  console.log('error in channel transformer', e.stack);
-  return CLOSED;
-}
-
-function handleEx(buf, exHandler, e) {
-  var def = (exHandler || defaultHandler)(e);
-  if (def !== CLOSED) {
-    buf.add(def);
-  }
-  return buf;
 }
 
 // The base transformer object to use with transducers
-function AddTransformer() {
+class AddTransformer {
+  ['@@transducer/init']() {
+    throw new Error('init not available');
+  }
+
+  ['@@transducer/result'](v) {
+    return v;
+  }
+
+  ['@@transducer/step'](buffer, input) {
+    buffer.add(input);
+    return buffer;
+  }
 }
 
-AddTransformer.prototype["@@transducer/init"] = function() {
-  throw new Error('init not available');
+const defaultHandler = (e) => {
+  console.log('error in channel transformer', e.stack);
+  return CLOSED;
 };
 
-AddTransformer.prototype["@@transducer/result"] = function(v) {
-  return v;
+const handleEx = (buf, exHandler: Function = defaultHandler, e) => {
+  const def = exHandler(e);
+
+  if (def !== CLOSED) {
+    buf.add(def);
+  }
+
+  return buf;
 };
 
-AddTransformer.prototype["@@transducer/step"] = function(buffer, input) {
-  buffer.add(input);
-  return buffer;
-};
+const handleException = (exHandler) => (xform) => ({
+  '@@transducer/step': (buffer, input) => {
+    try {
+      return xform['@@transducer/step'](buffer, input);
+    } catch (e) {
+      return handleEx(buffer, exHandler, e);
+    }
+  },
+  '@@transducer/result': (buffer) => {
+    try {
+      return xform['@@transducer/result'](buffer);
+    } catch (e) {
+      return handleEx(buffer, exHandler, e);
+    }
+  },
+});
 
-
-function handleException(exHandler) {
-  return function(xform) {
-    return {
-      "@@transducer/step": function(buffer, input) {
-        try {
-          return xform["@@transducer/step"](buffer, input);
-        } catch (e) {
-          return handleEx(buffer, exHandler, e);
-        }
-      },
-      "@@transducer/result": function(buffer) {
-        try {
-          return xform["@@transducer/result"](buffer);
-        } catch (e) {
-          return handleEx(buffer, exHandler, e);
-        }
-      }
-    };
-  };
-}
 
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducer xform, not both
-exports.chan = function(buf, xform, exHandler) {
+export const chan = (buf, xform, exHandler): Channel => {
   if (xform) {
     if (!buf) {
-      throw new Error("Only buffered channels can use transducers");
+      throw new Error('Only buffered channels can use transducers');
     }
 
     xform = xform(new AddTransformer());
   } else {
     xform = new AddTransformer();
   }
+
   xform = handleException(exHandler)(xform);
 
-  return new Channel(buffers.ring(32), buffers.ring(32), buf, xform);
+  return new Channel(ringBuffer(), ringBuffer(), buf, xform);
 };
-
-exports.Box = Box;
-exports.Channel = Channel;
-exports.CLOSED = CLOSED;

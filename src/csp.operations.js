@@ -1,22 +1,10 @@
-"use strict";
-
-var Box = require("./impl/channels").Box;
-
-var csp = require("./csp.core"),
-    go = csp.go,
-    take = csp.take,
-    put = csp.put,
-    takeAsync = csp.takeAsync,
-    putAsync = csp.putAsync,
-    alts = csp.alts,
-    chan = csp.chan,
-    CLOSED = csp.CLOSED;
-
+import { Box } from './impl/channels';
+import { go, take, put, takeAsync, putAsync, alts, chan, CLOSED } from './csp.core';
 
 function mapFrom(f, ch) {
   return {
-    is_closed: function() {
-      return ch.is_closed();
+    isClosed: function() {
+      return ch.isClosed();
     },
     close: function() {
       ch.close();
@@ -48,8 +36,8 @@ function mapFrom(f, ch) {
 
 function mapInto(f, ch) {
   return {
-    is_closed: function() {
-      return ch.is_closed();
+    isClosed: function() {
+      return ch.isClosed();
     },
     close: function() {
       ch.close();
@@ -82,8 +70,8 @@ function filterFrom(p, ch, bufferOrN) {
 
 function filterInto(p, ch) {
   return {
-    is_closed: function() {
-      return ch.is_closed();
+    isClosed: function() {
+      return ch.isClosed();
     },
     close: function() {
       ch.close();
@@ -92,7 +80,7 @@ function filterInto(p, ch) {
       if (p(value)) {
         return ch._put(value, handler);
       } else {
-        return new Box(!ch.is_closed());
+        return new Box(!ch.isClosed());
       }
     },
     _take: function(handler) {
@@ -125,7 +113,7 @@ function* mapcat(f, src, dst) {
       for (var i = 0; i < length; i++) {
         yield put(dst, seq[i]);
       }
-      if (dst.is_closed()) {
+      if (dst.isClosed()) {
         break;
       }
     }
@@ -740,32 +728,32 @@ pub.unsubAll = function unsubAll(p, topic) {
 };
 
 module.exports = {
-  mapFrom: mapFrom,
-  mapInto: mapInto,
-  filterFrom: filterFrom,
-  filterInto: filterInto,
-  removeFrom: removeFrom,
-  removeInto: removeInto,
-  mapcatFrom: mapcatFrom,
-  mapcatInto: mapcatInto,
+  mapFrom,
+  mapInto,
+  filterFrom,
+  filterInto,
+  removeFrom,
+  removeInto,
+  mapcatFrom,
+  mapcatInto,
 
-  pipe: pipe,
-  split: split,
-  reduce: reduce,
-  onto: onto,
-  fromColl: fromColl,
+  pipe,
+  split,
+  reduce,
+  onto,
+  fromColl,
 
-  map: map,
-  merge: merge,
-  into: into,
+  map,
+  merge,
+  into,
   take: takeN,
-  unique: unique,
-  partition: partition,
-  partitionBy: partitionBy,
+  unique,
+  partition,
+  partitionBy,
 
-  mult: mult,
-  mix: mix,
-  pub: pub
+  mult,
+  mix,
+  pub,
 };
 
 

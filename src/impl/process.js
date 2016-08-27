@@ -1,194 +1,179 @@
-import { run, queueDelay } from './dispatch';
+// @flow
 import { doAlts } from './select';
+import { Box, Channel } from './channels';
+import { run, queueDelay } from './dispatch';
 
-var Channel = require("./channels").Channel;
+export const NO_VALUE: Object = {};
 
-var NO_VALUE = {};
+export class FnHandler {
+  blockable: boolean;
+  func: ?Function;
 
-var FnHandler = function(blockable, f) {
-  this.f = f;
-  this.blockable = blockable;
-};
+  constructor(blockable: boolean, func: ?Function) {
+    this.blockable = blockable;
+    this.func = func;
+  }
 
-FnHandler.prototype.isActive = function() {
-  return true;
-};
+  isActive(): boolean {
+    return true;
+  }
 
-FnHandler.prototype.isBlockable = function() {
-  return this.blockable;
-};
+  isBlockable(): boolean {
+    return this.blockable;
+  }
 
-FnHandler.prototype.commit = function() {
-  return this.f;
-};
+  commit(): ?Function {
+    return this.func;
+  }
+}
 
-function put_then_callback(channel, value, callback) {
-  var result = channel._put(value, new FnHandler(true, callback));
+export class Instruction<T> {
+  static TAKE: string = 'take';
+  static PUT: string = 'put';
+  static SLEEP: string = 'sleep';
+  static ALTS: string = 'alts';
+
+  op: string;
+  data: T;
+
+  constructor(op: string, data: T) {
+    this.op = op;
+    this.data = data;
+  }
+
+  toString(): string {
+    return this.op;
+  }
+}
+
+export type IteratorYieldResultType =
+  Instruction<Channel> | Instruction<{ channel: Channel, value: Object }> |
+  Instruction<number> | Instruction<{ operations: Object[], options: Object }> |
+  Channel | any;
+
+export const putThenCallback = (channel: Channel, value: any, callback: ?Function): void => {
+  const result: ?Box = channel._put(value, new FnHandler(true, callback));
+
   if (result && callback) {
     callback(result.value);
   }
-}
+};
 
-function take_then_callback(channel, callback) {
-  var result = channel._take(new FnHandler(true, callback));
-  if (result) {
+export const takeThenCallback = (channel: Channel, callback: ?Function): void => {
+  const result: ?Box = channel._take(new FnHandler(true, callback));
+
+  if (result && callback) {
     callback(result.value);
   }
-}
-
-var Process = function(gen, onFinish, creator) {
-  this.gen = gen;
-  this.creatorFunc = creator;
-  this.finished = false;
-  this.onFinish = onFinish;
 };
 
-var Instruction = function(op, data) {
-  this.op = op;
-  this.data = data;
-};
+export class Process {
+  gen: Generator<any, any, any>;
+  onFinishFunc: Function;
+  creatorFunc: Function;
+  finished: boolean;
 
-var TAKE = "take";
-var PUT = "put";
-var SLEEP = "sleep";
-var ALTS = "alts";
+  constructor(gen: Generator<any, any, any>, onFinishFunc: Function, creatorFunc: Function) {
+    this.gen = gen;
+    this.creatorFunc = creatorFunc;
+    this.onFinishFunc = onFinishFunc;
+    this.finished = false;
+  }
 
-// TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
-// up the stack, but it means double queueing when the value is not
-// immediately available
-Process.prototype._continue = function(response) {
-  var self = this;
-  run(function() {
-    self.run(response);
-  });
-};
+  _continue(response: any): void {
+    // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
+    // up the stack, but it means double queueing when the value is not
+    // immediately available
+    run(() => this.run(response));
+  }
 
-Process.prototype._done = function(value) {
-  if (!this.finished) {
-    this.finished = true;
-    var onFinish = this.onFinish;
-    if (typeof onFinish === "function") {
-      run(function() {
-        onFinish(value);
-      });
+  _done(value: any): void {
+    if (!this.finished) {
+      this.finished = true;
+      run(() => this.onFinishFunc(value));
     }
   }
-};
 
-Process.prototype.run = function(response) {
-  if (this.finished) {
-    return;
-  }
+  run(response: any): void {
+    if (this.finished) {
+      return;
+    }
 
-  // TODO: Shouldn't we (optionally) stop error propagation here (and
-  // signal the error through a channel or something)? Otherwise the
-  // uncaught exception will crash some runtimes (e.g. Node)
-  var iter = this.gen.next(response);
-  if (iter.done) {
-    this._done(iter.value);
-    return;
-  }
+    // TODO: Shouldn't we (optionally) stop error propagation here (and
+    // signal the error through a channel or something)? Otherwise the
+    // uncaught exception will crash some runtimes (e.g. Node)
+    const iter: IteratorResult<any, any> = this.gen.next(response);
+    const ins: IteratorYieldResultType = iter.value;
 
-  var ins = iter.value;
-  var self = this;
+    if (iter.done) {
+      this._done(ins);
+      return;
+    }
 
-  if (ins instanceof Instruction) {
-    switch (ins.op) {
-    case PUT:
-      var data = ins.data;
-      put_then_callback(data.channel, data.value, function(ok) {
-        self._continue(ok);
-      });
-      break;
+    if (ins instanceof Instruction) {
+      switch (ins.op) {
+        case Instruction.PUT: {
+          const { channel, value }: { channel: Channel, value: Object } = ins.data;
+          putThenCallback(channel, value, (ok) => this._continue(ok));
+          break;
+        }
 
-    case TAKE:
-      var channel = ins.data;
-      take_then_callback(channel, function(value) {
-        self._continue(value);
-      });
-      break;
+        case Instruction.TAKE: {
+          const channel: Channel = ins.data;
+          takeThenCallback(channel, (value) => this._continue(value));
+          break;
+        }
 
-    case SLEEP:
-      var msecs = ins.data;
-      queueDelay(function() {
-        self.run(null);
-      }, msecs);
-      break;
+        case Instruction.SLEEP: {
+          const msecs: number = ins.data;
+          queueDelay(() => this.run(null), msecs);
+          break;
+        }
 
-    case ALTS:
-      doAlts(ins.data.operations, function(result) {
-        self._continue(result);
-      }, ins.data.options);
-      break;
+        case Instruction.ALTS: {
+          doAlts(ins.data.operations, (result) => this._continue(result), ins.data.options);
+          break;
+        }
+
+        default:
+          throw new Error(`Unhandled instruction: ${ins.toString()}`);
+      }
+    } else if (ins instanceof Channel) {
+      takeThenCallback(ins, (value) => this._continue(value));
+    } else {
+      this._continue(ins);
     }
   }
-  else if(ins instanceof Channel) {
-    var channel = ins;
-    take_then_callback(channel, function(value) {
-      self._continue(value);
-    });
-  }
-  else {
-    this._continue(ins);
-  }
-};
-
-function take(channel) {
-  return new Instruction(TAKE, channel);
 }
 
-function put(channel, value) {
-  return new Instruction(PUT, {
-    channel: channel,
-    value: value
-  });
-}
+export const take = (channel: Channel): Instruction<Channel> =>
+  new Instruction(Instruction.TAKE, channel);
 
-function poll(channel) {
+export const put = (channel: Channel, value: Object): Instruction<{ channel: Channel, value: Object }> =>
+  new Instruction(Instruction.PUT, { channel, value });
+
+export const sleep = (msecs: number): Instruction<number> =>
+  new Instruction(Instruction.SLEEP, msecs);
+
+export const alts = (operations: Object[], options: Object): Instruction<{ operations: Object[], options: Object }> =>
+  new Instruction(Instruction.ALTS, { operations, options });
+
+export const poll = (channel: Channel): any => {
   if (channel.closed) {
     return NO_VALUE;
   }
 
-  var result = channel._take(new FnHandler(false));
-  if (result) {
-    return result.value;
-  } else {
-    return NO_VALUE;
-  }
-}
+  const result: ?Box = channel._take(new FnHandler(false));
 
-function offer(channel, value) {
+  return result ? result.value : NO_VALUE;
+};
+
+export const offer = (channel: Channel, value: Object): boolean => {
   if (channel.closed) {
     return false;
   }
 
-  var result = channel._put(value, new FnHandler(false));
-  if (result) {
-    return true;
-  } else {
-    return false;
-  }
-}
+  const result: ?Box = channel._put(value, new FnHandler(false));
 
-function sleep(msecs) {
-  return new Instruction(SLEEP, msecs);
-}
-
-function alts(operations, options) {
-  return new Instruction(ALTS, {
-    operations: operations,
-    options: options
-  });
-}
-
-exports.put_then_callback = put_then_callback;
-exports.take_then_callback = take_then_callback;
-exports.put = put;
-exports.take = take;
-exports.offer = offer;
-exports.poll = poll;
-exports.sleep = sleep;
-exports.alts = alts;
-exports.Instruction = Instruction;
-exports.Process = Process;
-exports.NO_VALUE = NO_VALUE;
+  return result instanceof Box;
+};
