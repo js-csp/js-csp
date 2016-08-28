@@ -1,6 +1,5 @@
 // @flow
 import { run } from './dispatch';
-import FnHandler from './fn-handler';
 import { RingBuffer, FixedBuffer, DroppingBuffer, SlidingBuffer, ring, EMPTY } from './buffers';
 
 export const MAX_DIRTY = 64;
@@ -46,7 +45,7 @@ export class Channel {
     this.closed = false;
   }
 
-  put(value, handler) {
+  put(value, handler): ?Box {
     if (value === CLOSED) {
       throw new Error('Cannot put CLOSED on a channel.');
     }
@@ -125,7 +124,7 @@ export class Channel {
     return null;
   }
 
-  take(handler: FnHandler) {
+  take(handler): ?Box {
     if (!handler.isActive()) {
       return null;
     }
@@ -261,31 +260,24 @@ export class Channel {
 }
 
 // The base transformer object to use with transducers
-class AddTransformer {
-  // $FlowFixMe
-  '@@transducer/init'() {
+const AddTransformer: Object = {
+  '@@transducer/init': () => {
     throw new Error('init not available');
-  }
+  },
 
-  // $FlowFixMe
-  '@@transducer/result'(v) {
-    return v;
-  }
+  '@@transducer/result': (v) => v,
 
-  // $FlowFixMe
-  '@@transducer/step'(buffer, input) {
+  '@@transducer/step': (buffer, input) => {
     buffer.add(input);
     return buffer;
-  }
-}
-
-const defaultHandler = (e: Error) => {
-  console.log('error in channel transformer', e.stack);
-  return CLOSED;
+  },
 };
 
-const handleEx = (buf, exHandler: Function = defaultHandler, e: Error) => {
-  const def = exHandler(e);
+const handleEx = (buf: ChannelBufferType, exHandler: ?Function, e: Error) => {
+  const def = (exHandler || ((err: Error) => {
+    console.log('error in channel transformer', err.stack); // eslint-disable-line
+    return CLOSED;
+  }))(e);
 
   if (def !== CLOSED) {
     buf.add(def);
@@ -295,40 +287,36 @@ const handleEx = (buf, exHandler: Function = defaultHandler, e: Error) => {
 };
 
 const handleException = (exHandler: ?Function): Function => (xform: Object): Object => ({
-  '@@transducer/step': (buffer, input) => {
+  '@@transducer/step': (buffer: ChannelBufferType, input: any) => {
     try {
       return xform['@@transducer/step'](buffer, input);
     } catch (e) {
-      // $FlowFixMe
       return handleEx(buffer, exHandler, e);
     }
   },
-  '@@transducer/result': (buffer) => {
+  '@@transducer/result': (buffer: ChannelBufferType) => {
     try {
       return xform['@@transducer/result'](buffer);
     } catch (e) {
-      // $FlowFixMe
       return handleEx(buffer, exHandler, e);
     }
   },
 });
 
-
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducer xform, not both
-// $FlowFixMe
 export const chan = (buf: ?ChannelBufferType, xform: ?Function, exHandler: ?Function): Channel => {
+  let newXForm: typeof AddTransformer;
+
   if (xform) {
     if (!buf) {
       throw new Error('Only buffered channels can use transducers');
     }
 
-    xform = xform(new AddTransformer());
+    newXForm = xform(AddTransformer);
   } else {
-    xform = new AddTransformer();
+    newXForm = AddTransformer;
   }
 
-  xform = handleException(exHandler)(xform);
-
-  return new Channel(ring(), ring(), buf, xform);
+  return new Channel(ring(), ring(), buf, handleException(exHandler)(newXForm));
 };

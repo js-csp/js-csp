@@ -17,7 +17,7 @@ export const doAlts = (operations: Channel[] | [Channel, any][], callback: Funct
   const flag: Box<boolean> = new Box(true);
   const indexes: number[] = shuffle(range(operations.length));
   const hasPriority: boolean = !!(options && options.priority);
-  let result;
+  let result: ?Box;
 
   for (let i = 0; i < operations.length; i++) {
     const operation: Channel | [Channel, any] = operations[hasPriority ? i : indexes[i]];
@@ -31,14 +31,13 @@ export const doAlts = (operations: Channel[] | [Channel, any][], callback: Funct
       result = ch.put(operation[1], new AltHandler(flag, (ok) => callback(new AltResult(ok, ch))));
     }
 
-    // XXX Hmm
-    if (result instanceof Box) {
+    if (result) {
       callback(new AltResult(result.value, ch));
       break;
     }
   }
 
-  if (!(result instanceof Box) && has(options, 'default') && flag.value) {
+  if (!result && has(options, 'default') && flag.value) {
     flag.value = false;
     callback(new AltResult(options.default, DEFAULT));
   }
