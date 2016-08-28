@@ -47,7 +47,7 @@ export const DEFAULT: Object = {
 export const doAlts = (operations: Object[], callback: Function, options: Object) => {
   if (operations.length === 0) throw new Error('Empty alt list');
 
-  const flag = new Box(true);
+  const flag: Box<boolean> = new Box(true);
   const indexes = shuffle(range(operations.length));
   const hasPriority = options && options.priority;
   let result;

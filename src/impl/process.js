@@ -1,55 +1,16 @@
 // @flow
 import { doAlts } from './select';
+import FnHandler from './fn-handler';
+import Instruction from './instruction';
 import { Box, Channel } from './channels';
 import { run, queueDelay } from './dispatch';
 
 export const NO_VALUE: Object = {};
 
-export class FnHandler {
-  blockable: boolean;
-  func: ?Function;
-
-  constructor(blockable: boolean, func: ?Function) {
-    this.blockable = blockable;
-    this.func = func;
-  }
-
-  isActive(): boolean {
-    return true;
-  }
-
-  isBlockable(): boolean {
-    return this.blockable;
-  }
-
-  commit(): ?Function {
-    return this.func;
-  }
-}
-
-export class Instruction<T> {
-  static TAKE: string = 'take';
-  static PUT: string = 'put';
-  static SLEEP: string = 'sleep';
-  static ALTS: string = 'alts';
-
-  op: string;
-  data: T;
-
-  constructor(op: string, data: T) {
-    this.op = op;
-    this.data = data;
-  }
-
-  toString(): string {
-    return this.op;
-  }
-}
-
-export type IteratorYieldResultType =
-  Instruction<Channel> | Instruction<{ channel: Channel, value: Object }> |
-  Instruction<number> | Instruction<{ operations: Object[], options: Object }> |
-  Channel | any;
+export type TakeInstructionType = Instruction<Channel>;
+export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
+export type SleepInstructionType = Instruction<number>;
+export type AltsInstructionType = Instruction<{ operations: Object[], options: Object }>;
 
 export const putThenCallback = (channel: Channel, value: any, callback: ?Function): void => {
   const result: ?Box = channel._put(value, new FnHandler(true, callback));
@@ -102,8 +63,8 @@ export class Process {
     // TODO: Shouldn't we (optionally) stop error propagation here (and
     // signal the error through a channel or something)? Otherwise the
     // uncaught exception will crash some runtimes (e.g. Node)
-    const iter: IteratorResult<any, any> = this.gen.next(response);
-    const ins: IteratorYieldResultType = iter.value;
+    const iter = this.gen.next(response);
+    const ins = iter.value;
 
     if (iter.done) {
       this._done(ins);
@@ -112,21 +73,18 @@ export class Process {
 
     if (ins instanceof Instruction) {
       switch (ins.op) {
-        case Instruction.PUT: {
-          const { channel, value }: { channel: Channel, value: Object } = ins.data;
-          putThenCallback(channel, value, (ok) => this._continue(ok));
+        case Instruction.TAKE: {
+          takeThenCallback(ins.data, (value) => this._continue(value));
           break;
         }
 
-        case Instruction.TAKE: {
-          const channel: Channel = ins.data;
-          takeThenCallback(channel, (value) => this._continue(value));
+        case Instruction.PUT: {
+          putThenCallback(ins.data.channel, ins.data.value, (ok) => this._continue(ok));
           break;
         }
 
         case Instruction.SLEEP: {
-          const msecs: number = ins.data;
-          queueDelay(() => this.run(null), msecs);
+          queueDelay(() => this.run(null), ins.data);
           break;
         }
 
@@ -146,17 +104,13 @@ export class Process {
   }
 }
 
-export const take = (channel: Channel): Instruction<Channel> =>
-  new Instruction(Instruction.TAKE, channel);
+export const take = (channel: Channel): TakeInstructionType => new Instruction(Instruction.TAKE, channel);
 
-export const put = (channel: Channel, value: Object): Instruction<{ channel: Channel, value: Object }> =>
-  new Instruction(Instruction.PUT, { channel, value });
+export const put = (channel: Channel, value: Object): PutInstructionType => new Instruction(Instruction.PUT, { channel, value });
 
-export const sleep = (msecs: number): Instruction<number> =>
-  new Instruction(Instruction.SLEEP, msecs);
+export const sleep = (msecs: number): SleepInstructionType => new Instruction(Instruction.SLEEP, msecs);
 
-export const alts = (operations: Object[], options: Object): Instruction<{ operations: Object[], options: Object }> =>
-  new Instruction(Instruction.ALTS, { operations, options });
+export const alts = (operations: Object[], options: Object): AltsInstructionType => new Instruction(Instruction.ALTS, { operations, options });
 
 export const poll = (channel: Channel): any => {
   if (channel.closed) {

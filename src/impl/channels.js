@@ -1,17 +1,21 @@
+// @flow
 import { run } from './dispatch';
-import { ring as ringBuffer, EMPTY as EMPTY_BUFFER } from './buffers';
+import FnHandler from './fn-handler';
+import { RingBuffer, FixedBuffer, DroppingBuffer, SlidingBuffer, ring, EMPTY } from './buffers';
 
 export const MAX_DIRTY = 64;
 export const MAX_QUEUE_SIZE = 1024;
 export const CLOSED = null;
 
+export type ChannelBufferType = FixedBuffer<any> | DroppingBuffer<any> | SlidingBuffer<any>;
+
 const isReduced = (v) => v && v['@@transducer/reduced'];
 const schedule = (f, v) => run(() => f(v));
 
-export class Box {
-  value: any;
+export class Box<T> {
+  value: T;
 
-  constructor(value: any) {
+  constructor(value: T) {
     this.value = value;
   }
 }
@@ -24,14 +28,21 @@ export class PutBox {
 }
 
 export class Channel {
-  constructor(takes, puts, buf, xform) {
+  buf: ?ChannelBufferType;
+  xform: Object;
+  takes: RingBuffer<any>;
+  puts: RingBuffer<any>;
+  dirtyPuts: number;
+  dirtyTakes: number;
+  closed: boolean;
+
+  constructor(takes: RingBuffer<any>, puts: RingBuffer<any>, buf: ?ChannelBufferType, xform: Object) {
     this.buf = buf;
     this.xform = xform;
     this.takes = takes;
     this.puts = puts;
-
-    this.dirty_takes = 0;
-    this.dirty_puts = 0;
+    this.dirtyTakes = 0;
+    this.dirtyPuts = 0;
     this.closed = false;
   }
 
@@ -67,7 +78,7 @@ export class Channel {
           break;
         }
         const taker = this.takes.pop();
-        if (taker === EMPTY_BUFFER) {
+        if (taker === EMPTY) {
           break;
         }
         if (taker.isActive()) {
@@ -87,7 +98,7 @@ export class Channel {
     // for that).
     for (;;) {
       const taker = this.takes.pop();
-      if (taker === EMPTY_BUFFER) {
+      if (taker === EMPTY) {
         break;
       }
       if (taker.isActive()) {
@@ -99,11 +110,11 @@ export class Channel {
     }
 
     // No buffer, full buffer, no pending takes. Queue this put now if blockable.
-    if (this.dirty_puts > MAX_DIRTY) {
+    if (this.dirtyPuts > MAX_DIRTY) {
       this.puts.cleanup((putter) => putter.handler.isActive());
-      this.dirty_puts = 0;
+      this.dirtyPuts = 0;
     } else {
-      this.dirty_puts ++;
+      this.dirtyPuts ++;
     }
     if (handler.isBlockable()) {
       if (this.puts.length >= MAX_QUEUE_SIZE) {
@@ -114,7 +125,7 @@ export class Channel {
     return null;
   }
 
-  _take(handler) {
+  _take(handler: FnHandler) {
     if (!handler.isActive()) {
       return null;
     }
@@ -130,7 +141,7 @@ export class Channel {
         }
 
         const putter = this.puts.pop();
-        if (putter === EMPTY_BUFFER) {
+        if (putter === EMPTY) {
           break;
         }
 
@@ -158,7 +169,7 @@ export class Channel {
       const putter = this.puts.pop();
       const value = putter.value;
 
-      if (putter === EMPTY_BUFFER) {
+      if (putter === EMPTY) {
         break;
       }
 
@@ -180,11 +191,11 @@ export class Channel {
     }
 
     // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
-    if (this.dirty_takes > MAX_DIRTY) {
+    if (this.dirtyTakes > MAX_DIRTY) {
       this.takes.cleanup((_handler) => _handler.isActive());
-      this.dirty_takes = 0;
+      this.dirtyTakes = 0;
     } else {
-      this.dirty_takes ++;
+      this.dirtyTakes ++;
     }
 
     if (handler.isBlockable()) {
@@ -211,7 +222,7 @@ export class Channel {
 
         const taker = this.takes.pop();
 
-        if (taker === EMPTY_BUFFER) break;
+        if (taker === EMPTY) break;
 
         if (taker.isActive()) {
           schedule(taker.commit(), this.buf.remove());
@@ -222,7 +233,7 @@ export class Channel {
     for (;;) {
       const taker = this.takes.pop();
 
-      if (taker === EMPTY_BUFFER) break;
+      if (taker === EMPTY) break;
 
       if (taker.isActive()) {
         schedule(taker.commit(), CLOSED);
@@ -232,7 +243,7 @@ export class Channel {
     for (;;) {
       const putter = this.puts.pop();
 
-      if (putter === EMPTY_BUFFER) break;
+      if (putter === EMPTY) break;
 
       if (putter.handler.isActive()) {
         const pulCallback = putter.handler.commit();
@@ -251,26 +262,29 @@ export class Channel {
 
 // The base transformer object to use with transducers
 class AddTransformer {
-  ['@@transducer/init']() {
+  // $FlowFixMe
+  '@@transducer/init'() {
     throw new Error('init not available');
   }
 
-  ['@@transducer/result'](v) {
+  // $FlowFixMe
+  '@@transducer/result'(v) {
     return v;
   }
 
-  ['@@transducer/step'](buffer, input) {
+  // $FlowFixMe
+  '@@transducer/step'(buffer, input) {
     buffer.add(input);
     return buffer;
   }
 }
 
-const defaultHandler = (e) => {
+const defaultHandler = (e: Error) => {
   console.log('error in channel transformer', e.stack);
   return CLOSED;
 };
 
-const handleEx = (buf, exHandler: Function = defaultHandler, e) => {
+const handleEx = (buf, exHandler: Function = defaultHandler, e: Error) => {
   const def = exHandler(e);
 
   if (def !== CLOSED) {
@@ -280,11 +294,12 @@ const handleEx = (buf, exHandler: Function = defaultHandler, e) => {
   return buf;
 };
 
-const handleException = (exHandler) => (xform) => ({
+const handleException = (exHandler: ?Function): Function => (xform: Object): Object => ({
   '@@transducer/step': (buffer, input) => {
     try {
       return xform['@@transducer/step'](buffer, input);
     } catch (e) {
+      // $FlowFixMe
       return handleEx(buffer, exHandler, e);
     }
   },
@@ -292,6 +307,7 @@ const handleException = (exHandler) => (xform) => ({
     try {
       return xform['@@transducer/result'](buffer);
     } catch (e) {
+      // $FlowFixMe
       return handleEx(buffer, exHandler, e);
     }
   },
@@ -300,7 +316,8 @@ const handleException = (exHandler) => (xform) => ({
 
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducer xform, not both
-export const chan = (buf, xform, exHandler): Channel => {
+// $FlowFixMe
+export const chan = (buf: ?ChannelBufferType, xform: ?Function, exHandler: ?Function): Channel => {
   if (xform) {
     if (!buf) {
       throw new Error('Only buffered channels can use transducers');
@@ -313,5 +330,5 @@ export const chan = (buf, xform, exHandler): Channel => {
 
   xform = handleException(exHandler)(xform);
 
-  return new Channel(ringBuffer(), ringBuffer(), buf, xform);
+  return new Channel(ring(), ring(), buf, xform);
 };

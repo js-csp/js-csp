@@ -1,7 +1,7 @@
 // @flow
 import { RingBuffer, ring, EMPTY } from './buffers';
 
-const tasks: RingBuffer = ring();
+const tasks: RingBuffer<Function> = ring();
 const queueDispatcher = (): void => {
   // See the implementation of setImmediate at babel-runtime/core-js/set-immediate
   // https://github.com/zloirock/core-js/blob/e482646353b489e200a5ecccca6af5c01f0b4ef2/library/modules/_task.js

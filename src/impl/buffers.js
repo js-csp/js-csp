@@ -5,18 +5,18 @@ export const EMPTY: Function = (): Object => ({
   },
 });
 
-export class RingBuffer {
-  _array: Function[];
+export class RingBuffer<T> {
+  _array: T[];
 
   constructor() {
     this._array = [];
   }
 
-  unshift(item: Function): void {
+  unshift(item: T): void {
     this._array.unshift(item);
   }
 
-  pop(): Function {
+  pop(): T | EMPTY {
     if (this._array.length === 0) {
       return EMPTY;
     }
@@ -33,11 +33,11 @@ export class RingBuffer {
   }
 }
 
-export class FixedBuffer {
-  _buffer: RingBuffer;
+export class FixedBuffer<T> {
+  _buffer: RingBuffer<T>;
   _n: number;
 
-  constructor(buffer: RingBuffer, n: number) {
+  constructor(buffer: RingBuffer<T>, n: number) {
     this._buffer = buffer;
     this._n = n;
   }
@@ -46,12 +46,12 @@ export class FixedBuffer {
     return this._buffer.size() >= this._n;
   }
 
-  remove(): Function {
-    return this._buffer.pop();
+  add(item: T): void {
+    this._buffer.unshift(item);
   }
 
-  add(item: Function): void {
-    this._buffer.unshift(item);
+  remove(): T | EMPTY {
+    return this._buffer.pop();
   }
 
   count(): number {
@@ -59,11 +59,11 @@ export class FixedBuffer {
   }
 }
 
-export class DroppingBuffer {
-  _buffer: RingBuffer;
+export class DroppingBuffer<T> {
+  _buffer: RingBuffer<T>;
   _n: number;
 
-  constructor(buffer: RingBuffer, n: number) {
+  constructor(buffer: RingBuffer<T>, n: number) {
     this._buffer = buffer;
     this._n = n;
   }
@@ -72,26 +72,26 @@ export class DroppingBuffer {
     return false;
   }
 
-  remove(): Function {
-    return this._buffer.pop();
-  }
-
-  add(item: Function): void {
+  add(item: T): void {
     if (this._buffer.size() < this._n) {
       this._buffer.unshift(item);
     }
   }
 
+  remove(): T | EMPTY {
+    return this._buffer.pop();
+  }
+
   count(): number {
     return this._buffer.size();
   }
 }
 
-export class SlidingBuffer {
-  _buffer: RingBuffer;
+export class SlidingBuffer<T> {
+  _buffer: RingBuffer<T>;
   _n: number;
 
-  constructor(buffer: RingBuffer, n: number) {
+  constructor(buffer: RingBuffer<T>, n: number) {
     this._buffer = buffer;
     this._n = n;
   }
@@ -100,16 +100,16 @@ export class SlidingBuffer {
     return false;
   }
 
-  remove(): Function {
-    return this._buffer.pop();
-  }
-
-  add(item: Function): void {
+  add(item: T): void {
     if (this._buffer.size() === this._n) {
       this._buffer.pop();
     }
 
     this._buffer.unshift(item);
+  }
+
+  remove(): T | EMPTY {
+    return this._buffer.pop();
   }
 
   count(): number {
@@ -125,7 +125,14 @@ export class SlidingBuffer {
  * running the transduced step function, while still allowing a
  * transduced step to expand into multiple "essence" steps.
  */
-export const ring = (): RingBuffer => new RingBuffer();
-export const fixed = (n: number): FixedBuffer => new FixedBuffer(ring(), n);
-export const dropping = (n: number): DroppingBuffer => new DroppingBuffer(ring(), n);
-export const sliding = (n: number): SlidingBuffer => new SlidingBuffer(ring(), n);
+export const ring = <T>(): RingBuffer<T> => // eslint-disable-line
+  new RingBuffer();
+
+export const fixed = <T>(n: number): FixedBuffer<T> => // eslint-disable-line
+  new FixedBuffer(ring(), n);
+
+export const dropping = <T>(n: number): DroppingBuffer<T> => // eslint-disable-line
+  new DroppingBuffer(ring(), n);
+
+export const sliding = <T>(n: number): SlidingBuffer<T> => // eslint-disable-line
+  new SlidingBuffer(ring(), n);
