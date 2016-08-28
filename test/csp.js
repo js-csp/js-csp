@@ -87,7 +87,7 @@ describe("put", function() {
 
         // XXX FIX: Throwing an exception here (in a "non-top-level"
         // goroutine) makes the alts test crash with a weird "Cannot
-        // call method '_take' of undefined". It goes away if
+        // call method 'take' of undefined". It goes away if
         // Process.prototype.run handles exceptions throw by the
         // generator. It looks like it has to do with mocha's "done"
         // needs to be called for async test to be cleanedly cleaned

@@ -9,11 +9,11 @@ function mapFrom(f, ch) {
     close: function() {
       ch.close();
     },
-    _put: function(value, handler) {
-      return ch._put(value, handler);
+    put: function(value, handler) {
+      return ch.put(value, handler);
     },
-    _take: function(handler) {
-      var result = ch._take({
+    take: function(handler) {
+      var result = ch.take({
         isActive: function() {
           return handler.isActive();
         },
@@ -42,11 +42,11 @@ function mapInto(f, ch) {
     close: function() {
       ch.close();
     },
-    _put: function(value, handler) {
-      return ch._put(f(value), handler);
+    put: function(value, handler) {
+      return ch.put(f(value), handler);
     },
-    _take: function(handler) {
-      return ch._take(handler);
+    take: function(handler) {
+      return ch.take(handler);
     }
   };
 }
@@ -76,15 +76,15 @@ function filterInto(p, ch) {
     close: function() {
       ch.close();
     },
-    _put: function(value, handler) {
+    put: function(value, handler) {
       if (p(value)) {
-        return ch._put(value, handler);
+        return ch.put(value, handler);
       } else {
         return new Box(!ch.isClosed());
       }
     },
-    _take: function(handler) {
-      return ch._take(handler);
+    take: function(handler) {
+      return ch.take(handler);
     }
   };
 }

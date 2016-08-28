@@ -46,7 +46,7 @@ export class Channel {
     this.closed = false;
   }
 
-  _put(value, handler) {
+  put(value, handler) {
     if (value === CLOSED) {
       throw new Error('Cannot put CLOSED on a channel.');
     }
@@ -56,7 +56,7 @@ export class Channel {
     // is for a previous operation in the same alt to have returned
     // immediately, which would have short-circuited to prevent this to
     // be ever register anyway. The same thing goes for the active check
-    // in "_take".
+    // in "take".
     if (!handler.isActive()) {
       return null;
     }
@@ -125,7 +125,7 @@ export class Channel {
     return null;
   }
 
-  _take(handler: FnHandler) {
+  take(handler: FnHandler) {
     if (!handler.isActive()) {
       return null;
     }

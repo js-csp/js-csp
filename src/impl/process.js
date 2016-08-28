@@ -10,10 +10,10 @@ export const NO_VALUE: Object = {};
 export type TakeInstructionType = Instruction<Channel>;
 export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
 export type SleepInstructionType = Instruction<number>;
-export type AltsInstructionType = Instruction<{ operations: Object[], options: Object }>;
+export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
 
 export const putThenCallback = (channel: Channel, value: any, callback: ?Function): void => {
-  const result: ?Box = channel._put(value, new FnHandler(true, callback));
+  const result: ?Box = channel.put(value, new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -21,7 +21,7 @@ export const putThenCallback = (channel: Channel, value: any, callback: ?Functio
 };
 
 export const takeThenCallback = (channel: Channel, callback: ?Function): void => {
-  const result: ?Box = channel._take(new FnHandler(true, callback));
+  const result: ?Box = channel.take(new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -110,14 +110,14 @@ export const put = (channel: Channel, value: Object): PutInstructionType => new 
 
 export const sleep = (msecs: number): SleepInstructionType => new Instruction(Instruction.SLEEP, msecs);
 
-export const alts = (operations: Object[], options: Object): AltsInstructionType => new Instruction(Instruction.ALTS, { operations, options });
+export const alts = (operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType => new Instruction(Instruction.ALTS, { operations, options });
 
 export const poll = (channel: Channel): any => {
   if (channel.closed) {
     return NO_VALUE;
   }
 
-  const result: ?Box = channel._take(new FnHandler(false));
+  const result: ?Box = channel.take(new FnHandler(false));
 
   return result ? result.value : NO_VALUE;
 };
@@ -127,7 +127,7 @@ export const offer = (channel: Channel, value: Object): boolean => {
     return false;
   }
 
-  const result: ?Box = channel._put(value, new FnHandler(false));
+  const result: ?Box = channel.put(value, new FnHandler(false));
 
   return result instanceof Box;
 };

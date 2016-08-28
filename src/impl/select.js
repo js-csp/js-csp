@@ -2,80 +2,38 @@
 import has from 'lodash/get';
 import range from 'lodash/range';
 import shuffle from 'lodash/shuffle';
-import { Box } from './channels';
+import { Channel, Box } from './channels';
+import AltHandler from './alt-handler';
+import { AltResult, DEFAULT } from './alt-result';
 
-export class AltHandler {
-  flag: Box;
-  f: Function;
-
-  constructor(flag: Box, f: Function) {
-    this.f = f;
-    this.flag = flag;
-  }
-
-  isActive() {
-    return this.flag.value;
-  }
-
-  isBlockable(): boolean {
-    return true;
-  }
-
-  commit(): Function {
-    this.flag.value = false;
-    return this.f;
-  }
-}
-
-export class AltResult {
-  value: Object;
-  channel: Object;
-
-  constructor(value: Object, channel: Object) {
-    this.value = value;
-    this.channel = channel;
-  }
-}
-
-export const DEFAULT: Object = {
-  toString(): string {
-    return '[object DEFAULT]';
-  },
-};
+export { DEFAULT };
 
 // TODO: Accept a priority function or something
-export const doAlts = (operations: Object[], callback: Function, options: Object) => {
-  if (operations.length === 0) throw new Error('Empty alt list');
+export const doAlts = (operations: Channel[] | [Channel, any][], callback: Function, options: Object) => {
+  if (operations.length === 0) {
+    throw new Error('Empty alt list');
+  }
 
   const flag: Box<boolean> = new Box(true);
-  const indexes = shuffle(range(operations.length));
-  const hasPriority = options && options.priority;
+  const indexes: number[] = shuffle(range(operations.length));
+  const hasPriority: boolean = !!(options && options.priority);
   let result;
 
   for (let i = 0; i < operations.length; i++) {
-    const operation = operations[hasPriority ? i : indexes[i]];
-    let port;
+    const operation: Channel | [Channel, any] = operations[hasPriority ? i : indexes[i]];
+    let ch: Channel;
 
-    // XXX Hmm
-    if (operation instanceof Array) {
-      const value = operation[1];
-      port = operation[0];
-
-      result = port._put(
-        value,
-        new AltHandler(flag, (ok) => callback(new AltResult(ok, port)))
-      );
+    if (operation instanceof Channel) {
+      ch = operation;
+      result = ch.take(new AltHandler(flag, (value) => callback(new AltResult(value, ch))));
     } else {
-      port = operation;
-
-      result = port._take(
-        new AltHandler(flag, (value) => callback(new AltResult(value, port)))
-      );
+      ch = operation[0];
+      result = ch.put(operation[1], new AltHandler(flag, (ok) => callback(new AltResult(ok, ch))));
     }
 
     // XXX Hmm
     if (result instanceof Box) {
-      callback(new AltResult(result.value, port));
+      callback(new AltResult(result.value, ch));
       break;
     }
   }
