@@ -1,9 +1,9 @@
 // @flow
-export const EMPTY: Function = (): Object => ({
+export const EMPTY: Object = {
   toString(): string {
     return '[object EMPTY]';
   },
-});
+};
 
 export class RingBuffer<T> {
   _array: T[];

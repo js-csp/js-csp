@@ -24,10 +24,10 @@ export class FnHandler {
 
 export class AltHandler {
   flag: Box;
-  f: Function;
+  func: ?Function;
 
-  constructor(flag: Box, f: Function) {
-    this.f = f;
+  constructor(flag: Box, func: ?Function) {
+    this.func = func;
     this.flag = flag;
   }
 
@@ -39,9 +39,9 @@ export class AltHandler {
     return true;
   }
 
-  commit(): Function {
+  commit(): ?Function {
     this.flag.value = false;
-    return this.f;
+    return this.func;
   }
 }
 

@@ -8,7 +8,7 @@ const queueDispatcher = (): void => {
   // Under the hood, it will use process.nextTick, MessageChannel, and fallback to setTimeout
   setImmediate(() => {
     for (; ;) {
-      const task: Function = tasks.pop();
+      const task: Function | typeof EMPTY = tasks.pop();
 
       if (task === EMPTY) break;
 

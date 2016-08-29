@@ -33,13 +33,13 @@ export class PutBox<T> {
 export class Channel {
   buf: ?ChannelBufferType;
   xform: Object;
-  takes: RingBuffer<any>;
-  puts: RingBuffer<any>;
+  takes: RingBuffer<HandlerType>;
+  puts: RingBuffer<PutBox<any>>;
   dirtyPuts: number;
   dirtyTakes: number;
   closed: boolean;
 
-  constructor(takes: RingBuffer<any>, puts: RingBuffer<any>, buf: ?ChannelBufferType, xform: Object) {
+  constructor(takes: RingBuffer<any>, puts: RingBuffer<PutBox<any>>, buf: ?ChannelBufferType, xform: Object) {
     this.buf = buf;
     this.xform = xform;
     this.takes = takes;
@@ -49,7 +49,7 @@ export class Channel {
     this.closed = false;
   }
 
-  put(value: any, handler: HandlerType): ?Box<boolean> {
+  put(value: any, handler: HandlerType): ?Box<any> {
     if (value === CLOSED) {
       throw new Error('Cannot put CLOSED on a channel.');
     }
@@ -80,10 +80,12 @@ export class Channel {
         if (this.buf.count() === 0) {
           break;
         }
-        const taker = this.takes.pop();
+        const taker: HandlerType = this.takes.pop();
+
         if (taker === EMPTY) {
           break;
         }
+
         if (taker.isActive()) {
           schedule(taker.commit(), this.buf.remove());
         }
@@ -100,10 +102,12 @@ export class Channel {
     // have to worry about transducers here since we require a buffer
     // for that).
     for (; ;) {
-      const taker = this.takes.pop();
+      const taker: HandlerType = this.takes.pop();
+
       if (taker === EMPTY) {
         break;
       }
+
       if (taker.isActive()) {
         handler.commit();
         const callback = taker.commit();
@@ -119,23 +123,25 @@ export class Channel {
     } else {
       this.dirtyPuts++;
     }
+
     if (handler.isBlockable()) {
-      if (this.puts.length >= MAX_QUEUE_SIZE) {
+      if (this.puts.size() >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`);
       }
       this.puts.unshift(new PutBox(handler, value));
     }
+
     return null;
   }
 
-  take(handler: HandlerType): ?Box<boolean> {
+  take(handler: HandlerType): ?Box<any> {
     if (!handler.isActive()) {
       return null;
     }
 
     if (this.buf && this.buf.count() > 0) {
       handler.commit();
-      const value = this.buf.remove();
+      const value: any = this.buf.remove();
       // We need to check pending puts here, other wise they won't
       // be able to proceed until their number reaches MAX_DIRTY
       for (; ;) {
@@ -143,14 +149,15 @@ export class Channel {
           break;
         }
 
-        const putter = this.puts.pop();
+        const putter: PutBox<any> = this.puts.pop();
+
         if (putter === EMPTY) {
           break;
         }
 
-        const putHandler = putter.handler;
-        if (putHandler.isActive()) {
-          const callback = putHandler.commit();
+        if (putter.handler.isActive()) {
+          const callback: ?Function = putter.handler.commit();
+
           if (callback) {
             schedule(callback, true);
           }
@@ -169,22 +176,21 @@ export class Channel {
     // have to worry about transducers here since we require a buffer
     // for that).
     for (; ;) {
-      const putter = this.puts.pop();
-      const value = putter.value;
+      const putter: PutBox<any> = this.puts.pop();
 
       if (putter === EMPTY) {
         break;
       }
 
-      const putHandler = putter.handler;
-
-      if (putHandler.isActive()) {
+      if (putter.handler.isActive()) {
         handler.commit();
-        const callback = putHandler.commit();
+        const callback: ?Function = putter.handler.commit();
+
         if (callback) {
           schedule(callback, true);
         }
-        return new Box(value);
+
+        return new Box(putter.value);
       }
     }
 
@@ -195,19 +201,20 @@ export class Channel {
 
     // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
     if (this.dirtyTakes > MAX_DIRTY) {
-      this.takes.cleanup((_handler) => _handler.isActive());
+      this.takes.cleanup((_handler: HandlerType) => _handler.isActive());
       this.dirtyTakes = 0;
     } else {
       this.dirtyTakes++;
     }
 
     if (handler.isBlockable()) {
-      if (this.takes.length >= MAX_QUEUE_SIZE) {
+      if (this.takes.size() >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`);
       }
 
       this.takes.unshift(handler);
     }
+
     return null;
   }
 
@@ -225,7 +232,7 @@ export class Channel {
       for (; ;) {
         if (this.buf.count() === 0) break;
 
-        const taker = this.takes.pop();
+        const taker: HandlerType = this.takes.pop();
 
         if (taker === EMPTY) break;
 
@@ -236,7 +243,7 @@ export class Channel {
     }
 
     for (; ;) {
-      const taker = this.takes.pop();
+      const taker: HandlerType = this.takes.pop();
 
       if (taker === EMPTY) break;
 
@@ -246,12 +253,12 @@ export class Channel {
     }
 
     for (; ;) {
-      const putter = this.puts.pop();
+      const putter: PutBox<any> = this.puts.pop();
 
       if (putter === EMPTY) break;
 
       if (putter.handler.isActive()) {
-        const pulCallback = putter.handler.commit();
+        const pulCallback: ?Function = putter.handler.commit();
 
         if (pulCallback) {
           schedule(pulCallback, false);
