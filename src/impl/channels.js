@@ -49,7 +49,7 @@ export class Channel {
     this.closed = false;
   }
 
-  put(value: any, handler: HandlerType): ?Box {
+  put(value: any, handler: HandlerType): ?Box<boolean> {
     if (value === CLOSED) {
       throw new Error('Cannot put CLOSED on a channel.');
     }
@@ -128,7 +128,7 @@ export class Channel {
     return null;
   }
 
-  take(handler: HandlerType): ?Box {
+  take(handler: HandlerType): ?Box<boolean> {
     if (!handler.isActive()) {
       return null;
     }
@@ -211,8 +211,10 @@ export class Channel {
     return null;
   }
 
-  close() {
-    if (this.closed) return;
+  close(): void {
+    if (this.closed) {
+      return;
+    }
 
     this.closed = true;
 
