@@ -1,6 +1,6 @@
 // @flow
 import { doAlts } from './select';
-import FnHandler from './fn-handler';
+import { FnHandler } from './handlers';
 import Instruction from './instruction';
 import { Box, Channel } from './channels';
 import { run, queueDelay } from './dispatch';
@@ -13,7 +13,7 @@ export type SleepInstructionType = Instruction<number>;
 export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
 
 export const putThenCallback = (channel: Channel, value: any, callback: ?Function): void => {
-  const result: ?Box = channel.put(value, new FnHandler(true, callback));
+  const result: ?Box<any> = channel.put(value, new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -21,7 +21,7 @@ export const putThenCallback = (channel: Channel, value: any, callback: ?Functio
 };
 
 export const takeThenCallback = (channel: Channel, callback: ?Function): void => {
-  const result: ?Box = channel.take(new FnHandler(true, callback));
+  const result: ?Box<any> = channel.take(new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -104,20 +104,30 @@ export class Process {
   }
 }
 
-export const take = (channel: Channel): TakeInstructionType => new Instruction(Instruction.TAKE, channel);
+export const take = (channel: Channel): TakeInstructionType =>
+  new Instruction(Instruction.TAKE, channel);
 
-export const put = (channel: Channel, value: Object): PutInstructionType => new Instruction(Instruction.PUT, { channel, value });
+export const put = (channel: Channel, value: Object): PutInstructionType =>
+  new Instruction(Instruction.PUT, {
+    channel,
+    value,
+  });
 
-export const sleep = (msecs: number): SleepInstructionType => new Instruction(Instruction.SLEEP, msecs);
+export const sleep = (msecs: number): SleepInstructionType =>
+  new Instruction(Instruction.SLEEP, msecs);
 
-export const alts = (operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType => new Instruction(Instruction.ALTS, { operations, options });
+export const alts = (operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType =>
+  new Instruction(Instruction.ALTS, {
+    operations,
+    options,
+  });
 
 export const poll = (channel: Channel): any => {
   if (channel.closed) {
     return NO_VALUE;
   }
 
-  const result: ?Box = channel.take(new FnHandler(false));
+  const result: ?Box<any> = channel.take(new FnHandler(false));
 
   return result ? result.value : NO_VALUE;
 };
@@ -127,7 +137,7 @@ export const offer = (channel: Channel, value: Object): boolean => {
     return false;
   }
 
-  const result: ?Box = channel.put(value, new FnHandler(false));
+  const result: ?Box<any> = channel.put(value, new FnHandler(false));
 
   return result instanceof Box;
 };

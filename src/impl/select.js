@@ -3,13 +3,12 @@ import has from 'lodash/get';
 import range from 'lodash/range';
 import shuffle from 'lodash/shuffle';
 import { Channel, Box } from './channels';
-import AltHandler from './alt-handler';
-import { AltResult, DEFAULT } from './alt-result';
-
-export { DEFAULT };
+import { AltHandler } from './handlers';
+import { AltResult, DEFAULT } from './results';
 
 // TODO: Accept a priority function or something
-export const doAlts = (operations: Channel[] | [Channel, any][], callback: Function, options: Object) => {
+export const doAlts = ( // eslint-disable-line
+  operations: Channel[] | [Channel, any][], callback: Function, options: Object) => {
   if (operations.length === 0) {
     throw new Error('Empty alt list');
   }
@@ -17,7 +16,7 @@ export const doAlts = (operations: Channel[] | [Channel, any][], callback: Funct
   const flag: Box<boolean> = new Box(true);
   const indexes: number[] = shuffle(range(operations.length));
   const hasPriority: boolean = !!(options && options.priority);
-  let result: ?Box;
+  let result: ?Box<any>;
 
   for (let i = 0; i < operations.length; i++) {
     const operation: Channel | [Channel, any] = operations[hasPriority ? i : indexes[i]];
@@ -25,10 +24,14 @@ export const doAlts = (operations: Channel[] | [Channel, any][], callback: Funct
 
     if (operation instanceof Channel) {
       ch = operation;
-      result = ch.take(new AltHandler(flag, (value) => callback(new AltResult(value, ch))));
+      result = ch.take(
+        new AltHandler(flag, (value) => callback(new AltResult(value, ch)))
+      );
     } else {
       ch = operation[0];
-      result = ch.put(operation[1], new AltHandler(flag, (ok) => callback(new AltResult(ok, ch))));
+      result = ch.put(
+        operation[1], new AltHandler(flag, (ok) => callback(new AltResult(ok, ch)))
+      );
     }
 
     if (result) {

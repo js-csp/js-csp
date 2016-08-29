@@ -1,25 +1,25 @@
 import { Box } from './impl/channels';
-import { go, take, put, takeAsync, putAsync, alts, chan, CLOSED } from './csp.core';
+import { take, put, takeAsync, putAsync, alts, CLOSED } from './csp.core';
 
 function mapFrom(f, ch) {
   return {
-    isClosed: function() {
+    isClosed: function () {
       return ch.isClosed();
     },
-    close: function() {
+    close: function () {
       ch.close();
     },
-    put: function(value, handler) {
+    put: function (value, handler) {
       return ch.put(value, handler);
     },
-    take: function(handler) {
+    take: function (handler) {
       var result = ch.take({
-        isActive: function() {
+        isActive: function () {
           return handler.isActive();
         },
-        commit: function() {
+        commit: function () {
           var take_cb = handler.commit();
-          return function(value) {
+          return function (value) {
             return take_cb(value === CLOSED ? CLOSED : f(value));
           };
         }
@@ -36,16 +36,16 @@ function mapFrom(f, ch) {
 
 function mapInto(f, ch) {
   return {
-    isClosed: function() {
+    isClosed: function () {
       return ch.isClosed();
     },
-    close: function() {
+    close: function () {
       ch.close();
     },
-    put: function(value, handler) {
+    put: function (value, handler) {
       return ch.put(f(value), handler);
     },
-    take: function(handler) {
+    take: function (handler) {
       return ch.take(handler);
     }
   };
@@ -70,33 +70,33 @@ function filterFrom(p, ch, bufferOrN) {
 
 function filterInto(p, ch) {
   return {
-    isClosed: function() {
+    isClosed: function () {
       return ch.isClosed();
     },
-    close: function() {
+    close: function () {
       ch.close();
     },
-    put: function(value, handler) {
+    put: function (value, handler) {
       if (p(value)) {
         return ch.put(value, handler);
       } else {
         return new Box(!ch.isClosed());
       }
     },
-    take: function(handler) {
+    take: function (handler) {
       return ch.take(handler);
     }
   };
 }
 
 function removeFrom(p, ch) {
-  return filterFrom(function(value) {
+  return filterFrom(function (value) {
     return !p(value);
   }, ch);
 }
 
 function removeInto(p, ch) {
-  return filterInto(function(value) {
+  return filterInto(function (value) {
     return !p(value);
   }, ch);
 }
@@ -212,11 +212,11 @@ function map(f, chs, bufferOrN) {
   var dcount;
   // put callbacks for each channel
   var dcallbacks = new Array(length);
-  for (var i = 0; i < length; i ++) {
-    dcallbacks[i] = (function(i) {
-      return function(value) {
+  for (var i = 0; i < length; i++) {
+    dcallbacks[i] = (function (i) {
+      return function (value) {
         values[i] = value;
-        dcount --;
+        dcount--;
         if (dcount === 0) {
           putAsync(dchan, values.slice(0));
         }
@@ -228,16 +228,16 @@ function map(f, chs, bufferOrN) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
       // don't
-      for (var i = 0; i < length; i ++) {
+      for (var i = 0; i < length; i++) {
         try {
           takeAsync(chs[i], dcallbacks[i]);
         } catch (e) {
           // FIX: Hmm why catching here?
-          dcount --;
+          dcount--;
         }
       }
       var values = yield take(dchan);
-      for (i = 0; i < length; i ++) {
+      for (i = 0; i < length; i++) {
         if (values[i] === CLOSED) {
           out.close();
           return;
@@ -274,7 +274,7 @@ function merge(chs, bufferOrN) {
 
 function into(coll, ch) {
   var result = coll.slice(0);
-  return reduce(function(result, item) {
+  return reduce(function (result, item) {
     result.push(item);
     return result;
   }, result, ch);
@@ -283,7 +283,7 @@ function into(coll, ch) {
 function takeN(n, ch, bufferOrN) {
   var out = chan(bufferOrN);
   go(function*() {
-    for (var i = 0; i < n; i ++) {
+    for (var i = 0; i < n; i++) {
       var value = yield take(ch);
       if (value === CLOSED) {
         break;
@@ -368,10 +368,10 @@ function partition(n, ch, bufferOrN) {
 }
 
 // For channel identification
-var genId = (function() {
+var genId = (function () {
   var i = 0;
-  return function() {
-    i ++;
+  return function () {
+    i++;
     return "" + i;
   };
 })();
@@ -382,7 +382,7 @@ var ID_ATTR = "__csp_channel_id";
 function len(obj) {
   var count = 0;
   for (var p in obj) {
-    count ++;
+    count++;
   }
   return count;
 }
@@ -395,30 +395,30 @@ function chanId(ch) {
   return id;
 }
 
-var Mult = function(ch) {
+var Mult = function (ch) {
   this.taps = {};
   this.ch = ch;
 };
 
-var Tap = function(channel, keepOpen) {
+var Tap = function (channel, keepOpen) {
   this.channel = channel;
   this.keepOpen = keepOpen;
 };
 
-Mult.prototype.muxch = function() {
+Mult.prototype.muxch = function () {
   return this.ch;
 };
 
-Mult.prototype.tap = function(ch, keepOpen) {
+Mult.prototype.tap = function (ch, keepOpen) {
   var id = chanId(ch);
   this.taps[id] = new Tap(ch, keepOpen);
 };
 
-Mult.prototype.untap = function(ch) {
+Mult.prototype.untap = function (ch) {
   delete this.taps[chanId(ch)];
 };
 
-Mult.prototype.untapAll = function() {
+Mult.prototype.untapAll = function () {
   this.taps = {};
 };
 
@@ -426,9 +426,10 @@ function mult(ch) {
   var m = new Mult(ch);
   var dchan = chan(1);
   var dcount;
+
   function makeDoneCallback(tap) {
-    return function(stillOpen) {
-      dcount --;
+    return function (stillOpen) {
+      dcount--;
       if (dcount === 0) {
         putAsync(dchan, true);
       }
@@ -437,6 +438,7 @@ function mult(ch) {
       }
     };
   }
+
   go(function*() {
     while (true) {
       var value = yield take(ch);
@@ -484,18 +486,18 @@ mult.untapAll = function untapAll(m) {
   m.untapAll();
 };
 
-var Mix = function(ch) {
+var Mix = function (ch) {
   this.ch = ch;
   this.stateMap = {};
   this.change = chan();
   this.soloMode = mix.MUTE;
 };
 
-Mix.prototype._changed = function() {
+Mix.prototype._changed = function () {
   putAsync(this.change, true);
 };
 
-Mix.prototype._getAllState = function() {
+Mix.prototype._getAllState = function () {
   var allState = {};
   var stateMap = this.stateMap;
   var solos = [];
@@ -544,7 +546,7 @@ Mix.prototype._getAllState = function() {
   };
 };
 
-Mix.prototype.admix = function(ch) {
+Mix.prototype.admix = function (ch) {
   this.stateMap[chanId(ch)] = {
     channel: ch,
     state: {}
@@ -552,17 +554,17 @@ Mix.prototype.admix = function(ch) {
   this._changed();
 };
 
-Mix.prototype.unmix = function(ch) {
+Mix.prototype.unmix = function (ch) {
   delete this.stateMap[chanId(ch)];
   this._changed();
 };
 
-Mix.prototype.unmixAll = function() {
+Mix.prototype.unmixAll = function () {
   this.stateMap = {};
   this._changed();
 };
 
-Mix.prototype.toggle = function(updateStateList) {
+Mix.prototype.toggle = function (updateStateList) {
   // [[ch1, {}], [ch2, {solo: true}]];
   var length = updateStateList.length;
   for (var i = 0; i < length; i++) {
@@ -583,7 +585,7 @@ Mix.prototype.toggle = function(updateStateList) {
   this._changed();
 };
 
-Mix.prototype.setSoloMode = function(mode) {
+Mix.prototype.setSoloMode = function (mode) {
   if (VALID_SOLO_MODES.indexOf(mode) < 0) {
     throw new Error("Mode must be one of: ", VALID_SOLO_MODES.join(", "));
   }
@@ -610,7 +612,7 @@ function mix(out) {
       }
       var solos = state.solos;
       if (solos.indexOf(channel) > -1 ||
-          (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))) {
+        (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))) {
         var stillOpen = yield put(out, value);
         if (!stillOpen) {
           break;
@@ -650,14 +652,14 @@ function constantlyNull() {
   return null;
 }
 
-var Pub = function(ch, topicFn, bufferFn) {
+var Pub = function (ch, topicFn, bufferFn) {
   this.ch = ch;
   this.topicFn = topicFn;
   this.bufferFn = bufferFn;
   this.mults = {};
 };
 
-Pub.prototype._ensureMult = function(topic) {
+Pub.prototype._ensureMult = function (topic) {
   var m = this.mults[topic];
   var bufferFn = this.bufferFn;
   if (!m) {
@@ -666,19 +668,19 @@ Pub.prototype._ensureMult = function(topic) {
   return m;
 };
 
-Pub.prototype.sub = function(topic, ch, keepOpen) {
+Pub.prototype.sub = function (topic, ch, keepOpen) {
   var m = this._ensureMult(topic);
   return mult.tap(m, ch, keepOpen);
 };
 
-Pub.prototype.unsub = function(topic, ch) {
+Pub.prototype.unsub = function (topic, ch) {
   var m = this.mults[topic];
   if (m) {
     mult.untap(m, ch);
   }
 };
 
-Pub.prototype.unsubAll = function(topic) {
+Pub.prototype.unsubAll = function (topic) {
   if (topic === undefined) {
     this.mults = {};
   } else {

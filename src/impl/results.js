@@ -13,3 +13,5 @@ export class AltResult {
     this.channel = channel;
   }
 }
+
+export type ResultType = AltResult;

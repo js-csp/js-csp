@@ -10,8 +10,8 @@ function pipelineInternal(n, to, from, close, taskFn) {
   var jobs = csp.chan(n);
   var results = csp.chan(n);
 
-  for(var _ = 0; _ < n; _++) {
-    csp.go(function* (taskFn, jobs, results) {
+  for (var _ = 0; _ < n; _++) {
+    csp.go(function*(taskFn, jobs, results) {
       while (true) {
         var job = yield csp.take(jobs);
 
@@ -23,7 +23,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
     }, [taskFn, jobs, results]);
   }
 
-  csp.go(function* (jobs, from, results) {
+  csp.go(function*(jobs, from, results) {
     while (true) {
       var v = yield csp.take(from);
       if (v === csp.CLOSED) {
@@ -38,8 +38,8 @@ function pipelineInternal(n, to, from, close, taskFn) {
     }
   }, [jobs, from, results]);
 
-  csp.go(function* (results, close, to) {
-    while(true) {
+  csp.go(function*(results, close, to) {
+    while (true) {
       var p = yield csp.take(results);
       if (p === csp.CLOSED) {
         if (close) {
@@ -48,7 +48,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
         break;
       } else {
         var res = yield csp.take(p);
-        while(true) {
+        while (true) {
           var v = yield csp.take(res);
           if (v !== csp.CLOSED) {
             yield csp.put(to, v);
@@ -73,7 +73,7 @@ function pipeline(to, xf, from, keepOpen, exHandler) {
       var p = job[1];
       var res = csp.chan(1, xf, exHandler);
 
-      csp.go(function* (res, v) {
+      csp.go(function*(res, v) {
         yield csp.put(res, v);
         res.close();
       }, [res, v]);

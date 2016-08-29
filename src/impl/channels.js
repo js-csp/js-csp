@@ -1,6 +1,7 @@
 // @flow
 import { run } from './dispatch';
 import { RingBuffer, FixedBuffer, DroppingBuffer, SlidingBuffer, ring, EMPTY } from './buffers';
+import { HandlerType } from './handlers';
 
 export const MAX_DIRTY = 64;
 export const MAX_QUEUE_SIZE = 1024;
@@ -19,8 +20,11 @@ export class Box<T> {
   }
 }
 
-export class PutBox {
-  constructor(handler, value) {
+export class PutBox<T> {
+  handler: HandlerType;
+  value: T;
+
+  constructor(handler: HandlerType, value: any) {
     this.handler = handler;
     this.value = value;
   }
@@ -45,7 +49,7 @@ export class Channel {
     this.closed = false;
   }
 
-  put(value, handler): ?Box {
+  put(value: any, handler: HandlerType): ?Box {
     if (value === CLOSED) {
       throw new Error('Cannot put CLOSED on a channel.');
     }
@@ -72,7 +76,7 @@ export class Channel {
       handler.commit();
       const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
 
-      for (;;) {
+      for (; ;) {
         if (this.buf.count() === 0) {
           break;
         }
@@ -95,7 +99,7 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    for (;;) {
+    for (; ;) {
       const taker = this.takes.pop();
       if (taker === EMPTY) {
         break;
@@ -113,7 +117,7 @@ export class Channel {
       this.puts.cleanup((putter) => putter.handler.isActive());
       this.dirtyPuts = 0;
     } else {
-      this.dirtyPuts ++;
+      this.dirtyPuts++;
     }
     if (handler.isBlockable()) {
       if (this.puts.length >= MAX_QUEUE_SIZE) {
@@ -124,7 +128,7 @@ export class Channel {
     return null;
   }
 
-  take(handler): ?Box {
+  take(handler: HandlerType): ?Box {
     if (!handler.isActive()) {
       return null;
     }
@@ -134,7 +138,7 @@ export class Channel {
       const value = this.buf.remove();
       // We need to check pending puts here, other wise they won't
       // be able to proceed until their number reaches MAX_DIRTY
-      for (;;) {
+      for (; ;) {
         if (this.buf.isFull()) {
           break;
         }
@@ -164,7 +168,7 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    for (;;) {
+    for (; ;) {
       const putter = this.puts.pop();
       const value = putter.value;
 
@@ -194,7 +198,7 @@ export class Channel {
       this.takes.cleanup((_handler) => _handler.isActive());
       this.dirtyTakes = 0;
     } else {
-      this.dirtyTakes ++;
+      this.dirtyTakes++;
     }
 
     if (handler.isBlockable()) {
@@ -216,7 +220,7 @@ export class Channel {
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
-      for (;;) {
+      for (; ;) {
         if (this.buf.count() === 0) break;
 
         const taker = this.takes.pop();
@@ -229,7 +233,7 @@ export class Channel {
       }
     }
 
-    for (;;) {
+    for (; ;) {
       const taker = this.takes.pop();
 
       if (taker === EMPTY) break;
@@ -239,7 +243,7 @@ export class Channel {
       }
     }
 
-    for (;;) {
+    for (; ;) {
       const putter = this.puts.pop();
 
       if (putter === EMPTY) break;

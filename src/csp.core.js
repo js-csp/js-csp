@@ -1,8 +1,8 @@
 import * as buffers from './impl/buffers';
 import * as channels from './impl/channels';
 import * as process from './impl/process';
-import * as select from './impl/select';
 import * as timers from './impl/timers';
+import { DEFAULT } from './impl/results';
 
 const spawn = (gen, creator) => {
   const ch = channels.chan(buffers.fixed(1));
@@ -44,7 +44,7 @@ module.exports = {
   spawn,
   go,
   chan,
-  DEFAULT: select.DEFAULT,
+  DEFAULT,
   CLOSED: channels.CLOSED,
 
   put: process.put,

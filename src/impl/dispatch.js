@@ -7,7 +7,7 @@ const queueDispatcher = (): void => {
   // https://github.com/zloirock/core-js/blob/e482646353b489e200a5ecccca6af5c01f0b4ef2/library/modules/_task.js
   // Under the hood, it will use process.nextTick, MessageChannel, and fallback to setTimeout
   setImmediate(() => {
-    for (;;) {
+    for (; ;) {
       const task: Function = tasks.pop();
 
       if (task === EMPTY) break;
