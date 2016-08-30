@@ -115,14 +115,18 @@ export class SlidingBuffer<T> {
  * running the transduced step function, while still allowing a
  * transduced step to expand into multiple "essence" steps.
  */
-export const ring = <T>(): RingBuffer<T> => // eslint-disable-line
-  new RingBuffer();
+export function ring<T>(): RingBuffer<T> {
+  return new RingBuffer();
+}
 
-export const fixed = <T>(n: number): FixedBuffer<T> => // eslint-disable-line
-  new FixedBuffer(ring(), n);
+export function fixed<T>(n: number): FixedBuffer<T> {
+  return new FixedBuffer(ring(), n);
+}
 
-export const dropping = <T>(n: number): DroppingBuffer<T> => // eslint-disable-line
-  new DroppingBuffer(ring(), n);
+export function dropping<T>(n: number): DroppingBuffer<T> {
+  return new DroppingBuffer(ring(), n);
+}
 
-export const sliding = <T>(n: number): SlidingBuffer<T> => // eslint-disable-line
-  new SlidingBuffer(ring(), n);
+export function sliding<T>(n: number): SlidingBuffer<T> {
+  return new SlidingBuffer(ring(), n);
+}

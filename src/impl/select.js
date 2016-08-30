@@ -7,8 +7,9 @@ import { AltHandler } from './handlers';
 import { AltResult, DEFAULT } from './results';
 
 // TODO: Accept a priority function or something
-export const doAlts = ( // eslint-disable-line
-  operations: Channel[] | [Channel, any][], callback: Function, options: Object) => {
+export function doAlts( // eslint-disable-line
+  operations: Channel[] | [Channel, any][], callback: Function, options: Object
+) {
   if (operations.length === 0) {
     throw new Error('Empty alt list');
   }
@@ -44,4 +45,4 @@ export const doAlts = ( // eslint-disable-line
     flag.value = false;
     callback(new AltResult(options.default, DEFAULT));
   }
-};
+}
