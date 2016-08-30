@@ -1,6 +1,6 @@
 // @flow
 import { run } from './dispatch';
-import { RingBuffer, FixedBuffer, DroppingBuffer, SlidingBuffer, ring, EMPTY } from './buffers';
+import { RingBuffer, FixedBuffer, DroppingBuffer, SlidingBuffer, ring } from './buffers';
 import { HandlerType } from './handlers';
 
 export const MAX_DIRTY = 64;
@@ -76,15 +76,11 @@ export class Channel {
       handler.commit();
       const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
 
-      for (; ;) {
+      while (this.takes.count() > 0) {
         if (this.buf.count() === 0) {
           break;
         }
         const taker: HandlerType = this.takes.pop();
-
-        if (taker === EMPTY) {
-          break;
-        }
 
         if (taker.isActive()) {
           schedule(taker.commit(), this.buf.remove());
@@ -101,12 +97,8 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    for (; ;) {
+    while (this.takes.count() > 0) {
       const taker: HandlerType = this.takes.pop();
-
-      if (taker === EMPTY) {
-        break;
-      }
 
       if (taker.isActive()) {
         handler.commit();
@@ -125,7 +117,7 @@ export class Channel {
     }
 
     if (handler.isBlockable()) {
-      if (this.puts.size() >= MAX_QUEUE_SIZE) {
+      if (this.puts.count() >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`);
       }
       this.puts.unshift(new PutBox(handler, value));
@@ -144,16 +136,12 @@ export class Channel {
       const value: any = this.buf.remove();
       // We need to check pending puts here, other wise they won't
       // be able to proceed until their number reaches MAX_DIRTY
-      for (; ;) {
+      while (this.puts.count() > 0) {
         if (this.buf.isFull()) {
           break;
         }
 
         const putter: PutBox<any> = this.puts.pop();
-
-        if (putter === EMPTY) {
-          break;
-        }
 
         if (putter.handler.isActive()) {
           const callback: ?Function = putter.handler.commit();
@@ -175,12 +163,8 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    for (; ;) {
+    while (this.puts.count() > 0) {
       const putter: PutBox<any> = this.puts.pop();
-
-      if (putter === EMPTY) {
-        break;
-      }
 
       if (putter.handler.isActive()) {
         handler.commit();
@@ -208,7 +192,7 @@ export class Channel {
     }
 
     if (handler.isBlockable()) {
-      if (this.takes.size() >= MAX_QUEUE_SIZE) {
+      if (this.takes.count() >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`);
       }
 
@@ -229,12 +213,10 @@ export class Channel {
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
-      for (; ;) {
+      while (this.takes.count() > 0) {
         if (this.buf.count() === 0) break;
 
         const taker: HandlerType = this.takes.pop();
-
-        if (taker === EMPTY) break;
 
         if (taker.isActive()) {
           schedule(taker.commit(), this.buf.remove());
@@ -242,20 +224,16 @@ export class Channel {
       }
     }
 
-    for (; ;) {
+    while (this.takes.count() > 0) {
       const taker: HandlerType = this.takes.pop();
-
-      if (taker === EMPTY) break;
 
       if (taker.isActive()) {
         schedule(taker.commit(), CLOSED);
       }
     }
 
-    for (; ;) {
+    while (this.puts.count() > 0) {
       const putter: PutBox<any> = this.puts.pop();
-
-      if (putter === EMPTY) break;
 
       if (putter.handler.isActive()) {
         const pulCallback: ?Function = putter.handler.commit();

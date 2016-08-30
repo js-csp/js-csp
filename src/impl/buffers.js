@@ -1,10 +1,4 @@
 // @flow
-export const EMPTY: Object = {
-  toString(): string {
-    return '[object EMPTY]';
-  },
-};
-
 export class RingBuffer<T> {
   _array: T[];
 
@@ -16,15 +10,11 @@ export class RingBuffer<T> {
     this._array.unshift(item);
   }
 
-  pop(): T | typeof EMPTY {
-    if (this._array.length === 0) {
-      return EMPTY;
-    }
-
+  pop(): T {
     return this._array.pop();
   }
 
-  size(): number {
+  count(): number {
     return this._array.length;
   }
 
@@ -43,19 +33,19 @@ export class FixedBuffer<T> {
   }
 
   isFull(): boolean {
-    return this._buffer.size() >= this._n;
+    return this._buffer.count() >= this._n;
   }
 
   add(item: T): void {
     this._buffer.unshift(item);
   }
 
-  remove(): T | typeof EMPTY {
+  remove(): T {
     return this._buffer.pop();
   }
 
   count(): number {
-    return this._buffer.size();
+    return this._buffer.count();
   }
 }
 
@@ -73,17 +63,17 @@ export class DroppingBuffer<T> {
   }
 
   add(item: T): void {
-    if (this._buffer.size() < this._n) {
+    if (this._buffer.count() < this._n) {
       this._buffer.unshift(item);
     }
   }
 
-  remove(): T | typeof EMPTY {
+  remove(): T {
     return this._buffer.pop();
   }
 
   count(): number {
-    return this._buffer.size();
+    return this._buffer.count();
   }
 }
 
@@ -101,19 +91,19 @@ export class SlidingBuffer<T> {
   }
 
   add(item: T): void {
-    if (this._buffer.size() === this._n) {
+    if (this._buffer.count() === this._n) {
       this._buffer.pop();
     }
 
     this._buffer.unshift(item);
   }
 
-  remove(): T | typeof EMPTY {
+  remove(): T {
     return this._buffer.pop();
   }
 
   count(): number {
-    return this._buffer.size();
+    return this._buffer.count();
   }
 }
 

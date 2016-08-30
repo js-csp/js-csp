@@ -1,5 +1,5 @@
 // @flow
-import { RingBuffer, ring, EMPTY } from './buffers';
+import { RingBuffer, ring } from './buffers';
 
 const tasks: RingBuffer<Function> = ring();
 const queueDispatcher = (): void => {
@@ -7,12 +7,8 @@ const queueDispatcher = (): void => {
   // https://github.com/zloirock/core-js/blob/e482646353b489e200a5ecccca6af5c01f0b4ef2/library/modules/_task.js
   // Under the hood, it will use process.nextTick, MessageChannel, and fallback to setTimeout
   setImmediate(() => {
-    for (; ;) {
-      const task: Function | typeof EMPTY = tasks.pop();
-
-      if (task === EMPTY) break;
-
-      task();
+    while (tasks.count() > 0) {
+      tasks.pop()();
     }
   });
 };

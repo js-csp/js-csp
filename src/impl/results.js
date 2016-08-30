@@ -1,3 +1,6 @@
+// @flow
+import { Channel } from './channels';
+
 export const DEFAULT: Object = {
   toString(): string {
     return '[object DEFAULT]';
@@ -13,5 +16,3 @@ export class AltResult {
     this.channel = channel;
   }
 }
-
-export type ResultType = AltResult;

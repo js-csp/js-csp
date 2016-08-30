@@ -19,7 +19,7 @@ describe("Fixed buffer", function() {
 
     assert.equal(b.remove(), "2");
     assert.equal(b.count(), 0);
-    assert(buffers.EMPTY === b.remove(), "popping empty buffer gives EMPTY");
+    assert(undefined === b.remove(), "popping empty buffer gives 'undefined'");
   });
 
   it("should allow overflowing", function() {
@@ -62,7 +62,7 @@ describe("Dropping buffer", function() {
 
     assert.equal(b.remove(), "2", "dropping buffer drops newest item");
     assert.equal(b.count(), 0);
-    assert(buffers.EMPTY === b.remove(), "popping empty buffer gives EMPTY");
+    assert(undefined === b.remove(), "popping empty buffer gives 'undefined'");
   });
 });
 
@@ -88,6 +88,6 @@ describe("Sliding buffer", function() {
 
     assert.equal(b.remove(), "3", "sliding buffer keeps newest item");
     assert.equal(b.count(), 0);
-    assert(buffers.EMPTY === b.remove(), "popping empty buffer gives EMPTY");
+    assert(undefined === b.remove(), "popping empty buffer gives 'undefined'");
   });
 });
