@@ -7,11 +7,6 @@ import { run, queueDelay } from './dispatch';
 
 export const NO_VALUE: Object = {};
 
-export type TakeInstructionType = Instruction<Channel>;
-export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
-export type SleepInstructionType = Instruction<number>;
-export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
-
 export function putThenCallback(channel: Channel, value: any, callback: ?Function): void {
   const result: ?Box<any> = channel.put(value, new FnHandler(true, callback));
 
@@ -28,13 +23,63 @@ export function takeThenCallback(channel: Channel, callback: ?Function): void {
   }
 }
 
+export type TakeInstructionType = Instruction<Channel>;
+export function take(channel: Channel): TakeInstructionType {
+  return new Instruction(Instruction.TAKE, channel);
+}
+
+export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
+export function put(channel: Channel, value: Object): PutInstructionType {
+  return new Instruction(Instruction.PUT, {
+    channel,
+    value,
+  });
+}
+
+export type SleepInstructionType = Instruction<number>;
+export function sleep(msecs: number): SleepInstructionType {
+  return new Instruction(Instruction.SLEEP, msecs);
+}
+
+export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
+export function alts(operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType {
+  return new Instruction(Instruction.ALTS, {
+    operations,
+    options,
+  });
+}
+
+export function poll(channel: Channel): any {
+  if (channel.closed) {
+    return NO_VALUE;
+  }
+
+  const result: ?Box<any> = channel.take(new FnHandler(false));
+
+  return result ? result.value : NO_VALUE;
+}
+
+export function offer(channel: Channel, value: Object): boolean {
+  if (channel.closed) {
+    return false;
+  }
+
+  const result: ?Box<any> = channel.put(value, new FnHandler(false));
+
+  return result instanceof Box;
+}
+
+export type ProcessValueType =
+  TakeInstructionType | PutInstructionType | SleepInstructionType | AltsInstructionType |
+  Channel | any;
+
 export class Process {
-  gen: Generator<any, any, any>;
+  gen: Generator<ProcessValueType, any, any>;
   onFinishFunc: Function;
   creatorFunc: Function;
   finished: boolean;
 
-  constructor(gen: Generator<any, any, any>, onFinishFunc: Function, creatorFunc: Function) {
+  constructor(gen: Generator<ProcessValueType, any, any>, onFinishFunc: Function, creatorFunc: Function) {
     this.gen = gen;
     this.creatorFunc = creatorFunc;
     this.onFinishFunc = onFinishFunc;
@@ -64,7 +109,7 @@ export class Process {
     // signal the error through a channel or something)? Otherwise the
     // uncaught exception will crash some runtimes (e.g. Node)
     const iter = this.gen.next(response);
-    const ins = iter.value;
+    const ins: ProcessValueType = iter.value;
 
     if (iter.done) {
       this._done(ins);
@@ -102,46 +147,4 @@ export class Process {
       this._continue(ins);
     }
   }
-}
-
-export function take(channel: Channel): TakeInstructionType {
-  return new Instruction(Instruction.TAKE, channel);
-}
-
-export function put(channel: Channel, value: Object): PutInstructionType {
-  return new Instruction(Instruction.PUT, {
-    channel,
-    value,
-  });
-}
-
-export function sleep(msecs: number): SleepInstructionType {
-  return new Instruction(Instruction.SLEEP, msecs);
-}
-
-export function alts(operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType {
-  return new Instruction(Instruction.ALTS, {
-    operations,
-    options,
-  });
-}
-
-export function poll(channel: Channel): any {
-  if (channel.closed) {
-    return NO_VALUE;
-  }
-
-  const result: ?Box<any> = channel.take(new FnHandler(false));
-
-  return result ? result.value : NO_VALUE;
-}
-
-export function offer(channel: Channel, value: Object): boolean {
-  if (channel.closed) {
-    return false;
-  }
-
-  const result: ?Box<any> = channel.put(value, new FnHandler(false));
-
-  return result instanceof Box;
 }
