@@ -8,6 +8,7 @@ const queueDispatcher = (): void => {
   // Under the hood, it will use process.nextTick, MessageChannel, and fallback to setTimeout
   setImmediate(() => {
     while (tasks.count() > 0) {
+      // flow-ignore
       tasks.pop()();
     }
   });

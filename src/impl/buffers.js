@@ -10,7 +10,7 @@ export class RingBuffer<T> {
     this._array.unshift(item);
   }
 
-  pop(): T {
+  pop(): ?T {
     return this._array.pop();
   }
 
@@ -40,7 +40,7 @@ export class FixedBuffer<T> {
     this._buffer.unshift(item);
   }
 
-  remove(): T {
+  remove(): ?T {
     return this._buffer.pop();
   }
 
@@ -68,7 +68,7 @@ export class DroppingBuffer<T> {
     }
   }
 
-  remove(): T {
+  remove(): ?T {
     return this._buffer.pop();
   }
 
@@ -98,7 +98,7 @@ export class SlidingBuffer<T> {
     this._buffer.unshift(item);
   }
 
-  remove(): T {
+  remove(): ?T {
     return this._buffer.pop();
   }
 

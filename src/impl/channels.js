@@ -76,13 +76,12 @@ export class Channel {
       handler.commit();
       const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
 
-      while (this.takes.count() > 0) {
-        if (this.buf.count() === 0) {
-          break;
-        }
+      // flow-ignore
+      while (this.takes.count() > 0 && this.buf.count() > 0) {
         const taker: HandlerType = this.takes.pop();
 
         if (taker.isActive()) {
+          // flow-ignore
           schedule(taker.commit(), this.buf.remove());
         }
       }
@@ -133,14 +132,15 @@ export class Channel {
 
     if (this.buf && this.buf.count() > 0) {
       handler.commit();
+      // flow-ignore
       const value: any = this.buf.remove();
+
       // We need to check pending puts here, other wise they won't
       // be able to proceed until their number reaches MAX_DIRTY
-      while (this.puts.count() > 0) {
-        if (this.buf.isFull()) {
-          break;
-        }
 
+      // flow-ignore
+      while (this.puts.count() > 0 && !this.buf.isFull()) {
+        // flow-ignore
         const putter: PutBox<any> = this.puts.pop();
 
         if (putter.handler.isActive()) {
@@ -164,6 +164,7 @@ export class Channel {
     // have to worry about transducers here since we require a buffer
     // for that).
     while (this.puts.count() > 0) {
+      // flow-ignore
       const putter: PutBox<any> = this.puts.pop();
 
       if (putter.handler.isActive()) {
@@ -213,12 +214,12 @@ export class Channel {
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
-      while (this.takes.count() > 0) {
-        if (this.buf.count() === 0) break;
-
+      // flow-ignore
+      while (this.takes.count() > 0 && this.buf.count() > 0) {
         const taker: HandlerType = this.takes.pop();
 
         if (taker.isActive()) {
+          // flow-ignore
           schedule(taker.commit(), this.buf.remove());
         }
       }
@@ -233,6 +234,7 @@ export class Channel {
     }
 
     while (this.puts.count() > 0) {
+      // flow-ignore
       const putter: PutBox<any> = this.puts.pop();
 
       if (putter.handler.isActive()) {

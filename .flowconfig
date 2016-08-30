@@ -16,4 +16,4 @@ module.system=haste
 
 esproposal.class_static_fields=enable
 esproposal.class_instance_fields=enable
-suppress_comment= \\(.\\|\n\\)*\\$FlowFixMe
+suppress_comment= \\(.\\|\n\\)*\\flow-ignore
