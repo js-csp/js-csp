@@ -1,13 +1,12 @@
 // @flow
 import { run } from './dispatch';
-import { RingBuffer, FixedBuffer, DroppingBuffer, SlidingBuffer, ring } from './buffers';
-import { HandlerType } from './handlers';
+import type { BufferType } from './buffers';
+import { RingBuffer, ring } from './buffers';
+import type { HandlerType } from './handlers';
 
 export const MAX_DIRTY = 64;
 export const MAX_QUEUE_SIZE = 1024;
 export const CLOSED = null;
-
-export type ChannelBufferType = FixedBuffer<any> | DroppingBuffer<any> | SlidingBuffer<any>;
 
 const isReduced = (v) => v && v['@@transducer/reduced'];
 const schedule = (f, v) => run(() => f(v));
@@ -30,8 +29,8 @@ export class PutBox<T> {
   }
 }
 
-export class Channel {
-  buf: ?ChannelBufferType;
+export class Channel<T> {
+  buf: ?BufferType<T>;
   xform: Object;
   takes: RingBuffer<HandlerType>;
   puts: RingBuffer<PutBox<any>>;
@@ -39,7 +38,7 @@ export class Channel {
   dirtyTakes: number;
   closed: boolean;
 
-  constructor(takes: RingBuffer<any>, puts: RingBuffer<PutBox<any>>, buf: ?ChannelBufferType, xform: Object) {
+  constructor(takes: RingBuffer<any>, puts: RingBuffer<PutBox<any>>, buf: ?BufferType<T>, xform: Object) {
     this.buf = buf;
     this.xform = xform;
     this.takes = takes;
@@ -266,7 +265,7 @@ const AddTransformer: Object = {
   },
 };
 
-const handleEx = (buf: ChannelBufferType, exHandler: ?Function, e: Error) => {
+function handleEx<T>(buf: BufferType<T>, exHandler: ?Function, e: Error) {
   const def = (exHandler || ((err: Error) => {
     console.log('error in channel transformer', err.stack); // eslint-disable-line
     return CLOSED;
@@ -280,14 +279,14 @@ const handleEx = (buf: ChannelBufferType, exHandler: ?Function, e: Error) => {
 };
 
 const handleException = (exHandler: ?Function): Function => (xform: Object): Object => ({
-  '@@transducer/step': (buffer: ChannelBufferType, input: any) => {
+  '@@transducer/step': (buffer: BufferType, input: any) => {
     try {
       return xform['@@transducer/step'](buffer, input);
     } catch (e) {
       return handleEx(buffer, exHandler, e);
     }
   },
-  '@@transducer/result': (buffer: ChannelBufferType) => {
+  '@@transducer/result': (buffer: BufferType) => {
     try {
       return xform['@@transducer/result'](buffer);
     } catch (e) {
@@ -298,7 +297,7 @@ const handleException = (exHandler: ?Function): Function => (xform: Object): Obj
 
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducer xform, not both
-export const chan = (buf: ?ChannelBufferType, xform: ?Function, exHandler: ?Function): Channel => {
+export function chan<T>(buf: ?BufferType<T>, xform: ?Function, exHandler: ?Function): Channel {
   let newXForm: typeof AddTransformer;
 
   if (xform) {
@@ -312,4 +311,4 @@ export const chan = (buf: ?ChannelBufferType, xform: ?Function, exHandler: ?Func
   }
 
   return new Channel(ring(), ring(), buf, handleException(exHandler)(newXForm));
-};
+}

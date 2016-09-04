@@ -27,8 +27,8 @@ export class AltHandler {
   func: ?Function;
 
   constructor(flag: Box, func: ?Function) {
-    this.func = func;
     this.flag = flag;
+    this.func = func;
   }
 
   isActive() {

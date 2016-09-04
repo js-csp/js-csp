@@ -115,6 +115,8 @@ export class SlidingBuffer<T> {
  * running the transduced step function, while still allowing a
  * transduced step to expand into multiple "essence" steps.
  */
+export type BufferType<T> = FixedBuffer<T> | DroppingBuffer<T> | SlidingBuffer<T>;
+
 export function ring<T>(): RingBuffer<T> {
   return new RingBuffer();
 }
