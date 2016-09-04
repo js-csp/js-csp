@@ -1,61 +1,48 @@
-import * as buffers from './impl/buffers';
-import * as channels from './impl/channels';
-import * as process from './impl/process';
-import * as timers from './impl/timers';
-import { DEFAULT } from './impl/results';
+// @flow
+import { fixed, dropping, sliding } from './impl/buffers';
+import { putThenCallback, Process } from './impl/process';
+import type { ChannelBufferType } from './impl/channels';
+import { chan as channel, CLOSED } from './impl/channels';
 
-const spawn = (gen, creator) => {
-  const ch = channels.chan(buffers.fixed(1));
+export function spawn(gen: Generator<any, any, any>, creator: Function) {
+  const ch = channel(fixed(1));
 
-  (new process.Process(gen, (value) => {
-    if (value === channels.CLOSED) {
+  (new Process(gen, (value) => {
+    if (value === CLOSED) {
       ch.close();
     } else {
-      process.putThenCallback(ch, value, () => ch.close());
+      putThenCallback(ch, value, () => ch.close());
     }
   }, creator)).run();
 
   return ch;
-};
+}
 
-const go = (f, args = []) => spawn(f(...args), f);
+export function go(f: Function, args: any[] = []) {
+  return spawn(f(...args), f);
+}
 
-const chan = (bufferOrNumber, xform, exHandler) => {
-  let buf;
-  if (bufferOrNumber === 0) {
-    bufferOrNumber = null;
-  }
+export function chan(
+  bufferOrNumber: ChannelBufferType | number,
+  xform: ?Function,
+  exHandler: ?Function
+) {
   if (typeof bufferOrNumber === 'number') {
-    buf = buffers.fixed(bufferOrNumber);
-  } else {
-    buf = bufferOrNumber;
+    if (bufferOrNumber === 0) {
+      return channel(undefined, xform, exHandler);
+    }
+
+    return channel(fixed(bufferOrNumber), xform, exHandler);
   }
-  return channels.chan(buf, xform, exHandler);
-};
 
+  return channel(bufferOrNumber, xform, exHandler);
+}
 
-module.exports = {
-  buffers: {
-    fixed: buffers.fixed,
-    dropping: buffers.dropping,
-    sliding: buffers.sliding,
-  },
-
-  spawn,
-  go,
-  chan,
-  DEFAULT,
-  CLOSED: channels.CLOSED,
-
-  put: process.put,
-  take: process.take,
-  offer: process.offer,
-  poll: process.poll,
-  sleep: process.sleep,
-  alts: process.alts,
-  putAsync: process.putThenCallback,
-  takeAsync: process.takeThenCallback,
-  NO_VALUE: process.NO_VALUE,
-
-  timeout: timers.timeout,
-};
+export const buffers = { fixed, dropping, sliding };
+export { CLOSED };
+export { timeout } from './impl/timers';
+export { DEFAULT } from './impl/results';
+export {
+  put, take, offer, poll, sleep, alts,
+  putThenCallback as putAsync, takeThenCallback as takeAsync, NO_VALUE,
+} from './impl/process';

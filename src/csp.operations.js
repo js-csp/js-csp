@@ -1,65 +1,67 @@
+import times from 'lodash/times';
 import { Box } from './impl/channels';
-import { go, take, put, takeAsync, putAsync, alts, chan, CLOSED } from './csp.core';
+import { go, take as takeAction, put, takeAsync, putAsync, alts, chan, CLOSED } from './csp.core';
 
-function mapFrom(f, ch) {
+export function mapFrom(f, ch) {
   return {
-    isClosed: function() {
+    isClosed() {
       return ch.isClosed();
     },
-    close: function() {
+    close() {
       ch.close();
     },
-    put: function(value, handler) {
+    put(value, handler) {
       return ch.put(value, handler);
     },
-    take: function(handler) {
-      var result = ch.take({
-        isActive: function() {
+    take(handler) {
+      const result = ch.take({
+        isActive() {
           return handler.isActive();
         },
-        commit: function() {
-          var take_cb = handler.commit();
-          return function(value) {
-            return take_cb(value === CLOSED ? CLOSED : f(value));
-          };
-        }
+        commit() {
+          const takeCallback = handler.commit();
+          return value => takeCallback(value === CLOSED ? CLOSED : f(value));
+        },
       });
+
       if (result) {
-        var value = result.value;
+        const value = result.value;
         return new Box(value === CLOSED ? CLOSED : f(value));
-      } else {
-        return null;
       }
-    }
+
+      return null;
+    },
   };
 }
 
-function mapInto(f, ch) {
+export function mapInto(f, ch) {
   return {
-    isClosed: function() {
+    isClosed() {
       return ch.isClosed();
     },
-    close: function() {
+    close() {
       ch.close();
     },
-    put: function(value, handler) {
+    put(value, handler) {
       return ch.put(f(value), handler);
     },
-    take: function(handler) {
+    take(handler) {
       return ch.take(handler);
-    }
+    },
   };
 }
 
-function filterFrom(p, ch, bufferOrN) {
-  var out = chan(bufferOrN);
-  go(function*() {
-    while (true) {
-      var value = yield take(ch);
+export function filterFrom(p, ch, bufferOrN) {
+  const out = chan(bufferOrN);
+
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(ch);
       if (value === CLOSED) {
         out.close();
         break;
       }
+
       if (p(value)) {
         yield put(out, value);
       }
@@ -68,49 +70,45 @@ function filterFrom(p, ch, bufferOrN) {
   return out;
 }
 
-function filterInto(p, ch) {
+export function filterInto(p, ch) {
   return {
-    isClosed: function() {
+    isClosed() {
       return ch.isClosed();
     },
-    close: function() {
+    close() {
       ch.close();
     },
-    put: function(value, handler) {
+    put(value, handler) {
       if (p(value)) {
         return ch.put(value, handler);
-      } else {
-        return new Box(!ch.isClosed());
       }
+
+      return new Box(!ch.isClosed());
     },
-    take: function(handler) {
+    take(handler) {
       return ch.take(handler);
-    }
+    },
   };
 }
 
-function removeFrom(p, ch) {
-  return filterFrom(function(value) {
-    return !p(value);
-  }, ch);
+export function removeFrom(p, ch) {
+  return filterFrom(value => !p(value), ch);
 }
 
-function removeInto(p, ch) {
-  return filterInto(function(value) {
-    return !p(value);
-  }, ch);
+export function removeInto(p, ch) {
+  return filterInto(value => !p(value), ch);
 }
 
 function* mapcat(f, src, dst) {
-  while (true) {
-    var value = yield take(src);
+  for (;;) {
+    const value = yield takeAction(src);
     if (value === CLOSED) {
       dst.close();
       break;
     } else {
-      var seq = f(value);
-      var length = seq.length;
-      for (var i = 0; i < length; i++) {
+      const seq = f(value);
+      const length = seq.length;
+      for (let i = 0; i < length; i++) {
         yield put(dst, seq[i]);
       }
       if (dst.isClosed()) {
@@ -120,22 +118,22 @@ function* mapcat(f, src, dst) {
   }
 }
 
-function mapcatFrom(f, ch, bufferOrN) {
-  var out = chan(bufferOrN);
+export function mapcatFrom(f, ch, bufferOrN) {
+  const out = chan(bufferOrN);
   go(mapcat, [f, ch, out]);
   return out;
 }
 
-function mapcatInto(f, ch, bufferOrN) {
-  var src = chan(bufferOrN);
+export function mapcatInto(f, ch, bufferOrN) {
+  const src = chan(bufferOrN);
   go(mapcat, [f, src, ch]);
   return src;
 }
 
-function pipe(src, dst, keepOpen) {
-  go(function*() {
-    while (true) {
-      var value = yield take(src);
+export function pipe(src, dst, keepOpen) {
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(src);
       if (value === CLOSED) {
         if (!keepOpen) {
           dst.close();
@@ -150,12 +148,12 @@ function pipe(src, dst, keepOpen) {
   return dst;
 }
 
-function split(p, ch, trueBufferOrN, falseBufferOrN) {
-  var tch = chan(trueBufferOrN);
-  var fch = chan(falseBufferOrN);
-  go(function*() {
-    while (true) {
-      var value = yield take(ch);
+export function split(p, ch, trueBufferOrN, falseBufferOrN) {
+  const tch = chan(trueBufferOrN);
+  const fch = chan(falseBufferOrN);
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(ch);
       if (value === CLOSED) {
         tch.close();
         fch.close();
@@ -167,11 +165,11 @@ function split(p, ch, trueBufferOrN, falseBufferOrN) {
   return [tch, fch];
 }
 
-function reduce(f, init, ch) {
-  return go(function*() {
-    var result = init;
-    while (true) {
-      var value = yield take(ch);
+export function reduce(f, init, ch) {
+  return go(function* () {
+    let result = init;
+    for (;;) {
+      const value = yield takeAction(ch);
       if (value === CLOSED) {
         return result;
       } else {
@@ -181,11 +179,11 @@ function reduce(f, init, ch) {
   }, [], true);
 }
 
-function onto(ch, coll, keepOpen) {
-  return go(function*() {
-    var length = coll.length;
+export function onto(ch, coll, keepOpen) {
+  return go(function* () {
+    const length = coll.length;
     // FIX: Should be a generic looping interface (for...in?)
-    for (var i = 0; i < length; i++) {
+    for (let i = 0; i < length; i++) {
       yield put(ch, coll[i]);
     }
     if (!keepOpen) {
@@ -195,96 +193,96 @@ function onto(ch, coll, keepOpen) {
 }
 
 // TODO: Bounded?
-function fromColl(coll) {
-  var ch = chan(coll.length);
+export function fromColl(coll) {
+  const ch = chan(coll.length);
   onto(ch, coll);
   return ch;
 }
 
-function map(f, chs, bufferOrN) {
-  var out = chan(bufferOrN);
-  var length = chs.length;
+export function map(f, chs, bufferOrN) {
+  const out = chan(bufferOrN);
+  const length = chs.length;
   // Array holding 1 round of values
-  var values = new Array(length);
+  const values = new Array(length);
   // TODO: Not sure why we need a size-1 buffer here
-  var dchan = chan(1);
+  const dchan = chan(1);
   // How many more items this round
-  var dcount;
+  let dcount;
   // put callbacks for each channel
-  var dcallbacks = new Array(length);
-  for (var i = 0; i < length; i ++) {
-    dcallbacks[i] = (function(i) {
-      return function(value) {
-        values[i] = value;
-        dcount --;
-        if (dcount === 0) {
-          putAsync(dchan, values.slice(0));
-        }
-      };
-    }(i));
+  const dcallbacks = new Array(length);
+  for (let i = 0; i < length; i ++) {
+    dcallbacks[i] = ((i => value => {
+      values[i] = value;
+      dcount--;
+      if (dcount === 0) {
+        putAsync(dchan, values.slice(0));
+      }
+    })(i));
   }
-  go(function*() {
-    while (true) {
+
+  go(function* () {
+    for (;;) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
       // don't
-      for (var i = 0; i < length; i ++) {
+      for (let i = 0; i < length; i ++) {
         try {
           takeAsync(chs[i], dcallbacks[i]);
         } catch (e) {
           // FIX: Hmm why catching here?
-          dcount --;
+          dcount--;
         }
       }
-      var values = yield take(dchan);
-      for (i = 0; i < length; i ++) {
-        if (values[i] === CLOSED) {
+
+      const _values = yield takeAction(dchan);
+      for (let i = 0; i < length; i++) {
+        if (_values[i] === CLOSED) {
           out.close();
           return;
         }
       }
-      yield put(out, f.apply(null, values));
+      yield put(out, f(..._values));
     }
   });
   return out;
 }
 
-function merge(chs, bufferOrN) {
-  var out = chan(bufferOrN);
-  var actives = chs.slice(0);
-  go(function*() {
-    while (true) {
+export function merge(chs, bufferOrN) {
+  const out = chan(bufferOrN);
+  const actives = chs.slice(0);
+  go(function* () {
+    for (;;) {
       if (actives.length === 0) {
         break;
       }
-      var r = yield alts(actives);
-      var value = r.value;
+      const r = yield alts(actives);
+      const value = r.value;
       if (value === CLOSED) {
         // Remove closed channel
-        var i = actives.indexOf(r.channel);
+        const i = actives.indexOf(r.channel);
         actives.splice(i, 1);
-        continue;
+      } else {
+        yield put(out, value);
       }
-      yield put(out, value);
     }
     out.close();
   });
   return out;
 }
 
-function into(coll, ch) {
-  var result = coll.slice(0);
-  return reduce(function(result, item) {
-    result.push(item);
-    return result;
+export function into(coll, ch) {
+  const result = coll.slice(0);
+  return reduce((_result, item) => {
+    _result.push(item);
+    return _result;
   }, result, ch);
 }
 
-function takeN(n, ch, bufferOrN) {
-  var out = chan(bufferOrN);
-  go(function*() {
-    for (var i = 0; i < n; i ++) {
-      var value = yield take(ch);
+export function take(n, ch, bufferOrN) {
+  const out = chan(bufferOrN);
+  go(function* () {
+    for (let i = 0; i < n; i++) {
+      const value = yield takeAction(ch);
       if (value === CLOSED) {
         break;
       }
@@ -295,35 +293,34 @@ function takeN(n, ch, bufferOrN) {
   return out;
 }
 
-var NOTHING = {};
+const NOTHING = {};
 
-function unique(ch, bufferOrN) {
-  var out = chan(bufferOrN);
-  var last = NOTHING;
-  go(function*() {
-    while (true) {
-      var value = yield take(ch);
+export function unique(ch, bufferOrN) {
+  const out = chan(bufferOrN);
+  let last = NOTHING;
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(ch);
       if (value === CLOSED) {
         break;
       }
-      if (value === last) {
-        continue;
+      if (value !== last) {
+        last = value;
+        yield put(out, value);
       }
-      last = value;
-      yield put(out, value);
     }
     out.close();
   });
   return out;
 }
 
-function partitionBy(f, ch, bufferOrN) {
-  var out = chan(bufferOrN);
-  var part = [];
-  var last = NOTHING;
-  go(function*() {
-    while (true) {
-      var value = yield take(ch);
+export function partitionBy(f, ch, bufferOrN) {
+  const out = chan(bufferOrN);
+  let part = [];
+  let last = NOTHING;
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(ch);
       if (value === CLOSED) {
         if (part.length > 0) {
           yield put(out, part);
@@ -331,7 +328,7 @@ function partitionBy(f, ch, bufferOrN) {
         out.close();
         break;
       } else {
-        var newItem = f(value);
+        const newItem = f(value);
         if (newItem === last || last === NOTHING) {
           part.push(value);
         } else {
@@ -345,13 +342,13 @@ function partitionBy(f, ch, bufferOrN) {
   return out;
 }
 
-function partition(n, ch, bufferOrN) {
-  var out = chan(bufferOrN);
-  go(function*() {
-    while (true) {
-      var part = new Array(n);
-      for (var i = 0; i < n; i++) {
-        var value = yield take(ch);
+export function partition(n, ch, bufferOrN) {
+  const out = chan(bufferOrN);
+  go(function* () {
+    for (;;) {
+      const part = new Array(n);
+      for (let i = 0; i < n; i++) {
+        const value = yield takeAction(ch);
         if (value === CLOSED) {
           if (i > 0) {
             yield put(out, part.slice(0, i));
@@ -368,67 +365,64 @@ function partition(n, ch, bufferOrN) {
 }
 
 // For channel identification
-var genId = (function() {
-  var i = 0;
-  return function() {
-    i ++;
-    return "" + i;
+const genId = ((() => {
+  let i = 0;
+
+  return () => {
+    i++;
+    return `${i}`;
   };
-})();
+}))();
 
-var ID_ATTR = "__csp_channel_id";
-
-// TODO: Do we need to check with hasOwnProperty?
-function len(obj) {
-  var count = 0;
-  for (var p in obj) {
-    count ++;
-  }
-  return count;
-}
+const ID_ATTR = '__csp_channel_id';
 
 function chanId(ch) {
-  var id = ch[ID_ATTR];
+  let id = ch[ID_ATTR];
+
   if (id === undefined) {
     id = ch[ID_ATTR] = genId();
   }
   return id;
 }
 
-var Mult = function(ch) {
-  this.taps = {};
-  this.ch = ch;
-};
+class Tap {
+  constructor(channel, keepOpen) {
+    this.channel = channel;
+    this.keepOpen = keepOpen;
+  }
+}
 
-var Tap = function(channel, keepOpen) {
-  this.channel = channel;
-  this.keepOpen = keepOpen;
-};
+class Mult {
+  constructor(ch) {
+    this.taps = {};
+    this.ch = ch;
+  }
 
-Mult.prototype.muxch = function() {
-  return this.ch;
-};
+  muxch() {
+    return this.ch;
+  }
 
-Mult.prototype.tap = function(ch, keepOpen) {
-  var id = chanId(ch);
-  this.taps[id] = new Tap(ch, keepOpen);
-};
+  tap(ch, keepOpen) {
+    this.taps[chanId(ch)] = new Tap(ch, keepOpen);
+  }
 
-Mult.prototype.untap = function(ch) {
-  delete this.taps[chanId(ch)];
-};
+  untap(ch) {
+    delete this.taps[chanId(ch)];
+  }
 
-Mult.prototype.untapAll = function() {
-  this.taps = {};
-};
+  untapAll() {
+    this.taps = {};
+  }
+}
 
-function mult(ch) {
-  var m = new Mult(ch);
-  var dchan = chan(1);
-  var dcount;
+export function mult(ch) {
+  const m = new Mult(ch);
+  const dchan = chan(1);
+  let dcount;
+
   function makeDoneCallback(tap) {
     return function(stillOpen) {
-      dcount --;
+      dcount--;
       if (dcount === 0) {
         putAsync(dchan, true);
       }
@@ -437,168 +431,174 @@ function mult(ch) {
       }
     };
   }
-  go(function*() {
-    while (true) {
-      var value = yield take(ch);
-      var id, t;
-      var taps = m.taps;
+
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(ch);
+      const taps = m.taps;
+      let t;
+
       if (value === CLOSED) {
-        for (id in taps) {
+        Object.keys(taps).forEach((id) => {
           t = taps[id];
           if (!t.keepOpen) {
             t.channel.close();
           }
-        }
+        });
+
         // TODO: Is this necessary?
         m.untapAll();
         break;
       }
-      dcount = len(taps);
+      dcount = Object.keys(taps).length;
       // XXX: This is because putAsync can actually call back
       // immediately. Fix that
-      var initDcount = dcount;
+      const initDcount = dcount;
       // Put value on tapping channels...
-      for (id in taps) {
+      Object.keys(taps).forEach((id) => {
         t = taps[id];
         putAsync(t.channel, value, makeDoneCallback(t));
-      }
+      });
       // ... waiting for all puts to complete
       if (initDcount > 0) {
-        yield take(dchan);
+        yield takeAction(dchan);
       }
     }
   });
   return m;
 }
 
-mult.tap = function tap(m, ch, keepOpen) {
+mult.tap = (m, ch, keepOpen) => {
   m.tap(ch, keepOpen);
   return ch;
 };
 
-mult.untap = function untap(m, ch) {
+mult.untap = (m, ch) => {
   m.untap(ch);
 };
 
-mult.untapAll = function untapAll(m) {
+mult.untapAll = (m) => {
   m.untapAll();
 };
 
-var Mix = function(ch) {
-  this.ch = ch;
-  this.stateMap = {};
-  this.change = chan();
-  this.soloMode = mix.MUTE;
-};
-
-Mix.prototype._changed = function() {
-  putAsync(this.change, true);
-};
-
-Mix.prototype._getAllState = function() {
-  var allState = {};
-  var stateMap = this.stateMap;
-  var solos = [];
-  var mutes = [];
-  var pauses = [];
-  var reads;
-  for (var id in stateMap) {
-    var chanData = stateMap[id];
-    var state = chanData.state;
-    var channel = chanData.channel;
-    if (state[mix.SOLO]) {
-      solos.push(channel);
-    }
-    // TODO
-    if (state[mix.MUTE]) {
-      mutes.push(channel);
-    }
-    if (state[mix.PAUSE]) {
-      pauses.push(channel);
-    }
+class Mix {
+  constructor(ch) {
+    this.ch = ch;
+    this.stateMap = {};
+    this.change = chan();
+    this.soloMode = mix.MUTE;
   }
-  var i, n;
-  if (this.soloMode === mix.PAUSE && solos.length > 0) {
-    n = solos.length;
-    reads = new Array(n + 1);
-    for (i = 0; i < n; i++) {
-      reads[i] = solos[i];
-    }
-    reads[n] = this.change;
-  } else {
-    reads = [];
-    for (id in stateMap) {
-      chanData = stateMap[id];
-      channel = chanData.channel;
-      if (pauses.indexOf(channel) < 0) {
-        reads.push(channel);
+
+  _changed() {
+    putAsync(this.change, true);
+  }
+
+  _getAllState() {
+    const stateMap = this.stateMap;
+    let solos = [];
+    let mutes = [];
+    let pauses = [];
+    let reads;
+
+    Object.keys(stateMap).forEach((id) => {
+      const chanData = stateMap[id];
+      const state = chanData.state;
+      const channel = chanData.channel;
+      if (state[mix.SOLO]) {
+        solos.push(channel);
       }
+      // TODO
+      if (state[mix.MUTE]) {
+        mutes.push(channel);
+      }
+      if (state[mix.PAUSE]) {
+        pauses.push(channel);
+      }
+    });
+
+    let i;
+    let n;
+    if (this.soloMode === mix.PAUSE && solos.length > 0) {
+      n = solos.length;
+      reads = new Array(n + 1);
+      for (i = 0; i < n; i++) {
+        reads[i] = solos[i];
+      }
+      reads[n] = this.change;
+    } else {
+      reads = [];
+      Object.keys(stateMap).forEach((id) => {
+        const chanData = stateMap[id];
+        const channel = chanData.channel;
+        if (pauses.indexOf(channel) < 0) {
+          reads.push(channel);
+        }
+      });
+      reads.push(this.change);
     }
-    reads.push(this.change);
+
+    return { solos, mutes, reads };
   }
 
-  return {
-    solos: solos,
-    mutes: mutes,
-    reads: reads
-  };
-};
-
-Mix.prototype.admix = function(ch) {
-  this.stateMap[chanId(ch)] = {
-    channel: ch,
-    state: {}
-  };
-  this._changed();
-};
-
-Mix.prototype.unmix = function(ch) {
-  delete this.stateMap[chanId(ch)];
-  this._changed();
-};
-
-Mix.prototype.unmixAll = function() {
-  this.stateMap = {};
-  this._changed();
-};
-
-Mix.prototype.toggle = function(updateStateList) {
-  // [[ch1, {}], [ch2, {solo: true}]];
-  var length = updateStateList.length;
-  for (var i = 0; i < length; i++) {
-    var ch = updateStateList[i][0];
-    var id = chanId(ch);
-    var updateState = updateStateList[i][1];
-    var chanData = this.stateMap[id];
-    if (!chanData) {
-      chanData = this.stateMap[id] = {
-        channel: ch,
-        state: {}
-      };
-    }
-    for (var mode in updateState) {
-      chanData.state[mode] = updateState[mode];
-    }
+  admix(ch) {
+    this.stateMap[chanId(ch)] = {
+      channel: ch,
+      state: {},
+    };
+    this._changed();
   }
-  this._changed();
-};
 
-Mix.prototype.setSoloMode = function(mode) {
-  if (VALID_SOLO_MODES.indexOf(mode) < 0) {
-    throw new Error("Mode must be one of: ", VALID_SOLO_MODES.join(", "));
+  unmix(ch) {
+    delete this.stateMap[chanId(ch)];
+    this._changed();
   }
-  this.soloMode = mode;
-  this._changed();
-};
 
-function mix(out) {
-  var m = new Mix(out);
-  go(function*() {
-    var state = m._getAllState();
-    while (true) {
-      var result = yield alts(state.reads);
-      var value = result.value;
-      var channel = result.channel;
+  unmixAll() {
+    this.stateMap = {};
+    this._changed();
+  }
+
+  toggle(updateStateList) {
+    // [[ch1, {}], [ch2, {solo: true}]];
+    const length = updateStateList.length;
+    for (let i = 0; i < length; i++) {
+      const ch = updateStateList[i][0];
+      const id = chanId(ch);
+      const updateState = updateStateList[i][1];
+      let chanData = this.stateMap[id];
+
+      if (!chanData) {
+        chanData = this.stateMap[id] = {
+          channel: ch,
+          state: {},
+        };
+      }
+      Object.keys(updateState).forEach((mode) => {
+        chanData.state[mode] = updateState[mode];
+      });
+    }
+    this._changed();
+  }
+
+  setSoloMode = function(mode) {
+    if (VALID_SOLO_MODES.indexOf(mode) < 0) {
+      throw new Error("Mode must be one of: ", VALID_SOLO_MODES.join(", "));
+    }
+    this.soloMode = mode;
+    this._changed();
+  }
+}
+
+export function mix(out) {
+  const m = new Mix(out);
+  go(function* () {
+    let state = m._getAllState();
+
+    for (;;) {
+      const result = yield alts(state.reads);
+      const value = result.value;
+      const channel = result.channel;
+
       if (value === CLOSED) {
         delete m.stateMap[chanId(channel)];
         state = m._getAllState();
@@ -608,10 +608,11 @@ function mix(out) {
         state = m._getAllState();
         continue;
       }
-      var solos = state.solos;
+
+      const solos = state.solos;
       if (solos.indexOf(channel) > -1 ||
           (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))) {
-        var stillOpen = yield put(out, value);
+        const stillOpen = yield put(out, value);
         if (!stillOpen) {
           break;
         }
@@ -621,9 +622,10 @@ function mix(out) {
   return m;
 }
 
-mix.MUTE = "mute";
-mix.PAUSE = "pause";
-mix.SOLO = "solo";
+mix.MUTE = 'mute';
+mix.PAUSE = 'pause';
+mix.SOLO = 'solo';
+
 var VALID_SOLO_MODES = [mix.MUTE, mix.PAUSE];
 
 mix.add = function admix(m, ch) {
@@ -650,62 +652,62 @@ function constantlyNull() {
   return null;
 }
 
-var Pub = function(ch, topicFn, bufferFn) {
-  this.ch = ch;
-  this.topicFn = topicFn;
-  this.bufferFn = bufferFn;
-  this.mults = {};
-};
-
-Pub.prototype._ensureMult = function(topic) {
-  var m = this.mults[topic];
-  var bufferFn = this.bufferFn;
-  if (!m) {
-    m = this.mults[topic] = mult(chan(bufferFn(topic)));
-  }
-  return m;
-};
-
-Pub.prototype.sub = function(topic, ch, keepOpen) {
-  var m = this._ensureMult(topic);
-  return mult.tap(m, ch, keepOpen);
-};
-
-Pub.prototype.unsub = function(topic, ch) {
-  var m = this.mults[topic];
-  if (m) {
-    mult.untap(m, ch);
-  }
-};
-
-Pub.prototype.unsubAll = function(topic) {
-  if (topic === undefined) {
+class Pub {
+  constructor(ch, topicFn, bufferFn) {
+    this.ch = ch;
+    this.topicFn = topicFn;
+    this.bufferFn = bufferFn;
     this.mults = {};
-  } else {
-    delete this.mults[topic];
   }
-};
 
-function pub(ch, topicFn, bufferFn) {
-  bufferFn = bufferFn || constantlyNull;
-  var p = new Pub(ch, topicFn, bufferFn);
-  go(function*() {
-    while (true) {
-      var value = yield take(ch);
-      var mults = p.mults;
-      var topic;
+  _ensureMult(topic) {
+    let m = this.mults[topic];
+    const bufferFn = this.bufferFn;
+    if (!m) {
+      m = this.mults[topic] = mult(chan(bufferFn(topic)));
+    }
+    return m;
+  }
+
+  sub(topic, ch, keepOpen) {
+    const m = this._ensureMult(topic);
+    return mult.tap(m, ch, keepOpen);
+  }
+
+  unsub(topic, ch) {
+    const m = this.mults[topic];
+    if (m) {
+      mult.untap(m, ch);
+    }
+  }
+
+  unsubAll(topic) {
+    if (topic === undefined) {
+      this.mults = {};
+    } else {
+      delete this.mults[topic];
+    }
+  }
+}
+
+export function pub(ch, topicFn, bufferFn=constantlyNull) {
+  const p = new Pub(ch, topicFn, bufferFn);
+  go(function* () {
+    for (;;) {
+      const value = yield takeAction(ch);
+      const mults = p.mults;
       if (value === CLOSED) {
-        for (topic in mults) {
+        Object.keys(mults).forEach((topic) => {
           mults[topic].muxch().close();
-        }
+        });
         break;
       }
       // TODO: Somehow ensure/document that this must return a string
       // (otherwise use proper (hash)maps)
-      topic = topicFn(value);
-      var m = mults[topic];
+      const topic = topicFn(value);
+      const m = mults[topic];
       if (m) {
-        var stillOpen = yield put(m.muxch(), value);
+        const stillOpen = yield put(m.muxch(), value);
         if (!stillOpen) {
           delete mults[topic];
         }
@@ -715,48 +717,119 @@ function pub(ch, topicFn, bufferFn) {
   return p;
 }
 
-pub.sub = function sub(p, topic, ch, keepOpen) {
-  return p.sub(topic, ch, keepOpen);
-};
+pub.sub = (p, topic, ch, keepOpen) => p.sub(topic, ch, keepOpen);
 
-pub.unsub = function unsub(p, topic, ch) {
+pub.unsub = (p, topic, ch) => {
   p.unsub(topic, ch);
 };
 
-pub.unsubAll = function unsubAll(p, topic) {
+pub.unsubAll = (p, topic) => {
   p.unsubAll(topic);
 };
 
-module.exports = {
-  mapFrom,
-  mapInto,
-  filterFrom,
-  filterInto,
-  removeFrom,
-  removeInto,
-  mapcatFrom,
-  mapcatInto,
+function pipelineInternal(n, to, from, close, taskFn) {
+  if (n <= 0) {
+    throw new Error('n must be positive');
+  }
 
-  pipe,
-  split,
-  reduce,
-  onto,
-  fromColl,
+  const jobs = chan(n);
+  const results = chan(n);
 
-  map,
-  merge,
-  into,
-  take: takeN,
-  unique,
-  partition,
-  partitionBy,
+  times(n, () => {
+    go(function* (_taskFn, _jobs, _results) {
+      for (;;) {
+        const job = yield takeAction(_jobs);
 
-  mult,
-  mix,
-  pub,
-};
+        if (!_taskFn(job)) {
+          _results.close();
+          break;
+        }
+      }
+    }, [taskFn, jobs, results]);
+  });
 
+  go(function* (_jobs, _from, _results) {
+    for (;;) {
+      const v = yield takeAction(_from);
 
+      if (v === CLOSED) {
+        _jobs.close();
+        break;
+      }
+
+      const p = chan(1);
+
+      yield put(_jobs, [v, p]);
+      yield put(_results, p);
+    }
+  }, [jobs, from, results]);
+
+  go(function* (_results, _close, _to) {
+    for (;;) {
+      const p = yield takeAction(_results);
+
+      if (p === CLOSED) {
+        if (_close) {
+          _to.close();
+        }
+        break;
+      }
+
+      const res = yield takeAction(p);
+
+      for (;;) {
+        const v = yield takeAction(res);
+
+        if (v === CLOSED) {
+          break;
+        }
+
+        yield put(_to, v);
+      }
+    }
+  }, [results, close, to]);
+
+  return to;
+}
+
+export function pipeline(to, xf, from, keepOpen, exHandler) {
+  function taskFn(job) {
+    if (job === CLOSED) {
+      return null;
+    }
+
+    const [v, p] = job;
+    const res = chan(1, xf, exHandler);
+
+    go(function* (ch, value) {
+      yield put(ch, value);
+      res.close();
+    }, [res, v]);
+
+    putAsync(p, res);
+
+    return true;
+  }
+
+  return pipelineInternal(1, to, from, !keepOpen, taskFn);
+}
+
+export function pipelineAsync(n, to, af, from, keepOpen) {
+  function taskFn(job) {
+    if (job === CLOSED) {
+      return null;
+    }
+
+    const [v, p] = job;
+    const res = chan(1);
+    af(v, res);
+    putAsync(p, res);
+
+    return true;
+  }
+
+  return pipelineInternal(n, to, from, !keepOpen, taskFn);
+}
 // Possible "fluid" interfaces:
 
 // thread(

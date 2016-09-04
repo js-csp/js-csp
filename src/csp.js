@@ -1,9 +1,7 @@
-var csp = require("./csp.core");
-var operations = require("./csp.operations");
-var pipeline = require('./csp.pipeline');
+import * as csp from './csp.core';
+import * as operations from './csp.operations';
 
 csp.operations = operations;
-csp.operations.pipeline = pipeline.pipeline;
-csp.operations.pipelineAsync = pipeline.pipelineAsync;
 
+// TODO: FIX THIS
 module.exports = csp;

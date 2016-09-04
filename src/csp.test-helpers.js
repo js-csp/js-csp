@@ -5,7 +5,7 @@ import { chan, go as goroutine, put, take } from './csp';
 export const identityChan = (x: any) => {
   const ch = chan(1);
 
-  goroutine(function*() {
+  goroutine(function* () {
     yield put(ch, x);
     ch.close();
   });
@@ -27,7 +27,7 @@ export const goAsync = (f: Generator<any, any, any>): Function => (done: Functio
 };
 
 export const go = (f: Generator<any, any, any>) => (done: Function) => {
-  goroutine(function*() {
+  goroutine(function* () {
     try {
       const ch = goroutine(f, []);
       yield take(ch);
