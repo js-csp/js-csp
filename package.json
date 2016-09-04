@@ -70,7 +70,7 @@
     "test": "mocha",
     "test:watch": "mocha --watch --reporter progress",
     "test:coverage": "istanbul cover ./node_modules/.bin/_mocha",
-    "test:lint": "esw -w './src/**/*-test.js' './test/**/*.js'",
+    "lint": "esw -w './src/**/*-test.js' './test/**/*.js'",
     "flow:status": "flow status; test $? -eq 0 -o $? -eq 2",
     "flow:watch": "npm run flow:status && chokidar './src/**/*.js' './test/**/*.js' -c 'npm run flow:status'",
     "flow:stop": "flow stop",
