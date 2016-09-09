@@ -70,14 +70,18 @@
              csp.go(function*() {
                  for (;;) {
                      var query = yield csp.take(input);
-                     request(query);
-                     $display.addClass("waiting");
-                     var data = yield csp.take(result);
-                     $display.removeClass("waiting");
-                     $display.html("");
-                     data[1].forEach(function(item) {
-                         $("<div>").text(item).appendTo($display);
-                     });
+                     if (query.trim() !== '') {
+                         request(query);
+                         $display.addClass("waiting");
+                         var data = yield csp.take(result);
+                         $display.removeClass("waiting");
+                         $display.html("");
+                         data[1].forEach(function(item) {
+                             $("<div>").text(item).appendTo($display);
+                         });
+                     } else {
+                        $display.html("");
+                     }
                  }
              });
         </script>
