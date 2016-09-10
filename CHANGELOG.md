@@ -1,12 +1,13 @@
 # Changes to js-csp
-## 0.6.5
-- FIXED: Fix missing babel-runtime dependencies for node.
-- CHANGED: Improve npm script for publishing package.
 
 ## 0.7.0
 - CHANGED: Remove deprecated dispatcher function using babel-runtime/core-js/set-immediate
 - ADDED: Flowtype
 - CHANGED: Fix all eslint rules
+
+## 0.6.5
+- FIXED: Fix missing babel-runtime dependencies for node.
+- CHANGED: Improve npm script for publishing package.
 
 ## 0.6.0
 - CHANGED: Improved build tools (babel, webpack, eslint).
