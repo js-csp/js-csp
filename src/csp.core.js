@@ -1,66 +1,32 @@
-var buffers = require("./impl/buffers");
-var channels = require("./impl/channels");
-var select = require("./impl/select");
-var process = require("./impl/process");
-var timers = require("./impl/timers");
+// @flow
+import type { BufferType } from './impl/buffers';
+import type { ProcessValueType } from './impl/process';
+import { fixed } from './impl/buffers';
+import { putThenCallback, Process } from './impl/process';
+import { chan as channel, Channel, CLOSED } from './impl/channels';
 
-function spawn(gen, creator) {
-  var ch = channels.chan(buffers.fixed(1));
-  (new process.Process(gen, function(value) {
-    if (value === channels.CLOSED) {
+export function spawn(gen: Generator<ProcessValueType, any, void>, creator: Function): Channel {
+  const ch = channel(fixed(1));
+  const process = new Process(gen, (value) => {
+    if (value === CLOSED) {
       ch.close();
     } else {
-      process.put_then_callback(ch, value, function(ok) {
-        ch.close();
-      });
+      putThenCallback(ch, value, () => ch.close());
     }
-  }, creator)).run();
+  }, creator);
+
+  process.run();
   return ch;
-};
+}
 
-function go(f, args) {
-  args = args || [];
+export function go(f: Function, args: any[] = []): Channel {
+  return spawn(f(...args), f);
+}
 
-  var gen = f.apply(null, args);
-  return spawn(gen, f);
-};
-
-function chan(bufferOrNumber, xform, exHandler) {
-  var buf;
-  if (bufferOrNumber === 0) {
-    bufferOrNumber = null;
+export function chan<T>(bufferOrNumber: ?BufferType<T> | ?number, xform: ?Function, exHandler: ?Function): Channel {
+  if (typeof bufferOrNumber === 'number') {
+    return channel(bufferOrNumber === 0 ? null : fixed(bufferOrNumber), xform, exHandler);
   }
-  if (typeof bufferOrNumber === "number") {
-    buf = buffers.fixed(bufferOrNumber);
-  } else {
-    buf = bufferOrNumber;
-  }
-  return channels.chan(buf, xform, exHandler);
-};
 
-
-module.exports = {
-  buffers: {
-    fixed: buffers.fixed,
-    dropping: buffers.dropping,
-    sliding: buffers.sliding
-  },
-
-  spawn: spawn,
-  go: go,
-  chan: chan,
-  DEFAULT: select.DEFAULT,
-  CLOSED: channels.CLOSED,
-
-  put: process.put,
-  take: process.take,
-  offer: process.offer,
-  poll: process.poll,
-  sleep: process.sleep,
-  alts: process.alts,
-  putAsync: process.put_then_callback,
-  takeAsync: process.take_then_callback,
-  NO_VALUE: process.NO_VALUE,
-
-  timeout: timers.timeout
-};
+  return channel(bufferOrNumber, xform, exHandler);
+}

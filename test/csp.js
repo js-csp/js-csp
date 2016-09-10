@@ -19,7 +19,7 @@ var csp = require("../src/csp"),
     CLOSED = csp.CLOSED,
     NO_VALUE = csp.NO_VALUE;
 
-var do_alts = require("../src/impl/select").do_alts;
+var doAlts = require("../src/impl/select").doAlts;
 
 function closed(chanCons) {
   var ch = chanCons();
@@ -87,7 +87,7 @@ describe("put", function() {
 
         // XXX FIX: Throwing an exception here (in a "non-top-level"
         // goroutine) makes the alts test crash with a weird "Cannot
-        // call method '_take' of undefined". It goes away if
+        // call method 'take' of undefined". It goes away if
         // Process.prototype.run handles exceptions throw by the
         // generator. It looks like it has to do with mocha's "done"
         // needs to be called for async test to be cleanedly cleaned
@@ -264,8 +264,8 @@ describe("alts", function() {
       // We want to test that an immediately-available-due-to-closed
       // operation deactivates previously registered operations.
       // Therefore we use "priority" to make sure an already-ready
-      // operation that comes last does not short-circuit do_alts.
-      do_alts(ops, inc, {priority: true});
+      // operation that comes last does not short-circuit doAlts.
+      doAlts(ops, inc, {priority: true});
 
       yield* f.apply(this, chs);
       // One more turn for async operations scheduled by f above.
@@ -416,7 +416,7 @@ describe("Goroutine", function() {
     }, [42]);
     var value = yield take(ch);
     assert.equal(value, 42, "returned value is delivered");
-    assert.equal(ch.is_closed(), true, "output channel is closed");
+    assert.equal(ch.isClosed(), true, "output channel is closed");
   });
 
   it("should leave yielded normal values untouched", function*() {
@@ -434,7 +434,7 @@ describe("Goroutine", function() {
     }, [CLOSED]);
     var value = yield take(ch);
     assert.equal(value, CLOSED, "CLOSED is delivered");
-    assert.equal(ch.is_closed(), true, "output channel is closed");
+    assert.equal(ch.isClosed(), true, "output channel is closed");
   });
 });
 

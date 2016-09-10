@@ -57,7 +57,7 @@ describe("Operations", function() {
       assert.equal(2, (yield take(ch)));
       assert.equal(3, (yield take(ch)));
       assert.equal(4, (yield take(ch)));
-      assert.equal(ch.is_closed(), true);
+      assert.equal(ch.isClosed(), true);
     });
   });
 

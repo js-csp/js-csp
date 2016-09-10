@@ -1,82 +1,49 @@
-"use strict";
+// @flow
+import { RingBuffer, ring } from './buffers';
 
-// TODO: Use process.nextTick if it's available since it's more
-// efficient
-// http://howtonode.org/understanding-process-next-tick
-// Maybe we don't even need to queue ourselves in that case?
+const TASK_BATCH_SIZE: number = 1024;
+const tasks: RingBuffer<Function> = ring();
+let running: boolean = false;
+let queued: boolean = false;
 
-// XXX: But http://blog.nodejs.org/2013/03/11/node-v0-10-0-stable/
-// Looks like it will blow up the stack (or is that just about
-// pre-empting IO (but that's already bad enough IMO)?)
+export function queueDispatcher(): void {
+  // See the implementation of setImmediate at babel-runtime/core-js/set-immediate
+  // https://github.com/zloirock/core-js/blob/e482646353b489e200a5ecccca6af5c01f0b4ef2/library/modules/_task.js
+  // Under the hood, it will use process.nextTick, MessageChannel, and fallback to setTimeout
+  if (!(queued && running)) {
+    queued = true;
 
-// Looks like
-// http://nodejs.org/api/process.html#process_process_nexttick_callback
-// is the equivalent of our TASK_BATCH_SIZE
+    setImmediate(() => {
+      let count: number = 0;
 
-var buffers = require("./buffers");
+      running = true;
+      queued = false;
 
-var TASK_BATCH_SIZE = 1024;
+      while (count < TASK_BATCH_SIZE) {
+        const task: ?Function = tasks.pop();
 
-var tasks = buffers.ring(32);
-var running = false;
-var queued = false;
+        if (task) {
+          task();
+          count++;
+        } else {
+          break;
+        }
+      }
 
-var queue_dispatcher;
+      running = false;
 
-function process_messages() {
-  running = true;
-  queued = false;
-  var count = 0;
-  while (true) {
-    var task = tasks.pop();
-    if (task === buffers.EMPTY) {
-      break;
-    }
-    // TODO: Don't we need a try/finally here?
-    task();
-    if (count >= TASK_BATCH_SIZE) {
-      break;
-    }
-    count ++;
-  }
-  running = false;
-  if (tasks.length > 0) {
-    queue_dispatcher();
+      if (tasks.count() > 0) {
+        queueDispatcher();
+      }
+    });
   }
 }
 
-if (typeof MessageChannel !== "undefined") {
-  var message_channel = new MessageChannel();
-  message_channel.port1.onmessage = function(_) {
-    process_messages();
-  };
-  queue_dispatcher = function()  {
-    if (!(queued && running)) {
-      queued = true;
-      message_channel.port2.postMessage(0);
-    }
-  };
-} else if (typeof setImmediate !== "undefined") {
-  queue_dispatcher = function() {
-    if (!(queued && running)) {
-      queued = true;
-      setImmediate(process_messages);
-    }
-  };
-} else {
-  queue_dispatcher = function() {
-    if (!(queued && running)) {
-      queued = true;
-      setTimeout(process_messages, 0);
-    }
-  };
+export function run(func: Function): void {
+  tasks.unshift(func);
+  queueDispatcher();
 }
 
-exports.run = function (f) {
-  tasks.unbounded_unshift(f);
-  queue_dispatcher();
-};
-
-exports.queue_delay = function(f, delay) {
-  setTimeout(f, delay);
-};
+export function queueDelay(func: Function, delay: number): void {
+  setTimeout(func, delay);
+}

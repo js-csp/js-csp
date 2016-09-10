@@ -1,111 +1,48 @@
+// @flow
 import has from 'lodash/get';
-import { Box } from './channels';
-
-class AltHandler {
-  flag: Box;
-  f: Function;
-
-  constructor(flag, f) {
-    this.f = f;
-    this.flag = flag;
-  }
-
-  is_active() {
-    return this.flag.value;
-  }
-
-  is_blockable() {
-    return true;
-  }
-
-  commit() {
-    this.flag.value = false;
-    return this.f;
-  }
-}
-
-class AltResult {
-  constructor(value, channel) {
-    this.value = value;
-    this.channel = channel;
-  }
-}
-
-function rand_int(n) {
-  return Math.floor(Math.random() * (n + 1));
-}
-
-function random_array(n) {
-  const a = new Array(n);
-  let i;
-
-  for (i = 0; i < n; i++) {
-    a[i] = 0;
-  }
-  for (i = 1; i < n; i++) {
-    const j = rand_int(i);
-    a[i] = a[j];
-    a[j] = i;
-  }
-  return a;
-}
-
-export const DEFAULT = {
-  toString: () => '[object DEFAULT]',
-};
+import range from 'lodash/range';
+import shuffle from 'lodash/shuffle';
+import { Channel, Box } from './channels';
+import { AltHandler } from './handlers';
+import { AltResult, DEFAULT } from './results';
 
 // TODO: Accept a priority function or something
-export const do_alts = (operations, callback, options) => {
-  var length = operations.length;
-  // XXX Hmm
-  if (length === 0) {
-    throw new Error("Empty alt list");
+export function doAlts( // eslint-disable-line
+  operations: Channel[] | [Channel, any][], callback: Function, options: Object
+) {
+  if (operations.length === 0) {
+    throw new Error('Empty alt list');
   }
 
-  var priority = (options && options.priority) ? true : false;
-  if (!priority) {
-    var indexes = random_array(length);
-  }
+  const flag: Box<boolean> = new Box(true);
+  const indexes: number[] = shuffle(range(operations.length));
+  const hasPriority: boolean = !!(options && options.priority);
+  let result: ?Box<any>;
 
-  var flag = new Box(true);
-  var result;
+  for (let i = 0; i < operations.length; i++) {
+    const operation: Channel | [Channel, any] = operations[hasPriority ? i : indexes[i]];
+    let ch: Channel;
 
-  for (var i = 0; i < length; i++) {
-    var operation = operations[priority ? i : indexes[i]];
-    var port;
-    // XXX Hmm
-    if (operation instanceof Array) {
-      var value = operation[1];
-      port = operation[0];
-      // We wrap this in a function to capture the value of "port",
-      // because js' closure captures vars by "references", not
-      // values. "let port" would have worked, but I don't want to
-      // raise the runtime requirement yet. TODO: So change this when
-      // most runtimes are modern enough.
-      result = port._put(value, (function(port) {
-        return new AltHandler(flag, function(ok) {
-          callback(new AltResult(ok, port));
-        });
-      })(port));
+    if (operation instanceof Channel) {
+      ch = operation;
+      result = ch.take(
+        new AltHandler(flag, (value) => callback(new AltResult(value, ch)))
+      );
     } else {
-      port = operation;
-      result = port._take((function(port) {
-        return new AltHandler(flag, function(value) {
-          callback(new AltResult(value, port));
-        });
-      })(port));
+      ch = operation[0];
+      result = ch.put(
+        operation[1], new AltHandler(flag, (ok) => callback(new AltResult(ok, ch)))
+      );
     }
-    // XXX Hmm
-    if (result instanceof Box) {
-      callback(new AltResult(result.value, port));
+
+    if (result) {
+      callback(new AltResult(result.value, ch));
       break;
     }
   }
 
-  if (!(result instanceof Box) && has(options, 'default')) {
-    if (flag.value) {
-      flag.value = false;
-      callback(new AltResult(options.default, DEFAULT));
-    }
+  if (!result && has(options, 'default') && flag.value) {
+    flag.value = false;
+    callback(new AltResult(options.default, DEFAULT));
   }
-};
+}
