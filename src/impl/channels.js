@@ -29,8 +29,8 @@ export class PutBox<T> {
   }
 }
 
-export class Channel<T> {
-  buf: ?BufferType<T>;
+export class Channel {
+  buf: ?BufferType<any>;
   xform: Object;
   takes: RingBuffer<HandlerType>;
   puts: RingBuffer<PutBox<any>>;
@@ -38,7 +38,7 @@ export class Channel<T> {
   dirtyTakes: number;
   closed: boolean;
 
-  constructor(takes: RingBuffer<any>, puts: RingBuffer<PutBox<any>>, buf: ?BufferType<T>, xform: Object) {
+  constructor(takes: RingBuffer<any>, puts: RingBuffer<PutBox<any>>, buf: ?BufferType<any>, xform: Object) {
     this.buf = buf;
     this.xform = xform;
     this.takes = takes;
@@ -265,35 +265,40 @@ const AddTransformer: Object = {
   },
 };
 
-function handleEx<T>(buf: BufferType<T>, exHandler: ?Function, e: Error) {
-  const def = (exHandler || ((err: Error) => {
-    console.log('error in channel transformer', err.stack); // eslint-disable-line
-    return CLOSED;
-  }))(e);
+function defaultExceptionHandler(err: Error): typeof CLOSED {
+  console.log('error in channel transformer', err.stack); // eslint-disable-line
+  return CLOSED;
+}
+
+function handleEx<T>(buf: BufferType<T>, exHandler: ?Function, e: Error): BufferType<T> {
+  const def = (exHandler || defaultExceptionHandler)(e);
 
   if (def !== CLOSED) {
+    // flow-ignore
     buf.add(def);
   }
 
   return buf;
-};
+}
 
-const handleException = (exHandler: ?Function): Function => (xform: Object): Object => ({
-  '@@transducer/step': (buffer: BufferType, input: any) => {
-    try {
-      return xform['@@transducer/step'](buffer, input);
-    } catch (e) {
-      return handleEx(buffer, exHandler, e);
-    }
-  },
-  '@@transducer/result': (buffer: BufferType) => {
-    try {
-      return xform['@@transducer/result'](buffer);
-    } catch (e) {
-      return handleEx(buffer, exHandler, e);
-    }
-  },
-});
+function handleException<T>(exHandler: ?Function): Function {
+  return (xform: Object): Object => ({
+    '@@transducer/step': (buffer: BufferType<T>, input: any) => {
+      try {
+        return xform['@@transducer/step'](buffer, input);
+      } catch (e) {
+        return handleEx(buffer, exHandler, e);
+      }
+    },
+    '@@transducer/result': (buffer: BufferType<T>) => {
+      try {
+        return xform['@@transducer/result'](buffer);
+      } catch (e) {
+        return handleEx(buffer, exHandler, e);
+      }
+    },
+  });
+}
 
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducer xform, not both

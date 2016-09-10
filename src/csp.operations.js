@@ -1,6 +1,13 @@
 import times from 'lodash/times';
-import { Box } from './impl/channels';
-import { go, take as takeAction, put, takeAsync, putAsync, alts, chan, CLOSED } from './csp.core';
+import { Box, CLOSED } from './impl/channels';
+import {
+  take as _take,
+  put,
+  takeThenCallback as takeAsync,
+  putThenCallback as putAsync,
+  alts,
+} from './impl/process';
+import { go, chan } from './csp.core';
 
 export function mapFrom(f, ch) {
   return {
@@ -56,7 +63,7 @@ export function filterFrom(p, ch, bufferOrN) {
 
   go(function* () {
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       if (value === CLOSED) {
         out.close();
         break;
@@ -101,7 +108,7 @@ export function removeInto(p, ch) {
 
 function* mapcat(f, src, dst) {
   for (;;) {
-    const value = yield takeAction(src);
+    const value = yield _take(src);
     if (value === CLOSED) {
       dst.close();
       break;
@@ -133,7 +140,7 @@ export function mapcatInto(f, ch, bufferOrN) {
 export function pipe(src, dst, keepOpen) {
   go(function* () {
     for (;;) {
-      const value = yield takeAction(src);
+      const value = yield _take(src);
       if (value === CLOSED) {
         if (!keepOpen) {
           dst.close();
@@ -153,7 +160,7 @@ export function split(p, ch, trueBufferOrN, falseBufferOrN) {
   const fch = chan(falseBufferOrN);
   go(function* () {
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       if (value === CLOSED) {
         tch.close();
         fch.close();
@@ -169,12 +176,13 @@ export function reduce(f, init, ch) {
   return go(function* () {
     let result = init;
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
+
       if (value === CLOSED) {
         return result;
-      } else {
-        result = f(result, value);
       }
+
+      result = f(result, value);
     }
   }, [], true);
 }
@@ -210,14 +218,16 @@ export function map(f, chs, bufferOrN) {
   let dcount;
   // put callbacks for each channel
   const dcallbacks = new Array(length);
-  for (let i = 0; i < length; i ++) {
-    dcallbacks[i] = ((i => value => {
-      values[i] = value;
-      dcount--;
-      if (dcount === 0) {
-        putAsync(dchan, values.slice(0));
-      }
-    })(i));
+  const callback = (i) => (value) => {
+    values[i] = value;
+    dcount--;
+    if (dcount === 0) {
+      putAsync(dchan, values.slice(0));
+    }
+  };
+
+  for (let i = 0; i < length; i++) {
+    dcallbacks[i] = callback(i);
   }
 
   go(function* () {
@@ -225,7 +235,7 @@ export function map(f, chs, bufferOrN) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
       // don't
-      for (let i = 0; i < length; i ++) {
+      for (let i = 0; i < length; i++) {
         try {
           takeAsync(chs[i], dcallbacks[i]);
         } catch (e) {
@@ -234,7 +244,7 @@ export function map(f, chs, bufferOrN) {
         }
       }
 
-      const _values = yield takeAction(dchan);
+      const _values = yield _take(dchan);
       for (let i = 0; i < length; i++) {
         if (_values[i] === CLOSED) {
           out.close();
@@ -282,7 +292,7 @@ export function take(n, ch, bufferOrN) {
   const out = chan(bufferOrN);
   go(function* () {
     for (let i = 0; i < n; i++) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       if (value === CLOSED) {
         break;
       }
@@ -300,7 +310,7 @@ export function unique(ch, bufferOrN) {
   let last = NOTHING;
   go(function* () {
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       if (value === CLOSED) {
         break;
       }
@@ -320,7 +330,7 @@ export function partitionBy(f, ch, bufferOrN) {
   let last = NOTHING;
   go(function* () {
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       if (value === CLOSED) {
         if (part.length > 0) {
           yield put(out, part);
@@ -348,7 +358,7 @@ export function partition(n, ch, bufferOrN) {
     for (;;) {
       const part = new Array(n);
       for (let i = 0; i < n; i++) {
-        const value = yield takeAction(ch);
+        const value = yield _take(ch);
         if (value === CLOSED) {
           if (i > 0) {
             yield put(out, part.slice(0, i));
@@ -421,7 +431,7 @@ export function mult(ch) {
   let dcount;
 
   function makeDoneCallback(tap) {
-    return function(stillOpen) {
+    return (stillOpen) => {
       dcount--;
       if (dcount === 0) {
         putAsync(dchan, true);
@@ -434,7 +444,7 @@ export function mult(ch) {
 
   go(function* () {
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       const taps = m.taps;
       let t;
 
@@ -461,7 +471,7 @@ export function mult(ch) {
       });
       // ... waiting for all puts to complete
       if (initDcount > 0) {
-        yield takeAction(dchan);
+        yield _take(dchan);
       }
     }
   });
@@ -481,12 +491,17 @@ mult.untapAll = (m) => {
   m.untapAll();
 };
 
+const MIX_MUTE = 'mute';
+const MIX_PAUSE = 'pause';
+const MIX_SOLO = 'solo';
+const VALID_SOLO_MODES = [MIX_MUTE, MIX_PAUSE];
+
 class Mix {
   constructor(ch) {
     this.ch = ch;
     this.stateMap = {};
     this.change = chan();
-    this.soloMode = mix.MUTE;
+    this.soloMode = MIX_MUTE;
   }
 
   _changed() {
@@ -495,30 +510,30 @@ class Mix {
 
   _getAllState() {
     const stateMap = this.stateMap;
-    let solos = [];
-    let mutes = [];
-    let pauses = [];
+    const solos = [];
+    const mutes = [];
+    const pauses = [];
     let reads;
 
     Object.keys(stateMap).forEach((id) => {
       const chanData = stateMap[id];
       const state = chanData.state;
       const channel = chanData.channel;
-      if (state[mix.SOLO]) {
+      if (state[MIX_SOLO]) {
         solos.push(channel);
       }
       // TODO
-      if (state[mix.MUTE]) {
+      if (state[MIX_MUTE]) {
         mutes.push(channel);
       }
-      if (state[mix.PAUSE]) {
+      if (state[MIX_PAUSE]) {
         pauses.push(channel);
       }
     });
 
     let i;
     let n;
-    if (this.soloMode === mix.PAUSE && solos.length > 0) {
+    if (this.soloMode === MIX_PAUSE && solos.length > 0) {
       n = solos.length;
       reads = new Array(n + 1);
       for (i = 0; i < n; i++) {
@@ -580,9 +595,9 @@ class Mix {
     this._changed();
   }
 
-  setSoloMode = function(mode) {
+  setSoloMode = function (mode) {
     if (VALID_SOLO_MODES.indexOf(mode) < 0) {
-      throw new Error("Mode must be one of: ", VALID_SOLO_MODES.join(", "));
+      throw new Error('Mode must be one of: ', VALID_SOLO_MODES.join(', '));
     }
     this.soloMode = mode;
     this._changed();
@@ -602,31 +617,23 @@ export function mix(out) {
       if (value === CLOSED) {
         delete m.stateMap[chanId(channel)];
         state = m._getAllState();
-        continue;
-      }
-      if (channel === m.change) {
+      } else if (channel === m.change) {
         state = m._getAllState();
-        continue;
-      }
+      } else {
+        const solos = state.solos;
 
-      const solos = state.solos;
-      if (solos.indexOf(channel) > -1 ||
+        if (solos.indexOf(channel) > -1 ||
           (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))) {
-        const stillOpen = yield put(out, value);
-        if (!stillOpen) {
-          break;
+          const stillOpen = yield put(out, value);
+          if (!stillOpen) {
+            break;
+          }
         }
       }
     }
   });
   return m;
 }
-
-mix.MUTE = 'mute';
-mix.PAUSE = 'pause';
-mix.SOLO = 'solo';
-
-var VALID_SOLO_MODES = [mix.MUTE, mix.PAUSE];
 
 mix.add = function admix(m, ch) {
   m.admix(ch);
@@ -690,11 +697,11 @@ class Pub {
   }
 }
 
-export function pub(ch, topicFn, bufferFn=constantlyNull) {
+export function pub(ch, topicFn, bufferFn = constantlyNull) {
   const p = new Pub(ch, topicFn, bufferFn);
   go(function* () {
     for (;;) {
-      const value = yield takeAction(ch);
+      const value = yield _take(ch);
       const mults = p.mults;
       if (value === CLOSED) {
         Object.keys(mults).forEach((topic) => {
@@ -738,7 +745,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
   times(n, () => {
     go(function* (_taskFn, _jobs, _results) {
       for (;;) {
-        const job = yield takeAction(_jobs);
+        const job = yield _take(_jobs);
 
         if (!_taskFn(job)) {
           _results.close();
@@ -750,7 +757,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
 
   go(function* (_jobs, _from, _results) {
     for (;;) {
-      const v = yield takeAction(_from);
+      const v = yield _take(_from);
 
       if (v === CLOSED) {
         _jobs.close();
@@ -766,7 +773,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
 
   go(function* (_results, _close, _to) {
     for (;;) {
-      const p = yield takeAction(_results);
+      const p = yield _take(_results);
 
       if (p === CLOSED) {
         if (_close) {
@@ -775,10 +782,10 @@ function pipelineInternal(n, to, from, close, taskFn) {
         break;
       }
 
-      const res = yield takeAction(p);
+      const res = yield _take(p);
 
       for (;;) {
-        const v = yield takeAction(res);
+        const v = yield _take(res);
 
         if (v === CLOSED) {
           break;

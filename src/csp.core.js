@@ -1,10 +1,11 @@
 // @flow
 import type { BufferType } from './impl/buffers';
-import { fixed, dropping, sliding } from './impl/buffers';
+import type { ProcessValueType } from './impl/process';
+import { fixed } from './impl/buffers';
 import { putThenCallback, Process } from './impl/process';
 import { chan as channel, Channel, CLOSED } from './impl/channels';
 
-export function spawn<Yield, Return, Next>(gen: Generator<Yield, Return, Next>, creator: Function): Channel {
+export function spawn(gen: Generator<ProcessValueType, any, void>, creator: Function): Channel {
   const ch = channel(fixed(1));
   const process = new Process(gen, (value) => {
     if (value === CLOSED) {
@@ -29,13 +30,3 @@ export function chan<T>(bufferOrNumber: ?BufferType<T> | ?number, xform: ?Functi
 
   return channel(bufferOrNumber, xform, exHandler);
 }
-
-// TODO: Fix those import statements
-export const buffers = { fixed, dropping, sliding };
-export { CLOSED };
-export { timeout } from './impl/timers';
-export { DEFAULT } from './impl/results';
-export {
-  put, take, offer, poll, sleep, alts,
-  putThenCallback as putAsync, takeThenCallback as takeAsync, NO_VALUE,
-} from './impl/process';

@@ -5,7 +5,7 @@ import Instruction from './instruction';
 import { Box, Channel } from './channels';
 import { run, queueDelay } from './dispatch';
 
-export const NO_VALUE: Object = {};
+export const NO_VALUE = '@@process/NO_VALUE';
 
 export function putThenCallback(channel: Channel, value: any, callback: ?Function): void {
   const result: ?Box<any> = channel.put(value, new FnHandler(true, callback));
@@ -49,7 +49,7 @@ export function alts(operations: Channel[] | [Channel, any][], options: Object):
   });
 }
 
-export function poll(channel: Channel): any {
+export function poll(channel: Channel): Box<any> | typeof NO_VALUE {
   if (channel.closed) {
     return NO_VALUE;
   }
@@ -71,25 +71,25 @@ export function offer(channel: Channel, value: Object): boolean {
 
 export type ProcessValueType =
   TakeInstructionType | PutInstructionType | SleepInstructionType | AltsInstructionType |
-  Channel | any;
+    Channel | any;
 
 export class Process {
-  gen: Generator<ProcessValueType, any, any>;
+  gen: Generator<ProcessValueType, any, void>;
   onFinishFunc: Function;
   creatorFunc: Function;
   finished: boolean;
 
-  constructor(gen: Generator<ProcessValueType, any, any>, onFinishFunc: Function, creatorFunc: Function) {
+  constructor(gen: Generator<ProcessValueType, any, void>, onFinishFunc: Function, creatorFunc: Function) {
     this.gen = gen;
     this.creatorFunc = creatorFunc;
     this.onFinishFunc = onFinishFunc;
     this.finished = false;
   }
 
+  // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
+  // up the stack, but it means double queueing when the value is not
+  // immediately available
   _continue(response: any): void {
-    // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
-    // up the stack, but it means double queueing when the value is not
-    // immediately available
     run(() => this.run(response));
   }
 
@@ -108,15 +108,12 @@ export class Process {
     // TODO: Shouldn't we (optionally) stop error propagation here (and
     // signal the error through a channel or something)? Otherwise the
     // uncaught exception will crash some runtimes (e.g. Node)
-    const iter = this.gen.next(response);
+    const iter: IteratorResult<ProcessValueType, any> = this.gen.next(response);
     const ins: ProcessValueType = iter.value;
 
     if (iter.done) {
       this._done(ins);
-      return;
-    }
-
-    if (ins instanceof Instruction) {
+    } else if (ins instanceof Instruction) {
       switch (ins.op) {
         case Instruction.TAKE: {
           takeThenCallback(ins.data, (value) => this._continue(value));
