@@ -1,5 +1,9 @@
 # Changes to js-csp
 
+## 0.7.1
+- FIXED: Webpack built error
+- ADD: npm-shrinkwrap.json
+
 ## 0.7.0
 - CHANGED: Remove deprecated dispatcher function using babel-runtime/core-js/set-immediate
 - ADDED: Flowtype

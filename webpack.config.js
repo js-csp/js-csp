@@ -15,9 +15,8 @@ module.exports = {
     libraryTarget: 'umd',
     library: '[name]',
   },
-  externals: {},
   resolve: {
-    extensions: ['', '.js'],
+    extensions: ['.js'],
     modules: [
       path.resolve('./app'),
       'node_modules',
