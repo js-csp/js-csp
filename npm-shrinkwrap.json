@@ -1,6 +1,6 @@
 {
   "name": "js-csp",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "dependencies": {
     "babel-runtime": {
       "version": "6.11.6",
