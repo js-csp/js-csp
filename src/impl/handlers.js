@@ -24,10 +24,10 @@ export class FnHandler {
 }
 
 export class AltHandler {
-  flag: Box;
+  flag: Box<boolean>;
   func: ?Function;
 
-  constructor(flag: Box, func: ?Function) {
+  constructor(flag: Box<boolean>, func: ?Function) {
     this.flag = flag;
     this.func = func;
   }

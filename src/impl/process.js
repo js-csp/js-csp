@@ -30,10 +30,7 @@ export function take(channel: Channel): TakeInstructionType {
 
 export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
 export function put(channel: Channel, value: Object): PutInstructionType {
-  return new Instruction(Instruction.PUT, {
-    channel,
-    value,
-  });
+  return new Instruction(Instruction.PUT, { channel, value });
 }
 
 export type SleepInstructionType = Instruction<number>;
@@ -43,10 +40,7 @@ export function sleep(msecs: number): SleepInstructionType {
 
 export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
 export function alts(operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType {
-  return new Instruction(Instruction.ALTS, {
-    operations,
-    options,
-  });
+  return new Instruction(Instruction.ALTS, { operations, options });
 }
 
 export function poll(channel: Channel): Box<any> | typeof NO_VALUE {

@@ -6,10 +6,6 @@
 [include]
 
 [libs]
-flow/bom.js.flow
-flow/core.js.flow
-flow/dom.js.flow
-flow/node.js.flow
 
 [options]
 module.system=haste
