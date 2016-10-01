@@ -1,3 +1,4 @@
+// @flow
 import { Box } from './channels';
 
 export class FnHandler {

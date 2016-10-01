@@ -1,3 +1,4 @@
+// @flow
 export default class Instruction<T> {
   static TAKE: string = 'take';
   static PUT: string = 'put';
