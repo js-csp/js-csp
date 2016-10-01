@@ -96,7 +96,6 @@
     "build",
     "src",
     "CHANGELOG.md",
-    "README.md",
-    "npm-shrinkwrap.json"
+    "README.md"
   ]
 }
