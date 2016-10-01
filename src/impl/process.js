@@ -5,6 +5,12 @@ import Instruction from './instruction';
 import { Box, Channel } from './channels';
 import { run, queueDelay } from './dispatch';
 
+export type TakeInstructionType = Instruction<Channel>;
+export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
+export type SleepInstructionType = Instruction<number>;
+export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
+export type ProcessValueType = TakeInstructionType | PutInstructionType | SleepInstructionType | AltsInstructionType | Channel | any;
+
 export const NO_VALUE = '@@process/NO_VALUE';
 
 export function putThenCallback(channel: Channel, value: any, callback: ?Function): void {
@@ -23,22 +29,18 @@ export function takeThenCallback(channel: Channel, callback: ?Function): void {
   }
 }
 
-export type TakeInstructionType = Instruction<Channel>;
 export function take(channel: Channel): TakeInstructionType {
   return new Instruction(Instruction.TAKE, channel);
 }
 
-export type PutInstructionType = Instruction<{ channel: Channel, value: Object }>;
 export function put(channel: Channel, value: Object): PutInstructionType {
   return new Instruction(Instruction.PUT, { channel, value });
 }
 
-export type SleepInstructionType = Instruction<number>;
 export function sleep(msecs: number): SleepInstructionType {
   return new Instruction(Instruction.SLEEP, msecs);
 }
 
-export type AltsInstructionType = Instruction<{ operations: Channel[] | [Channel, any][], options: Object }>;
 export function alts(operations: Channel[] | [Channel, any][], options: Object): AltsInstructionType {
   return new Instruction(Instruction.ALTS, { operations, options });
 }
@@ -62,10 +64,6 @@ export function offer(channel: Channel, value: Object): boolean {
 
   return result instanceof Box;
 }
-
-export type ProcessValueType =
-  TakeInstructionType | PutInstructionType | SleepInstructionType | AltsInstructionType |
-    Channel | any;
 
 export class Process {
   gen: Generator<ProcessValueType, any, void>;

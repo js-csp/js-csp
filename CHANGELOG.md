@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.7.3
+- REMOVED: flow
+
 ## 0.7.2
 - IGNORE: npm-shrinkwrap.json in files when publishing
 
