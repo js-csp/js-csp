@@ -595,7 +595,7 @@ class Mix {
     this._changed();
   }
 
-  setSoloMode = function (mode) {
+  setSoloMode(mode) {
     if (VALID_SOLO_MODES.indexOf(mode) < 0) {
       throw new Error('Mode must be one of: ', VALID_SOLO_MODES.join(', '));
     }
