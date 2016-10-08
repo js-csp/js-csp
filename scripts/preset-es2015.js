@@ -1,7 +1,3 @@
 module.exports = {
-  presets: [
-    [require('babel-preset-es2015').buildPreset, {
-      modules: process.env.RUN_MODE === 'es' ? false : 'commonjs',
-    }],
-  ],
+  presets: process.env.IGNORE_PRESETS ? ['stage-0'] : ['es2015', 'stage-0'],
 };

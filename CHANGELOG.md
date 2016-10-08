@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.7.4
+- ADDED: support for built tool
+
 ## 0.7.3
 - REMOVED: flow
 

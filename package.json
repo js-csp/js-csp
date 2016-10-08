@@ -75,8 +75,9 @@
     "flow:watch": "npm run flow:status && chokidar './src/**/*.js' './test/**/*.js' -c 'npm run flow:status'",
     "flow:stop": "flow stop",
     "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
+    "build:es": "node -e \"require('ncp').ncp('./src', './es')\" && IGNORE_PRESETS=true BABEL_ENV=production babel -d es src",
     "build:browser": "webpack --config webpack.config.js",
-    "build": "npm run build:node && npm run build:browser",
+    "build": "npm run build:node && npm run build:browser && npm run build:es",
     "prepublish": "npm run build"
   },
   "engines": {
@@ -84,8 +85,8 @@
     "npm": ">=3.0.0"
   },
   "main": "./lib/csp.js",
-  "module": "./src/csp.js",
-  "jsnext:main": "./src/csp.js",
+  "module": "./es/csp.js",
+  "jsnext:main": "./es/csp.js",
   "browserify": {
     "transform": [
       "loose-envify"
@@ -93,6 +94,7 @@
   },
   "files": [
     "lib",
+    "es",
     "build",
     "src",
     "CHANGELOG.md",
