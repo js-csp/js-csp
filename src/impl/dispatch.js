@@ -24,7 +24,7 @@ export function queueDispatcher(): void {
 
         if (task) {
           task();
-          count++;
+          count += 1;
         } else {
           break;
         }

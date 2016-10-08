@@ -1,5 +1,5 @@
 // @flow
-import { Box } from './channels';
+import { Box } from './boxes';
 
 export class FnHandler {
   blockable: boolean;
@@ -25,14 +25,14 @@ export class FnHandler {
 
 export class AltHandler {
   flag: Box<boolean>;
-  func: ?Function;
+  func: Function;
 
-  constructor(flag: Box<boolean>, func: ?Function) {
+  constructor(flag: Box<boolean>, func: Function) {
     this.flag = flag;
     this.func = func;
   }
 
-  isActive() {
+  isActive(): boolean {
     return this.flag.value;
   }
 
@@ -40,7 +40,7 @@ export class AltHandler {
     return true;
   }
 
-  commit(): ?Function {
+  commit(): Function {
     this.flag.value = false;
     return this.func;
   }

@@ -1,5 +1,6 @@
 import times from 'lodash/times';
-import { Box, CLOSED } from './impl/channels';
+import { Box } from './impl/boxes';
+import { CLOSED } from './impl/channels';
 import {
   take as _take,
   put,

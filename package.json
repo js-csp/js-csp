@@ -75,9 +75,9 @@
     "flow:watch": "npm run flow:status && chokidar './src/**/*.js' './test/**/*.js' -c 'npm run flow:status'",
     "flow:stop": "flow stop",
     "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
-    "build:es": "node -e \"require('ncp').ncp('./src', './es')\" && IGNORE_PRESETS=true BABEL_ENV=production babel -d es src",
+    "build:es": "node -e \"require('ncp').ncp('./src', './es')\" && ES_PRESETS=true BABEL_ENV=production babel -d es src",
     "build:browser": "webpack --config webpack.config.js",
-    "build": "npm run build:node && npm run build:browser && npm run build:es",
+    "build": "npm run build:node && npm run build:es && npm run build:browser",
     "prepublish": "npm run build"
   },
   "engines": {
