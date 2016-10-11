@@ -1,21 +1,8 @@
-var assert = require("chai").assert;
-var a = require("../src/csp.test-helpers"),
-    it = a.it,
-    before = a.before,
-    afterEach = a.afterEach,
-    beforeEach = a.beforeEach;
-
-var csp = require("../src/csp"),
-    chan = csp.chan,
-    go = csp.go,
-    put = csp.put,
-    take = csp.take,
-    alts = csp.alts,
-    sleep = csp.sleep,
-    buffers = csp.buffers,
-    CLOSED = csp.CLOSED;
-
-var ops = csp.operations;
+/* eslint-disable require-yield */
+import _ from 'lodash';
+import { assert } from 'chai';
+import { it, beforeEach } from './../src/csp.test-helpers';
+import { chan, go, put, take, operations } from './../src/csp';
 
 function inc(x) {
   return x + 1;
@@ -25,34 +12,20 @@ function even(x) {
   return x % 2 === 0;
 }
 
-function sum() {
-  var args = Array.prototype.slice.call(arguments),
-      length = args.length,
-      s = 0;
-  for (var i = 0; i < length; i++) {
-    s += args[i];
-  }
-  return s;
-}
-
-function range(n) {
-  var r = new Array(n);
-  for (var i = 0; i < n; i++) {
-    r[i] = i;
-  }
-  return r;
-}
-
 function typeOf(x) {
   return typeof x;
 }
 
+function sum(...args) {
+  return _.sum(args);
+}
+
 // TODO: These are very rudimentary tests. Add more
 
-describe("Operations", function() {
-  describe("fromColl", function() {
-    it("should work", function*() {
-      var ch = ops.fromColl([1, 2, 3, 4]);
+describe('Operations', () => {
+  describe('fromColl', () => {
+    it('should work', function* () {
+      const ch = operations.fromColl([1, 2, 3, 4]);
       assert.equal(1, (yield take(ch)));
       assert.equal(2, (yield take(ch)));
       assert.equal(3, (yield take(ch)));
@@ -61,165 +34,163 @@ describe("Operations", function() {
     });
   });
 
-  describe("into", function() {
-    it("should work", function*() {
-      var coll = [1, 2, 3];
-      var ch = ops.fromColl([4, 5, 6]);
-      var result = yield take(ops.into(coll, ch));
+  describe('into', () => {
+    it('should work', function* () {
+      const coll = [1, 2, 3];
+      const ch = operations.fromColl([4, 5, 6]);
+      const result = yield take(operations.into(coll, ch));
       assert.deepEqual(result, [1, 2, 3, 4, 5, 6]);
     });
   });
 
-  describe("onto", function() {
-    it("should work", function*() {
-      var ch = chan();
-      ops.onto(ch, [1, 2, 3, 4]);
+  describe('onto', () => {
+    it('should work', function* () {
+      const ch = chan();
+      operations.onto(ch, [1, 2, 3, 4]);
       assert.deepEqual(
         [1, 2, 3, 4],
-        (yield take(ops.into([], ch)))
+        (yield take(operations.into([], ch)))
       );
     });
   });
 
-  describe("mapFrom", function() {
-    it("should work", function*() {
-      var result = yield take(
-        ops.into(
-          [], ops.mapFrom(
-            inc, ops.fromColl([1, 2, 3, 4]))));
+  describe('mapFrom', () => {
+    it('should work', function* () {
+      const result = yield take(
+        operations.into(
+          [], operations.mapFrom(
+            inc, operations.fromColl([1, 2, 3, 4]))));
       assert.deepEqual(result, [2, 3, 4, 5]);
     });
   });
 
-  describe("mapInto", function() {
-    it("should work", function*() {
-      var dst = chan();
-      var src = ops.mapInto(inc, dst);
-      ops.onto(src, [1, 2, 3, 4]);
-      var result = yield take(ops.into([], dst));
+  describe('mapInto', () => {
+    it('should work', function* () {
+      const dst = chan();
+      const src = operations.mapInto(inc, dst);
+      operations.onto(src, [1, 2, 3, 4]);
+      const result = yield take(operations.into([], dst));
       assert.deepEqual(result, [2, 3, 4, 5]);
     });
   });
 
-  describe("filterFrom", function() {
-    it("should work", function*() {
-      var result = yield take(
-        ops.into(
-          [], ops.filterFrom(
-            even, ops.fromColl([1, 2, 3, 4, 5, 6]))));
+  describe('filterFrom', () => {
+    it('should work', function* () {
+      const result = yield take(
+        operations.into(
+          [], operations.filterFrom(
+            even, operations.fromColl([1, 2, 3, 4, 5, 6]))));
       assert.deepEqual(result, [2, 4, 6]);
     });
   });
 
-  describe("filterInto", function() {
-    it("should work", function*() {
-      var dst = chan();
-      var src = ops.filterInto(even, dst);
-      ops.onto(src, [1, 2, 3, 4, 5, 6]);
-      var result = yield take(ops.into([], dst));
+  describe('filterInto', () => {
+    it('should work', function* () {
+      const dst = chan();
+      const src = operations.filterInto(even, dst);
+      operations.onto(src, [1, 2, 3, 4, 5, 6]);
+      const result = yield take(operations.into([], dst));
       assert.deepEqual(result, [2, 4, 6]);
     });
   });
 
-  describe("removeFrom", function() {
-    it("should work", function*() {
-      var result = yield take(
-        ops.into(
-          [], ops.removeFrom(
-            even, ops.fromColl([1, 2, 3, 4, 5, 6]))));
+  describe('removeFrom', () => {
+    it('should work', function* () {
+      const result = yield take(
+        operations.into(
+          [], operations.removeFrom(
+            even, operations.fromColl([1, 2, 3, 4, 5, 6]))));
       assert.deepEqual(result, [1, 3, 5]);
     });
   });
 
-  describe("removeInto", function() {
-    it("should work", function*() {
-      var dst = chan();
-      var src = ops.removeInto(even, dst);
-      ops.onto(src, [1, 2, 3, 4, 5, 6]);
-      var result = yield take(ops.into([], dst));
+  describe('removeInto', () => {
+    it('should work', function* () {
+      const dst = chan();
+      const src = operations.removeInto(even, dst);
+      operations.onto(src, [1, 2, 3, 4, 5, 6]);
+      const result = yield take(operations.into([], dst));
       assert.deepEqual(result, [1, 3, 5]);
     });
   });
 
-  describe("mapcatFrom", function() {
-    it("should work", function*() {
-      var src = ops.fromColl([1, 2, 3, 4]);
-      var dst = ops.mapcatFrom(range, src);
-      var result = yield take(ops.into([], dst));
+  describe('mapcatFrom', () => {
+    it('should work', function* () {
+      const src = operations.fromColl([1, 2, 3, 4]);
+      const dst = operations.mapcatFrom(_.range, src);
+      const result = yield take(operations.into([], dst));
       assert.deepEqual(result, [0, 0, 1, 0, 1, 2, 0, 1, 2, 3]);
     });
   });
 
-  describe("mapcatInto", function() {
-    it("should work", function*() {
-      var dst = chan();
-      var src = ops.mapcatInto(range, dst);
-      ops.onto(src, [1, 2, 3, 4]);
-      var result = yield take(ops.into([], dst));
+  describe('mapcatInto', () => {
+    it('should work', function* () {
+      const dst = chan();
+      const src = operations.mapcatInto(_.range, dst);
+      operations.onto(src, [1, 2, 3, 4]);
+      const result = yield take(operations.into([], dst));
       assert.deepEqual(result, [0, 0, 1, 0, 1, 2, 0, 1, 2, 3]);
     });
   });
 
-  describe("pipe", function() {
-    it("should work", function*() {
-      var dst = chan();
-      var src = ops.fromColl([1, 2, 3, 4, 5]);
-      ops.pipe(src, dst);
+  describe('pipe', () => {
+    it('should work', function* () {
+      const dst = chan();
+      const src = operations.fromColl([1, 2, 3, 4, 5]);
+      operations.pipe(src, dst);
       assert.deepEqual(
         [1, 2, 3, 4, 5],
-        (yield take(ops.into([], dst))));
+        (yield take(operations.into([], dst))));
     });
   });
 
-  describe("split", function() {
-    it("should work", function*() {
-      var src = ops.fromColl([1, 2, 3, 4, 5, 6]);
-      var chs = ops.split(even, src, 3, 3);
-      var evenCh = chs[0],
-          oddCh = chs[1];
+  describe('split', () => {
+    it('should work', function* () {
+      const src = operations.fromColl([1, 2, 3, 4, 5, 6]);
+      const chs = operations.split(even, src, 3, 3);
+      const evenCh = chs[0];
+      const oddCh = chs[1];
       assert.deepEqual(
         [2, 4, 6],
-        (yield take(ops.into([], evenCh))));
+        (yield take(operations.into([], evenCh))));
       assert.deepEqual(
         [1, 3, 5],
-        (yield take(ops.into([], oddCh))));
+        (yield take(operations.into([], oddCh))));
     });
   });
 
-  describe("reduce", function() {
-    it("should work", function*() {
-      var src = ops.fromColl([1, 2, 3, 4, 5]);
-      var dst = ops.reduce(function(x, y) {
-        return x + y;
-      }, 0, src);
+  describe('reduce', () => {
+    it('should work', function* () {
+      const src = operations.fromColl([1, 2, 3, 4, 5]);
+      const dst = operations.reduce((x, y) => x + y, 0, src);
       assert.equal(15, (yield take(dst)));
     });
   });
 
-  describe("map", function() {
-    it("should work", function*() {
-      var inputs = [
-        ops.fromColl([1, 2, 3, 4, 5, 6]),
-        ops.fromColl([1, 2, 3, 4, 5, 6]),
-        ops.fromColl([1, 2, 3, 4, 5, 6]),
-        ops.fromColl([1, 2, 3, 4, 5, 6])
+  describe('map', () => {
+    it('should work', function* () {
+      const inputs = [
+        operations.fromColl([1, 2, 3, 4, 5, 6]),
+        operations.fromColl([1, 2, 3, 4, 5, 6]),
+        operations.fromColl([1, 2, 3, 4, 5, 6]),
+        operations.fromColl([1, 2, 3, 4, 5, 6]),
       ];
-      var output = ops.map(sum, inputs);
+      const output = operations.map(sum, inputs);
       assert.deepEqual(
         [4, 8, 12, 16, 20, 24],
-        (yield take(ops.into([], output))));
+        (yield take(operations.into([], output))));
     });
   });
 
-  describe("merge", function() {
-    it("should work", function*() {
-      var inputs = [
-        ops.fromColl([1, 2, 3]),
-        ops.fromColl([1, 2, 3]),
-        ops.fromColl([1, 2, 3])
+  describe('merge', () => {
+    it('should work', function* () {
+      const inputs = [
+        operations.fromColl([1, 2, 3]),
+        operations.fromColl([1, 2, 3]),
+        operations.fromColl([1, 2, 3]),
       ];
-      var output = ops.merge(inputs);
-      var result = yield take(ops.into([], output));
+      const output = operations.merge(inputs);
+      const result = yield take(operations.into([], output));
       assert.deepEqual(
         [1, 1, 1, 2, 2, 2, 3, 3, 3],
         result.sort()
@@ -227,188 +198,189 @@ describe("Operations", function() {
     });
   });
 
-  describe("take", function() {
-    it("should work without enough values", function*() {
-      var src = ops.fromColl([1, 2, 3]);
-      var dst = ops.take(10, src);
+  describe('take', () => {
+    it('should work without enough values', function* () {
+      const src = operations.fromColl([1, 2, 3]);
+      const dst = operations.take(10, src);
       assert.deepEqual(
         [1, 2, 3],
-        (yield take(ops.into([], dst)))
+        (yield take(operations.into([], dst)))
       );
     });
 
-    it("should work with more than enough values", function*() {
-      var src = ops.fromColl([1, 2, 3, 4, 5]);
-      var dst = ops.take(3, src);
+    it('should work with more than enough values', function* () {
+      const src = operations.fromColl([1, 2, 3, 4, 5]);
+      const dst = operations.take(3, src);
       assert.deepEqual(
         [1, 2, 3],
-        (yield take(ops.into([], dst)))
+        (yield take(operations.into([], dst)))
       );
     });
   });
 
-  describe("unique", function() {
-    it("should work", function*() {
-      var src = ops.fromColl([1, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6]);
-      var dst = ops.unique(src);
+  describe('unique', () => {
+    it('should work', function* () {
+      const src = operations.fromColl([1, 2, 2, 3, 4, 4, 4, 5, 6, 6, 6]);
+      const dst = operations.unique(src);
       assert.deepEqual(
         [1, 2, 3, 4, 5, 6],
-        (yield take(ops.into([], dst))));
+        (yield take(operations.into([], dst))));
     });
   });
 
-  describe("partition", function() {
-    it("should work", function*() {
-      var src = ops.fromColl([1, 2, 3, 4, 5, 6, 7]);
-      var dst = ops.partition(3, src);
+  describe('partition', () => {
+    it('should work', function* () {
+      const src = operations.fromColl([1, 2, 3, 4, 5, 6, 7]);
+      const dst = operations.partition(3, src);
       assert.deepEqual(
         [[1, 2, 3], [4, 5, 6], [7]],
-        (yield take(ops.into([], dst))));
+        (yield take(operations.into([], dst))));
     });
   });
 
-  describe("partitionBy", function() {
-    it("should work", function*() {
-      var src = ops.fromColl(["a", "b", 1, 2, "c", true, undefined, false]);
-      var dst = ops.partitionBy(typeOf, src);
+  describe('partitionBy', () => {
+    it('should work', function* () {
+      const src = operations.fromColl(['a', 'b', 1, 2, 'c', true, undefined, false]);
+      const dst = operations.partitionBy(typeOf, src);
       assert.deepEqual(
-        [["a", "b"], [1, 2], ["c"], [true], [undefined], [false]],
-        (yield take(ops.into([], dst)))
+        [['a', 'b'], [1, 2], ['c'], [true], [undefined], [false]],
+        (yield take(operations.into([], dst)))
       );
     });
   });
 
-  describe("mult", function() {
+  describe('mult', () => {
     // TODO: More tests
-    it("should work", function*() {
-      var a = chan(4);
-      var b = chan(4);
-      var src = chan();
-      var m = ops.mult(src);
-      ops.mult.tap(m, a);
-      ops.mult.tap(m, b);
-      ops.pipe(ops.fromColl([1, 2, 3, 4]), src);
+    it('should work', function* () {
+      const a = chan(4);
+      const b = chan(4);
+      const src = chan();
+      const m = operations.mult(src);
+      operations.mult.tap(m, a);
+      operations.mult.tap(m, b);
+      operations.pipe(operations.fromColl([1, 2, 3, 4]), src);
 
       assert.deepEqual(
         [1, 2, 3, 4],
-        (yield take(ops.into([], a)))
+        (yield take(operations.into([], a)))
       );
       assert.deepEqual(
         [1, 2, 3, 4],
-        (yield take(ops.into([], b)))
+        (yield take(operations.into([], b)))
       );
     });
   });
 
-  describe("mix", function() {
-    var in1;
-    var in2;
-    var out;
-    var take_out;
-    var mixer;
+  describe('mix', () => {
+    let in1;
+    let in2;
+    let out;
+    let takeOut;
+    let mixer;
 
     // Common data for `mix` tests.
-    beforeEach(function*() {
-      in1 = ops.fromColl([1, 2, 3]);
-      in2 = ops.fromColl([4, 5, 6]);
+    beforeEach(function* () {
+      in1 = operations.fromColl([1, 2, 3]);
+      in2 = operations.fromColl([4, 5, 6]);
       out = chan();
-      take_out = chan();
+      takeOut = chan();
 
-      mixer = ops.mix(out);
+      mixer = operations.mix(out);
     });
 
-    it("should work", function*() {
+    it('should work', function* () {
       mixer.admix(in1);
       mixer.admix(in2);
 
-      go(function*() {
-        for (var i = 0; i < 6; i++) {
-          var value = yield take(out);
-          yield put(take_out, value);
+      go(function* () {
+        for (let i = 0; i < 6; i += 1) {
+          const value = yield take(out);
+          yield put(takeOut, value);
         }
-        take_out.close();
+        takeOut.close();
       });
 
       assert.deepEqual(
         [1, 2, 3, 4, 5, 6],
-        (yield take(ops.into([], take_out))).sort()
+        (yield take(operations.into([], takeOut))).sort()
       );
     });
 
-    describe("#toggle", function() {
-      it("should solo", function*() {
+    describe('#toggle', () => {
+      it('should solo', function* () {
         mixer.admix(in1);
         mixer.admix(in2);
-        mixer.toggle([[in1, {solo: true}]]);
+        mixer.toggle([[in1, { solo: true }]]);
 
-        go(function*() {
-          for (var i = 0; i < 3; i++) {
-            var value = yield take(out);
-            yield put(take_out, value);
+        go(function* () {
+          for (let i = 0; i < 3; i += 1) {
+            const value = yield take(out);
+            yield put(takeOut, value);
           }
-          take_out.close();
+          takeOut.close();
         });
 
         assert.deepEqual(
           [1, 2, 3],
-          (yield take(ops.into([], take_out))).sort()
+          (yield take(operations.into([], takeOut))).sort()
         );
       });
 
-      it("should mute", function*() {
+      it('should mute', function* () {
         mixer.admix(in1);
         mixer.admix(in2);
-        mixer.toggle([[in1, {mute: true}]]);
+        mixer.toggle([[in1, { mute: true }]]);
 
-        go(function*() {
-          for (var i = 0; i < 3; i++) {
-            var value = yield take(out);
-            yield put(take_out, value);
+        go(function* () {
+          for (let i = 0; i < 3; i += 1) {
+            const value = yield take(out);
+            yield put(takeOut, value);
           }
-          take_out.close();
+          takeOut.close();
         });
 
         assert.deepEqual(
           [4, 5, 6],
-          (yield take(ops.into([], take_out))).sort()
+          (yield take(operations.into([], takeOut))).sort()
         );
       });
     });
   });
 
-  describe("pub-sub", function() {
+  describe('pub-sub', () => {
     // TODO: More tests
-    it("should work", function*() {
-      var a_nums = chan(5);
-      var a_strs = chan(5);
-      var b_nums = chan(5);
-      var b_strs = chan(5);
-      var src = chan();
-      var p = ops.pub(src, typeOf);
+    it('should work', function* () {
+      const aNums = chan(5);
+      const aStrs = chan(5);
+      const bNums = chan(5);
+      const bStrs = chan(5);
+      const src = chan();
+      const p = operations.pub(src, typeOf);
 
-      ops.pub.sub(p, "string", a_strs);
-      ops.pub.sub(p, "string", b_strs);
-      ops.pub.sub(p, "number", a_nums);
-      ops.pub.sub(p, "number", b_nums);
+      operations.pub.sub(p, 'string', aStrs);
+      operations.pub.sub(p, 'string', bStrs);
+      operations.pub.sub(p, 'number', aNums);
+      operations.pub.sub(p, 'number', bNums);
 
-      ops.pipe(ops.fromColl([1, "a", 2, "b", 3, "c"]), src);
+      operations.pipe(operations.fromColl([1, 'a', 2, 'b', 3, 'c']), src);
 
       assert.deepEqual(
         [1, 2, 3],
-        (yield take(ops.into([], a_nums)))
+        (yield take(operations.into([], aNums)))
       );
       assert.deepEqual(
         [1, 2, 3],
-        (yield take(ops.into([], b_nums)))
+        (yield take(operations.into([], bNums)))
       );
       assert.deepEqual(
-        ["a", "b", "c"],
-        (yield take(ops.into([], a_strs)))
+        ['a', 'b', 'c'],
+        (yield take(operations.into([], aStrs)))
       );
       assert.deepEqual(
-        ["a", "b", "c"],
-        (yield take(ops.into([], b_strs)))
+        ['a', 'b', 'c'],
+        (yield take(operations.into([], bStrs)))
       );
     });
   });
 });
+

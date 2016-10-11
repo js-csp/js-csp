@@ -17,26 +17,10 @@ function schedule(func: Function, value: mixed) {
   return run(() => func(value));
 }
 
-function flush<T>(channelBuffer: RingBuffer<T>,
-                  callback: (element: T) => void): void {
+function flush<T>(channelBuffer: RingBuffer<T>, callback: (element: T) => void): void {
   while (channelBuffer.count() > 0) {
     // flow-ignore
     callback(channelBuffer.pop());
-  }
-}
-
-function combine<T, K>(buffer: BufferType<T>,
-                       channelBuffer: RingBuffer<K>,
-                       predicate: (element: K) => boolean,
-                       callback: (k: K, t: T) => void): void {
-  while (buffer.count() > 0 && channelBuffer.count() > 0) {
-    // flow-ignore
-    const item = channelBuffer.pop();
-
-    if (predicate(item)) {
-      // flow-ignore
-      callback(item, buffer.remove());
-    }
   }
 }
 
@@ -86,13 +70,13 @@ export class Channel {
       handler.commit();
       const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
 
-      combine(
-        // flow-ignore
-        this.buf,
-        this.takes,
-        (taker: HandlerType) => taker.isActive(),
-        (taker: HandlerType, element: mixed) => schedule(taker.commit(), element)
-      );
+      while (this.buf.count() > 0 && this.takes.count() > 0) {
+        const taker = this.takes.pop();
+
+        if (taker.isActive()) {
+          schedule(taker.commit(), this.buf.remove());
+        }
+      }
 
       if (done) {
         this.close();
@@ -221,12 +205,13 @@ export class Channel {
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
-      combine(
-        // flow-ignore
-        this.buf, this.takes,
-        (taker: HandlerType) => taker.isActive(),
-        (taker: HandlerType, element: mixed) => schedule(taker.commit(), element)
-      );
+      while (this.buf.count() > 0 && this.takes.count() > 0) {
+        const taker = this.takes.pop();
+
+        if (taker.isActive()) {
+          schedule(taker.commit(), this.buf.remove());
+        }
+      }
     }
 
     flush(this.takes, (taker: HandlerType) => {
@@ -257,7 +242,7 @@ const AddTransformer: Object = {
     throw new Error('init not available');
   },
 
-  '@@transducer/result': (v) => v,
+  '@@transducer/result': v => v,
 
   '@@transducer/step': (buffer, input) => {
     buffer.add(input);
@@ -301,7 +286,7 @@ function handleException<T>(exHandler: ?Function): Function {
 }
 
 // XXX: This is inconsistent. We should either call the reducing
-// function xform, or call the transducer xform, not both
+// function xform, or call the transducers xform, not both
 export function chan(buf: ?BufferType<mixed>, xform: ?Function, exHandler: ?Function): Channel {
   let newXForm: typeof AddTransformer;
 
