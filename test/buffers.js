@@ -29,9 +29,9 @@ describe('Fixed buffer', () => {
 
     assert.equal(b.isFull(), true, 'buffer is full');
     b.add('3');
-    assert.equal(b.isFull(), true, 'buffer is full (1 item overflowing)');
+    assert.equal(b.buffer.length, 3, 'buffer is full (1 item overflowing)');
     b.add('4');
-    assert.equal(b.isFull(), true, 'buffer is full (2 items overflowing)');
+    assert.equal(b.buffer.length, 4, 'buffer is full (1 item overflowing)');
     b.remove();
     b.remove();
     assert.equal(b.isFull(), true, 'buffer is full (without overflowing)');

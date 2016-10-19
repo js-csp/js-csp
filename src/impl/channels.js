@@ -18,7 +18,7 @@ function schedule(func: Function, value: mixed) {
 }
 
 function flush<T>(channelBuffer: RingBuffer<T>, callback: (element: T) => void): void {
-  while (channelBuffer.count() > 0) {
+  while (channelBuffer.length > 0) {
     // flow-ignore
     callback(channelBuffer.pop());
   }
@@ -70,7 +70,7 @@ export class Channel {
       handler.commit();
       const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
 
-      while (this.buf.count() > 0 && this.takes.count() > 0) {
+      while (this.buf.count() > 0 && this.takes.length > 0) {
         const taker = this.takes.pop();
 
         if (taker.isActive()) {
@@ -89,7 +89,7 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    while (this.takes.count() > 0) {
+    while (this.takes.length > 0) {
       const taker: HandlerType = this.takes.pop();
 
       if (taker.isActive()) {
@@ -109,10 +109,10 @@ export class Channel {
     }
 
     if (handler.isBlockable()) {
-      if (this.puts.count() >= MAX_QUEUE_SIZE) {
+      if (this.puts.length >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`);
       }
-      this.puts.unshift(new PutBox(handler, value));
+      this.puts.unboundedUnshift(new PutBox(handler, value));
     }
 
     return null;
@@ -132,7 +132,7 @@ export class Channel {
       // be able to proceed until their number reaches MAX_DIRTY
 
       // flow-ignore
-      while (this.puts.count() > 0 && !this.buf.isFull()) {
+      while (this.puts.length > 0 && !this.buf.isFull()) {
         const putter: PutBox<mixed> = this.puts.pop();
 
         if (putter.handler.isActive()) {
@@ -155,7 +155,7 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    while (this.puts.count() > 0) {
+    while (this.puts.length > 0) {
       const putter: PutBox<mixed> = this.puts.pop();
 
       if (putter.handler.isActive()) {
@@ -184,11 +184,11 @@ export class Channel {
     }
 
     if (handler.isBlockable()) {
-      if (this.takes.count() >= MAX_QUEUE_SIZE) {
+      if (this.takes.length >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`);
       }
 
-      this.takes.unshift(handler);
+      this.takes.unboundedUnshift(handler);
     }
 
     return null;
@@ -205,7 +205,7 @@ export class Channel {
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
-      while (this.buf.count() > 0 && this.takes.count() > 0) {
+      while (this.buf.count() > 0 && this.takes.length > 0) {
         const taker = this.takes.pop();
 
         if (taker.isActive()) {
@@ -300,5 +300,5 @@ export function chan(buf: ?BufferType<mixed>, xform: ?Function, exHandler: ?Func
     newXForm = AddTransformer;
   }
 
-  return new Channel(ring(), ring(), buf, handleException(exHandler)(newXForm));
+  return new Channel(ring(32), ring(32), buf, handleException(exHandler)(newXForm));
 }
