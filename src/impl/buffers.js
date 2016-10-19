@@ -1,13 +1,4 @@
 // @flow
-
-/**
- * Returns a buffer that is considered "full" when it reaches size n,
- * but still accepts additional items, effectively allow overflowing.
- * The overflowing behavior is useful for supporting "expanding"
- * transducers, where we want to check if a buffer is full before
- * running the transduced step function, while still allowing a
- * transduced step to expand into multiple "essence" steps.
- */
 import times from 'lodash/times';
 
 function acopy<T>(src: Array<T>, srcStart: number,
@@ -99,6 +90,14 @@ export function ring<T>(n: number): RingBuffer<T> {
   return new RingBuffer(0, 0, 0, new Array(n));
 }
 
+/**
+ * Returns a buffer that is considered "full" when it reaches size n,
+ * but still accepts additional items, effectively allow overflowing.
+ * The overflowing behavior is useful for supporting "expanding"
+ * transducers, where we want to check if a buffer is full before
+ * running the transduced step function, while still allowing a
+ * transduced step to expand into multiple "essence" steps.
+ */
 export class FixedBuffer<T> {
   buffer: RingBuffer<T>;
   n: number;
@@ -120,8 +119,7 @@ export class FixedBuffer<T> {
     this.buffer.unboundedUnshift(item);
   }
 
-  closeBuffer(): void {
-  }
+  closeBuffer(): void {} // eslint-disable-line
 
   count(): number {
     return this.buffer.length;
@@ -141,7 +139,7 @@ export class DroppingBuffer<T> {
     this.n = n;
   }
 
-  isFull(): boolean {
+  isFull(): boolean { // eslint-disable-line
     return false;
   }
 
@@ -155,8 +153,7 @@ export class DroppingBuffer<T> {
     }
   }
 
-  closeBuffer(): void {
-  }
+  closeBuffer(): void {} // eslint-disable-line
 
   count(): number {
     return this.buffer.length;
@@ -176,7 +173,7 @@ export class SlidingBuffer<T> {
     this.n = n;
   }
 
-  isFull(): boolean {
+  isFull(): boolean { // eslint-disable-line
     return false;
   }
 
@@ -192,8 +189,7 @@ export class SlidingBuffer<T> {
     this.buffer.unshift(item);
   }
 
-  closeBuffer(): void {
-  }
+  closeBuffer(): void {} // eslint-disable-line
 
   count(): number {
     return this.buffer.length;
@@ -208,16 +204,13 @@ export class PromiseBuffer {
   value: mixed;
 
   static NO_VALUE = {};
+  static isUndelivered = (value: mixed) => PromiseBuffer.NO_VALUE === value;
 
   constructor(value: mixed) {
     this.value = value;
   }
 
-  _isUndelivered(value: mixed) {
-    return PromiseBuffer.NO_VALUE === value;
-  }
-
-  isFull(): boolean {
+  isFull(): boolean { // eslint-disable-line
     return false;
   }
 
@@ -226,19 +219,19 @@ export class PromiseBuffer {
   }
 
   add(item: mixed): void {
-    if (this._isUndelivered(this.value)) {
+    if (PromiseBuffer.isUndelivered(this.value)) {
       this.value = item;
     }
   }
 
   closeBuffer(): void {
-    if (this._isUndelivered(this.value)) {
+    if (PromiseBuffer.isUndelivered(this.value)) {
       this.value = null;
     }
   }
 
   count() {
-    return this._isUndelivered(this.value) ? 0 : 1;
+    return PromiseBuffer.isUndelivered(this.value) ? 0 : 1;
   }
 }
 
