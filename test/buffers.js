@@ -92,3 +92,27 @@ describe('Sliding buffer', () => {
   });
 });
 
+describe('Promise buffer', () => {
+  it('should work', () => {
+    const b = buffers.promise();
+    assert.equal(b.count(), 0, 'new buffer is empty');
+
+    b.add('1');
+    assert.equal(b.count(), 1);
+
+    b.add('2');
+    assert.equal(b.count(), 1);
+
+    assert.equal(b.isFull(), false);
+    assert.doesNotThrow(() => {
+      b.add('3');
+    }, Error);
+    assert.equal(b.count(), 1);
+    assert.equal(b.remove(), '1');
+    assert.equal(b.isFull(), false);
+    assert.equal(b.count(), 1);
+    assert.equal(b.remove(), '1');
+    assert.equal(b.closeBuffer(), null);
+    assert.equal(b.remove(), '1');
+  });
+});

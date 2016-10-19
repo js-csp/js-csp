@@ -11,8 +11,8 @@
 import times from 'lodash/times';
 
 function acopy<T>(src: Array<T>, srcStart: number,
-               dest: Array<T>, destStart: number,
-               len: number) {
+                  dest: Array<T>, destStart: number,
+                  len: number) {
   for (let count = 0; count < len; count += 1) {
     dest[destStart + count] = src[srcStart + count];
   }
@@ -120,6 +120,9 @@ export class FixedBuffer<T> {
     this.buffer.unboundedUnshift(item);
   }
 
+  closeBuffer(): void {
+  }
+
   count(): number {
     return this.buffer.length;
   }
@@ -150,6 +153,9 @@ export class DroppingBuffer<T> {
     if (this.buffer.length !== this.n) {
       this.buffer.unshift(item);
     }
+  }
+
+  closeBuffer(): void {
   }
 
   count(): number {
@@ -186,6 +192,9 @@ export class SlidingBuffer<T> {
     this.buffer.unshift(item);
   }
 
+  closeBuffer(): void {
+  }
+
   count(): number {
     return this.buffer.length;
   }
@@ -193,6 +202,48 @@ export class SlidingBuffer<T> {
 
 export function sliding<T>(n: number): SlidingBuffer<T> {
   return new SlidingBuffer(ring(n), n);
+}
+
+export class PromiseBuffer {
+  value: mixed;
+
+  static NO_VALUE = {};
+
+  constructor(value: mixed) {
+    this.value = value;
+  }
+
+  _isUndelivered(value: mixed) {
+    return PromiseBuffer.NO_VALUE === value;
+  }
+
+  isFull(): boolean {
+    return false;
+  }
+
+  remove(): mixed {
+    return this.value;
+  }
+
+  add(item: mixed): void {
+    if (this._isUndelivered(this.value)) {
+      this.value = item;
+    }
+  }
+
+  closeBuffer(): void {
+    if (this._isUndelivered(this.value)) {
+      this.value = null;
+    }
+  }
+
+  count() {
+    return this._isUndelivered(this.value) ? 0 : 1;
+  }
+}
+
+export function promise<T>(): PromiseBuffer<T> {
+  return new PromiseBuffer(PromiseBuffer.NO_VALUE);
 }
 
 export type BufferType<T> = FixedBuffer<T> | DroppingBuffer<T> | SlidingBuffer<T>;
