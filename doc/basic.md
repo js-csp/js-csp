@@ -166,7 +166,7 @@ yield csp.take(ch); // csp.CLOSED
 
 ### `offer(ch, value)` ###
 
-Put a value in a channel iff it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish closed from ready channels.
+Put a value in a channel if it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish closed from ready channels.
 ```javascript
 var ch = csp.chan(1);
 csp.offer(ch, 42); // true
