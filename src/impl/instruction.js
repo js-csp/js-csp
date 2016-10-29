@@ -1,19 +1,38 @@
 // @flow
-export default class Instruction<T> {
-  static TAKE: string = 'take';
-  static PUT: string = 'put';
-  static SLEEP: string = 'sleep';
-  static ALTS: string = 'alts';
+import { Channel } from './channels';
 
-  op: string;
-  data: T;
+export class TakeInstruction {
+  channel: Channel;
 
-  constructor(op: string, data: T) {
-    this.op = op;
-    this.data = data;
+  constructor(channel: Channel) {
+    this.channel = channel;
   }
+}
 
-  toString(): string {
-    return this.op;
+export class PutInstruction {
+  channel: Channel;
+  value: mixed;
+
+  constructor(channel: Channel, value: mixed) {
+    this.channel = channel;
+    this.value = value;
+  }
+}
+
+export class SleepInstruction {
+  msec: number;
+
+  constructor(msec: number) {
+    this.msec = msec;
+  }
+}
+
+export class AltsInstruction {
+  operations: Channel[] | [Channel, mixed][];
+  options: Object;
+
+  constructor(operations: Channel[] | [Channel, mixed][], options: Object) {
+    this.operations = operations;
+    this.options = options;
   }
 }

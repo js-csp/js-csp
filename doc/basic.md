@@ -175,7 +175,7 @@ csp.offer(ch, 43); // false
 
 ### `poll(ch)` ###
 
-Take a value from a channel iff it it's possible to do so immediately. Returns value if succesful, `NO_VALUE` otherwise. Unlike `take`, `poll` cannot distinguish closed from ready channels.
+Take a value from a channel if it's possible to do so immediately. Returns value if succesful, `NO_VALUE` otherwise. Unlike `take`, `poll` cannot distinguish closed from ready channels.
 ```javascript
 var ch = csp.chan(1);
 csp.poll(ch);      // csp.NO_VALUE

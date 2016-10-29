@@ -1,19 +1,14 @@
-var assert = require("chai").assert;
-var a = require("../src/csp.test-helpers"),
-  it = a.it,
-  before = a.before,
-  afterEach = a.afterEach,
-  beforeEach = a.beforeEach;
+import { assert } from 'chai';
+import * as transducers from 'transducers.js';
+import { it } from './../src/csp.test-helpers';
+import * as csp from './../src/csp';
 
-var csp = require("../src/csp");
-var t = require('transducers.js');
-
-var pipeline = csp.operations.pipeline;
-var pipelineAsync = csp.operations.pipelineAsync;
+const pipeline = csp.operations.pipeline;
+const pipelineAsync = csp.operations.pipelineAsync;
 
 function pipelineTester(pipelineFunction, n, inputs, xf) {
-  var cin = csp.operations.fromColl(inputs);
-  var cout = csp.chan(1);
+  const cin = csp.operations.fromColl(inputs);
+  const cout = csp.chan(1);
 
   if (n !== null) {
     pipelineFunction(n, cout, xf, cin);
@@ -21,21 +16,20 @@ function pipelineTester(pipelineFunction, n, inputs, xf) {
     pipelineFunction(cout, xf, cin);
   }
 
-  var results = [];
+  const results = [];
 
-  return csp.go(function* (results) {
-    while(true) {
-      var val = yield csp.take(cout);
+  return csp.go(function* (_results) {
+    while (true) {
+      const val = yield csp.take(cout);
       if (val !== csp.CLOSED) {
-        results.push(val);
+        _results.push(val);
       } else {
         break;
       }
     }
 
-    return results;
-  },[results]);
-
+    return _results;
+  }, [results]);
 }
 
 function identity(n) {
@@ -50,40 +44,38 @@ function identityAsync(v, ch) {
 }
 
 
-
-
 function testSizeAsync(n, size) {
-  var r = [];
+  const r = [];
 
-  for (var i = 0; i < size; i++) {
+  for (let i = 0; i < size; i += 1) {
     r.push(i);
   }
 
   return csp.go(function* () {
-    var tester = pipelineTester(pipelineAsync, n, r, identityAsync);
-    var result = yield csp.take(tester);
+    const tester = pipelineTester(pipelineAsync, n, r, identityAsync);
+    const result = yield csp.take(tester);
 
     assert.deepEqual(result, r);
   });
 }
 
 function testSizeCompute(size) {
-  var r = [];
+  const r = [];
 
-  for (var i = 0; i< size; i++) {
+  for (let i = 0; i < size; i += 1) {
     r.push(i);
   }
 
-  return csp.go(function*() {
-    var result = yield csp.take(pipelineTester(pipeline, null, r, t.map(identity)));
+  return csp.go(function* () {
+    const result = yield csp.take(pipelineTester(pipeline, null, r, transducers.map(identity)));
 
     assert.deepEqual(result, r);
   });
 }
 
 
-describe('pipeline-test-sizes', function() {
-  it('pipeline async test size', function*() {
+describe('pipeline-test-sizes', () => {
+  it('pipeline async test size', function* () {
     yield csp.take(testSizeAsync(1, 0));
     yield csp.take(testSizeAsync(1, 10));
     yield csp.take(testSizeAsync(10, 10));
@@ -91,7 +83,7 @@ describe('pipeline-test-sizes', function() {
     yield csp.take(testSizeAsync(5, 1000));
   });
 
-  it('pipeline compute test size', function*() {
+  it('pipeline compute test size', function* () {
     yield csp.take(testSizeCompute(1, 0));
     yield csp.take(testSizeCompute(1, 10));
     yield csp.take(testSizeCompute(1, 1000));
@@ -99,83 +91,80 @@ describe('pipeline-test-sizes', function() {
 });
 
 
-describe('test-close', function() {
-  it('should work', function*() {
-    var cout = csp.chan(1);
-    pipeline(cout, t.map(identity), csp.operations.fromColl([1]));
+describe('test-close', () => {
+  it('should work', function* () {
+    let cout = csp.chan(1);
+    pipeline(cout, transducers.map(identity), csp.operations.fromColl([1]));
 
-    assert.equal(1, yield csp.take(cout));
-    assert.equal(csp.CLOSED, yield csp.take(cout));
-
-    cout = csp.chan(1);
-    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), true);
-
-    assert.equal(1, yield csp.take(cout));
-    yield csp.put(cout, 'more');
-
-    assert.equal('more', yield csp.take(cout));
+    assert.equal(1, (yield csp.take(cout)));
+    assert.equal(csp.CLOSED, (yield csp.take(cout)));
 
     cout = csp.chan(1);
-    pipeline(cout, t.map(identity), csp.operations.fromColl([1]), true);
+    pipeline(cout, transducers.map(identity), csp.operations.fromColl([1]), true);
 
-    assert.equal(1, yield csp.take(cout));
+    assert.equal(1, (yield csp.take(cout)));
     yield csp.put(cout, 'more');
 
-    assert.equal('more', yield csp.take(cout));
+    assert.equal('more', (yield csp.take(cout)));
 
+    cout = csp.chan(1);
+    pipeline(cout, transducers.map(identity), csp.operations.fromColl([1]), true);
+
+    assert.equal(1, (yield csp.take(cout)));
+    yield csp.put(cout, 'more');
+
+    assert.equal('more', (yield csp.take(cout)));
   });
-
 });
 
-describe('async-pipelines-af-multiplier', function() {
-  it('shoud work', function*() {
-
+describe('async-pipelines-af-multiplier', () => {
+  it('shoud work', function* () {
     function multiplierAsync(v, ch) {
-      csp.go(function* (v, ch) {
-        for(var i = 0; i < v; i++) {
-          yield csp.put(ch, i);
+      csp.go(function* (_v, _ch) {
+        for (let i = 0; i < _v; i += 1) {
+          yield csp.put(_ch, i);
         }
-        ch.close();
+        _ch.close();
       }, [v, ch]);
 
       return ch;
     }
 
-    var range = [1,2,3,4];
-    var g = csp.go(function*() {
-      var pipelineResult = pipelineTester(pipelineAsync, 2, range, multiplierAsync);
-      assert.deepEqual([0,0,1,0,1,2,0,1,2,3], yield csp.take(pipelineResult));
+    const range = [1, 2, 3, 4];
+    const g = csp.go(function* () {
+      const pipelineResult = pipelineTester(pipelineAsync, 2, range, multiplierAsync);
+      assert.deepEqual([0, 0, 1, 0, 1, 2, 0, 1, 2, 3], (yield csp.take(pipelineResult)));
     });
 
     yield csp.take(g);
   });
 });
 
-describe('pipeline-async', function() {
+describe('pipeline-async', () => {
   function incrementerAsync(v, ch) {
-    return csp.go(function* (v, ch) {
-      yield csp.put(ch, v + 1);
-      ch.close();
+    return csp.go(function* (_v, _ch) {
+      yield csp.put(_ch, _v + 1);
+      _ch.close();
     }, [v, ch]);
   }
 
-  it('should work', function*() {
-    var r = [];
-    var r2 = [];
-    for(var i = 0;i < 100;i++) {
+  it('should work', function* () {
+    const r = [];
+    const r2 = [];
+    for (let i = 0; i < 100; i += 1) {
       r.push(i);
     }
 
-    for(var j = 1;j < 101;j++) {
+    for (let j = 1; j < 101; j += 1) {
       r2.push(j);
     }
 
-    var g = csp.go(function*() {
-      var pipelineResult = pipelineTester(pipelineAsync, 1, r, incrementerAsync);
-      assert.deepEqual(r2, yield csp.take(pipelineResult));
+    const g = csp.go(function* () {
+      const pipelineResult = pipelineTester(pipelineAsync, 1, r, incrementerAsync);
+      assert.deepEqual(r2, (yield csp.take(pipelineResult)));
     });
 
     yield csp.take(g);
-
   });
 });
+

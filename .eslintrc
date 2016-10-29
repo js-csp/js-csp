@@ -1,7 +1,7 @@
 {
   "extends": "airbnb",
   "parser": "babel-eslint",
-  "plugins": ["mocha", "flowtype"],
+  "plugins": ["mocha", "babel", "flowtype"],
   "env": {
     "mocha": true,
     "browser": true,
@@ -15,13 +15,20 @@
     "func-names": 0,
     "no-duplicate-imports": 0,
     "no-underscore-dangle": 0,
+    "arrow-parens": 0,
     "import/no-extraneous-dependencies": 0,
     "import/no-named-as-default": 0,
     "flowtype/define-flow-type": 1,
     "flowtype/space-after-type-colon": [1, "always"],
     "flowtype/space-before-type-colon": [1, "never"],
     "flowtype/type-id-match": [1, "^([A-Z][a-z0-9]+)+Type$"],
-    "flowtype/use-flow-type": 1
+    "flowtype/use-flow-type": 1,
+    "babel/new-cap": 1,
+    "babel/array-bracket-spacing": 1,
+    "babel/object-shorthand": 1,
+    "babel/no-await-in-loop": 1,
+    "babel/flow-object-type": 1,
+    "babel/func-params-comma-dangle": 1
   },
   "settings": {
     "import/resolver": {

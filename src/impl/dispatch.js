@@ -2,7 +2,7 @@
 import { RingBuffer, ring } from './buffers';
 
 const TASK_BATCH_SIZE: number = 1024;
-const tasks: RingBuffer<Function> = ring();
+const tasks: RingBuffer<Function> = ring(32);
 let running: boolean = false;
 let queued: boolean = false;
 
@@ -24,7 +24,7 @@ export function queueDispatcher(): void {
 
         if (task) {
           task();
-          count++;
+          count += 1;
         } else {
           break;
         }
@@ -32,7 +32,7 @@ export function queueDispatcher(): void {
 
       running = false;
 
-      if (tasks.count() > 0) {
+      if (tasks.length > 0) {
         queueDispatcher();
       }
     });
@@ -40,7 +40,7 @@ export function queueDispatcher(): void {
 }
 
 export function run(func: Function): void {
-  tasks.unshift(func);
+  tasks.unboundedUnshift(func);
   queueDispatcher();
 }
 

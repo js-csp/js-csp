@@ -1,5 +1,6 @@
 import times from 'lodash/times';
-import { Box, CLOSED } from './impl/channels';
+import { Box } from './impl/boxes';
+import { CLOSED } from './impl/channels';
 import {
   take as _take,
   put,
@@ -115,7 +116,7 @@ function* mapcat(f, src, dst) {
     } else {
       const seq = f(value);
       const length = seq.length;
-      for (let i = 0; i < length; i++) {
+      for (let i = 0; i < length; i += 1) {
         yield put(dst, seq[i]);
       }
       if (dst.isClosed()) {
@@ -191,7 +192,7 @@ export function onto(ch, coll, keepOpen) {
   return go(function* () {
     const length = coll.length;
     // FIX: Should be a generic looping interface (for...in?)
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < length; i += 1) {
       yield put(ch, coll[i]);
     }
     if (!keepOpen) {
@@ -220,13 +221,13 @@ export function map(f, chs, bufferOrN) {
   const dcallbacks = new Array(length);
   const callback = (i) => (value) => {
     values[i] = value;
-    dcount--;
+    dcount -= 1;
     if (dcount === 0) {
       putAsync(dchan, values.slice(0));
     }
   };
 
-  for (let i = 0; i < length; i++) {
+  for (let i = 0; i < length; i += 1) {
     dcallbacks[i] = callback(i);
   }
 
@@ -235,17 +236,17 @@ export function map(f, chs, bufferOrN) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
       // don't
-      for (let i = 0; i < length; i++) {
+      for (let i = 0; i < length; i += 1) {
         try {
           takeAsync(chs[i], dcallbacks[i]);
         } catch (e) {
           // FIX: Hmm why catching here?
-          dcount--;
+          dcount -= 1;
         }
       }
 
       const _values = yield _take(dchan);
-      for (let i = 0; i < length; i++) {
+      for (let i = 0; i < length; i += 1) {
         if (_values[i] === CLOSED) {
           out.close();
           return;
@@ -291,7 +292,7 @@ export function into(coll, ch) {
 export function take(n, ch, bufferOrN) {
   const out = chan(bufferOrN);
   go(function* () {
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < n; i += 1) {
       const value = yield _take(ch);
       if (value === CLOSED) {
         break;
@@ -357,7 +358,7 @@ export function partition(n, ch, bufferOrN) {
   go(function* () {
     for (;;) {
       const part = new Array(n);
-      for (let i = 0; i < n; i++) {
+      for (let i = 0; i < n; i += 1) {
         const value = yield _take(ch);
         if (value === CLOSED) {
           if (i > 0) {
@@ -379,7 +380,7 @@ const genId = ((() => {
   let i = 0;
 
   return () => {
-    i++;
+    i += 1;
     return `${i}`;
   };
 }))();
@@ -432,7 +433,7 @@ export function mult(ch) {
 
   function makeDoneCallback(tap) {
     return (stillOpen) => {
-      dcount--;
+      dcount -= 1;
       if (dcount === 0) {
         putAsync(dchan, true);
       }
@@ -536,7 +537,7 @@ class Mix {
     if (this.soloMode === MIX_PAUSE && solos.length > 0) {
       n = solos.length;
       reads = new Array(n + 1);
-      for (i = 0; i < n; i++) {
+      for (i = 0; i < n; i += 1) {
         reads[i] = solos[i];
       }
       reads[n] = this.change;
@@ -576,7 +577,7 @@ class Mix {
   toggle(updateStateList) {
     // [[ch1, {}], [ch2, {solo: true}]];
     const length = updateStateList.length;
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < length; i += 1) {
       const ch = updateStateList[i][0];
       const id = chanId(ch);
       const updateState = updateStateList[i][1];

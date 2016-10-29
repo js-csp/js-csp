@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.7.5
+- CHANGED: refactor the core logic
+
 ## 0.7.4
 - ADDED: support for built tool
 

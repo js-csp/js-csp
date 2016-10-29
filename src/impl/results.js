@@ -7,11 +7,11 @@ export const DEFAULT: Object = {
   },
 };
 
-export class AltResult {
-  value: any;
+export class AltResult<T> {
+  value: T;
   channel: Channel | typeof DEFAULT;
 
-  constructor(value: any, channel: Channel | typeof DEFAULT) {
+  constructor(value: T, channel: Channel | typeof DEFAULT) {
     this.value = value;
     this.channel = channel;
   }

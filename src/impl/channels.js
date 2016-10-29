@@ -2,43 +2,38 @@
 import { run } from './dispatch';
 import type { BufferType } from './buffers';
 import { RingBuffer, ring } from './buffers';
+import { Box, PutBox } from './boxes';
 import type { HandlerType } from './handlers';
 
 export const MAX_DIRTY = 64;
 export const MAX_QUEUE_SIZE = 1024;
 export const CLOSED = null;
 
-const isReduced = (v) => v && v['@@transducer/reduced'];
-const schedule = (f, v) => run(() => f(v));
-
-export class Box<T> {
-  value: T;
-
-  constructor(value: T) {
-    this.value = value;
-  }
+function isReduced(v) {
+  return v && v['@@transducer/reduced'];
 }
 
-export class PutBox<T> {
-  handler: HandlerType;
-  value: T;
+function schedule(func: Function, value: mixed) {
+  return run(() => func(value));
+}
 
-  constructor(handler: HandlerType, value: any) {
-    this.handler = handler;
-    this.value = value;
+function flush<T>(channelBuffer: RingBuffer<T>, callback: (element: T) => void): void {
+  while (channelBuffer.length > 0) {
+    // flow-ignore
+    callback(channelBuffer.pop());
   }
 }
 
 export class Channel {
-  buf: ?BufferType<any>;
+  buf: ?BufferType<mixed>;
   xform: Object;
   takes: RingBuffer<HandlerType>;
-  puts: RingBuffer<PutBox<any>>;
+  puts: RingBuffer<PutBox<mixed>>;
   dirtyPuts: number;
   dirtyTakes: number;
   closed: boolean;
 
-  constructor(takes: RingBuffer<any>, puts: RingBuffer<PutBox<any>>, buf: ?BufferType<any>, xform: Object) {
+  constructor(takes: RingBuffer<HandlerType>, puts: RingBuffer<PutBox<mixed>>, buf: ?BufferType<mixed>, xform: Object) {
     this.buf = buf;
     this.xform = xform;
     this.takes = takes;
@@ -48,7 +43,7 @@ export class Channel {
     this.closed = false;
   }
 
-  put(value: any, handler: HandlerType): ?Box<any> {
+  put(value: mixed, handler: HandlerType): ?Box<mixed> {
     if (value === CLOSED) {
       throw new Error('Cannot put CLOSED on a channel.');
     }
@@ -76,14 +71,16 @@ export class Channel {
       const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
 
       // flow-ignore
-      while (this.takes.count() > 0 && this.buf.count() > 0) {
-        const taker: HandlerType = this.takes.pop();
+      while (this.buf.count() > 0 && this.takes.length > 0) {
+        const taker = this.takes.pop();
 
+        // flow-ignore
         if (taker.isActive()) {
           // flow-ignore
           schedule(taker.commit(), this.buf.remove());
         }
       }
+
       if (done) {
         this.close();
       }
@@ -95,13 +92,14 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    while (this.takes.count() > 0) {
-      const taker: HandlerType = this.takes.pop();
+    while (this.takes.length > 0) {
+      const taker = this.takes.pop();
 
+      // flow-ignore
       if (taker.isActive()) {
         handler.commit();
-        const callback = taker.commit();
-        schedule(callback, value);
+        // flow-ignore
+        schedule(taker.commit(), value);
         return new Box(true);
       }
     }
@@ -111,20 +109,20 @@ export class Channel {
       this.puts.cleanup((putter) => putter.handler.isActive());
       this.dirtyPuts = 0;
     } else {
-      this.dirtyPuts++;
+      this.dirtyPuts += 1;
     }
 
     if (handler.isBlockable()) {
-      if (this.puts.count() >= MAX_QUEUE_SIZE) {
+      if (this.puts.length >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`);
       }
-      this.puts.unshift(new PutBox(handler, value));
+      this.puts.unboundedUnshift(new PutBox(handler, value));
     }
 
     return null;
   }
 
-  take(handler: HandlerType): ?Box<any> {
+  take(handler: HandlerType): ?Box<mixed> {
     if (!handler.isActive()) {
       return null;
     }
@@ -132,23 +130,21 @@ export class Channel {
     if (this.buf && this.buf.count() > 0) {
       handler.commit();
       // flow-ignore
-      const value: any = this.buf.remove();
+      const value: mixed = this.buf.remove();
 
       // We need to check pending puts here, other wise they won't
       // be able to proceed until their number reaches MAX_DIRTY
 
       // flow-ignore
-      while (this.puts.count() > 0 && !this.buf.isFull()) {
+      while (this.puts.length > 0 && !this.buf.isFull()) {
+        const putter = this.puts.pop();
+
         // flow-ignore
-        const putter: PutBox<any> = this.puts.pop();
-
         if (putter.handler.isActive()) {
-          const callback: ?Function = putter.handler.commit();
+          // flow-ignore
+          schedule(putter.handler.commit(), true);
 
-          if (callback) {
-            schedule(callback, true);
-          }
-
+          // flow-ignore
           if (isReduced(this.xform['@@transducer/step'](this.buf, putter.value))) {
             this.close();
           }
@@ -162,18 +158,16 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    while (this.puts.count() > 0) {
-      // flow-ignore
-      const putter: PutBox<any> = this.puts.pop();
+    while (this.puts.length > 0) {
+      const putter = this.puts.pop();
 
+      // flow-ignore
       if (putter.handler.isActive()) {
         handler.commit();
-        const callback: ?Function = putter.handler.commit();
+        // flow-ignore
+        schedule(putter.handler.commit(), true);
 
-        if (callback) {
-          schedule(callback, true);
-        }
-
+        // flow-ignore
         return new Box(putter.value);
       }
     }
@@ -188,15 +182,15 @@ export class Channel {
       this.takes.cleanup((_handler: HandlerType) => _handler.isActive());
       this.dirtyTakes = 0;
     } else {
-      this.dirtyTakes++;
+      this.dirtyTakes += 1;
     }
 
     if (handler.isBlockable()) {
-      if (this.takes.count() >= MAX_QUEUE_SIZE) {
+      if (this.takes.length >= MAX_QUEUE_SIZE) {
         throw new Error(`No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`);
       }
 
-      this.takes.unshift(handler);
+      this.takes.unboundedUnshift(handler);
     }
 
     return null;
@@ -209,14 +203,14 @@ export class Channel {
 
     this.closed = true;
 
-    // TODO: Duplicate code. Make a "_flush" function or something
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
       // flow-ignore
-      while (this.takes.count() > 0 && this.buf.count() > 0) {
-        const taker: HandlerType = this.takes.pop();
+      while (this.buf.count() > 0 && this.takes.length > 0) {
+        const taker = this.takes.pop();
 
+        // flow-ignore
         if (taker.isActive()) {
           // flow-ignore
           schedule(taker.commit(), this.buf.remove());
@@ -224,26 +218,17 @@ export class Channel {
       }
     }
 
-    while (this.takes.count() > 0) {
-      const taker: HandlerType = this.takes.pop();
-
+    flush(this.takes, (taker: HandlerType) => {
       if (taker.isActive()) {
         schedule(taker.commit(), CLOSED);
       }
-    }
+    });
 
-    while (this.puts.count() > 0) {
-      // flow-ignore
-      const putter: PutBox<any> = this.puts.pop();
-
+    flush(this.puts, (putter: PutBox<mixed>) => {
       if (putter.handler.isActive()) {
-        const pulCallback: ?Function = putter.handler.commit();
-
-        if (pulCallback) {
-          schedule(pulCallback, false);
-        }
+        schedule(putter.handler.commit(), false);
       }
-    }
+    });
   }
 
   isClosed() {
@@ -257,7 +242,7 @@ const AddTransformer: Object = {
     throw new Error('init not available');
   },
 
-  '@@transducer/result': (v) => v,
+  '@@transducer/result': v => v,
 
   '@@transducer/step': (buffer, input) => {
     buffer.add(input);
@@ -270,11 +255,12 @@ function defaultExceptionHandler(err: Error): typeof CLOSED {
   return CLOSED;
 }
 
-function handleEx<T>(buf: BufferType<T>, exHandler: ?Function, e: Error): BufferType<T> {
+function handleEx<T>(buf: BufferType<T>,
+                     exHandler: ?Function,
+                     e: Error): BufferType<T> {
   const def = (exHandler || defaultExceptionHandler)(e);
 
   if (def !== CLOSED) {
-    // flow-ignore
     buf.add(def);
   }
 
@@ -283,7 +269,7 @@ function handleEx<T>(buf: BufferType<T>, exHandler: ?Function, e: Error): Buffer
 
 function handleException<T>(exHandler: ?Function): Function {
   return (xform: Object): Object => ({
-    '@@transducer/step': (buffer: BufferType<T>, input: any) => {
+    '@@transducer/step': (buffer: BufferType<T>, input: mixed) => {
       try {
         return xform['@@transducer/step'](buffer, input);
       } catch (e) {
@@ -301,8 +287,10 @@ function handleException<T>(exHandler: ?Function): Function {
 }
 
 // XXX: This is inconsistent. We should either call the reducing
-// function xform, or call the transducer xform, not both
-export function chan<T>(buf: ?BufferType<T>, xform: ?Function, exHandler: ?Function): Channel {
+// function xform, or call the transducers xform, not both
+export function chan(buf: ?BufferType<mixed>,
+                     xform: ?Function,
+                     exHandler: ?Function): Channel {
   let newXForm: typeof AddTransformer;
 
   if (xform) {
@@ -315,5 +303,5 @@ export function chan<T>(buf: ?BufferType<T>, xform: ?Function, exHandler: ?Funct
     newXForm = AddTransformer;
   }
 
-  return new Channel(ring(), ring(), buf, handleException(exHandler)(newXForm));
+  return new Channel(ring(32), ring(32), buf, handleException(exHandler)(newXForm));
 }

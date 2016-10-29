@@ -1,20 +1,7 @@
-var assert = require("chai").assert;
-var a = require("../src/csp.test-helpers"),
-    it = a.it,
-    before = a.before,
-    afterEach = a.afterEach,
-    beforeEach = a.beforeEach;
-
-var csp = require("../src/csp"),
-    chan = csp.chan,
-    go = csp.go,
-    put = csp.put,
-    takeAsync = csp.takeAsync,
-    putAsync = csp.putAsync,
-    take = csp.take,
-    CLOSED = csp.CLOSED;
-
-var t = require("transducers.js");
+import { assert } from 'chai';
+import * as transducers from 'transducers.js';
+import { it } from './../src/csp.test-helpers';
+import { chan, go, put, take, CLOSED } from './../src/csp';
 
 function inc(x) {
   return x + 1;
@@ -24,26 +11,26 @@ function even(x) {
   return x % 2 === 0;
 }
 
-describe("Transducers", function() {
-  describe("map (normal reduction)", function() {
-    it("should work", function*() {
-      var ch = chan(3, t.map(inc));
-      go(function*() {
-        for (var i = 0; i < 6; i++) {
+describe('Transducers', () => {
+  describe('map (normal reduction)', () => {
+    it('should work', function* () {
+      const ch = chan(3, transducers.map(inc));
+      go(function* () {
+        for (let i = 0; i < 6; i += 1) {
           yield put(ch, i);
         }
       });
-      for (var i = 0; i < 6; i++) {
+      for (let i = 0; i < 6; i += 1) {
         assert.equal((yield take(ch)), inc(i));
       }
     });
   });
 
-  describe("filter (input-supressing reduction)", function() {
-    it("should work", function*() {
-      var ch = chan(3, t.filter(even));
-      go(function*() {
-        for (var i = 0; i < 6; i++) {
+  describe('filter (input-supressing reduction)', () => {
+    it('should work', function* () {
+      const ch = chan(3, transducers.filter(even));
+      go(function* () {
+        for (let i = 0; i < 6; i += 1) {
           yield put(ch, i);
         }
       });
@@ -53,10 +40,10 @@ describe("Transducers", function() {
     });
   });
 
-  describe("take (terminating reduction)", function() {
-    it("should work", function*() {
-      var ch = chan(1, t.take(3));
-      go(function*() {
+  describe('take (terminating reduction)', () => {
+    it('should work', function* () {
+      const ch = chan(1, transducers.take(3));
+      go(function* () {
         assert.equal((yield put(ch, 0)), true);
         assert.equal((yield put(ch, 1)), true);
         assert.equal((yield put(ch, 2)), true);
@@ -69,10 +56,10 @@ describe("Transducers", function() {
     });
   });
 
-  describe("drop (stateful reduction)", function() {
-    it("should work", function*() {
-      var ch = chan(1, t.drop(3));
-      go(function*() {
+  describe('drop (stateful reduction)', () => {
+    it('should work', function* () {
+      const ch = chan(1, transducers.drop(3));
+      go(function* () {
         assert.equal((yield put(ch, 0)), true);
         assert.equal((yield put(ch, 1)), true);
         assert.equal((yield put(ch, 2)), true);
@@ -84,10 +71,10 @@ describe("Transducers", function() {
     });
   });
 
-  describe("cat (expanding reduction)", function() {
-    it("should work", function*() {
-      var ch = chan(1, t.cat);
-      go(function*() {
+  describe('cat (expanding reduction)', () => {
+    it('should work', function* () {
+      const ch = chan(1, transducers.cat);
+      go(function* () {
         assert.equal((yield put(ch, [0, 1])), true);
         assert.equal((yield put(ch, [1, 2])), true);
         assert.equal((yield put(ch, [2, 3])), true);
@@ -108,21 +95,21 @@ describe("Transducers", function() {
       assert.equal((yield take(ch)), CLOSED);
     });
 
-    it("should flush correct values to multiple takes in one expansion", function* () {
-      var count = 0;
-      var ch = chan(1, t.cat);
+    it('should flush correct values to multiple takes in one expansion', function* () {
+      let count = 0;
+      const ch = chan(1, transducers.cat);
 
-      go(function*() {
+      go(function* () {
         assert.equal(1, (yield take(ch)));
         count += 1;
         assert.equal(count, 1);
       });
-      go(function*() {
+      go(function* () {
         assert.equal(2, (yield take(ch)));
         count += 1;
         assert.equal(count, 2);
       });
-      go(function*() {
+      go(function* () {
         assert.equal(3, (yield take(ch)));
         count += 1;
         assert.equal(count, 3);
@@ -135,10 +122,10 @@ describe("Transducers", function() {
     });
   });
 
-  describe("partition (gathering reduction)", function() {
-    it("should complete when terminated from outside", function*() {
-      var ch = chan(1, t.partition(2));
-      go(function*() {
+  describe('partition (gathering reduction)', () => {
+    it('should complete when terminated from outside', function* () {
+      const ch = chan(1, transducers.partition(2));
+      go(function* () {
         yield put(ch, 1);
         yield put(ch, 2);
         yield put(ch, 3);
@@ -152,9 +139,9 @@ describe("Transducers", function() {
       assert.deepEqual((yield take(ch)), CLOSED);
     });
 
-    it("should complete when terminated by an earlier reduction", function*() {
-      var ch = chan(1, t.compose(t.take(5), t.partition(2)));
-      go(function*() {
+    it('should complete when terminated by an earlier reduction', function* () {
+      const ch = chan(1, transducers.compose(transducers.take(5), transducers.partition(2)));
+      go(function* () {
         assert.equal((yield put(ch, 1)), true);
         assert.equal((yield put(ch, 2)), true);
         assert.equal((yield put(ch, 3)), true);
@@ -168,25 +155,25 @@ describe("Transducers", function() {
       assert.deepEqual((yield take(ch)), CLOSED);
     });
 
-    it("should flush multiple pending puts when a value is taken off the buffer", function*() {
-      var ch = chan(1, t.partition(3));
-      var count = 0;
+    it('should flush multiple pending puts when a value is taken off the buffer', function* () {
+      const ch = chan(1, transducers.partition(3));
+      let count = 0;
 
       yield put(ch, 1);
       yield put(ch, 1);
       yield put(ch, 1);
 
-      go(function*() {
+      go(function* () {
         assert.equal(true, (yield put(ch, 1)));
         count += 1;
         assert.equal(count, 1);
       });
-      go(function*() {
+      go(function* () {
         assert.equal(true, (yield put(ch, 1)));
         count += 1;
         assert.equal(count, 2);
       });
-      go(function*() {
+      go(function* () {
         assert.equal(true, (yield put(ch, 1)));
         count += 1;
         assert.equal(count, 3);
@@ -199,26 +186,26 @@ describe("Transducers", function() {
     });
   });
 
-  describe("partition -> cat (valve)", function() {
-    it("should correctly flush multiple pending takes with accumulated values when closing", function*() {
-      var ch = chan(1, t.compose(t.partition(4), t.cat));
-      var count = 0;
+  describe('partition -> cat (valve)', () => {
+    it('should correctly flush multiple pending takes with accumulated values when closing', function* () {
+      const ch = chan(1, transducers.compose(transducers.partition(4), transducers.cat));
+      let count = 0;
 
       yield put(ch, 1);
       yield put(ch, 2);
       yield put(ch, 3);
 
-      go(function*() {
+      go(function* () {
         assert.equal((yield take(ch)), 1);
         count += 1;
         assert.equal(count, 1);
       });
-      go(function*() {
+      go(function* () {
         assert.equal((yield take(ch)), 2);
         count += 1;
         assert.equal(count, 2);
       });
-      go(function*() {
+      go(function* () {
         assert.equal((yield take(ch)), 3);
         count += 1;
         assert.equal(count, 3);
