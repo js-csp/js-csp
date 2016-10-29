@@ -1,16 +1,17 @@
 // @flow
+import noop from 'lodash/noop';
 import { Box } from './boxes';
 
 export class FnHandler {
   blockable: boolean;
-  func: ?Function;
+  func: Function;
 
   constructor(blockable: boolean, func: ?Function) {
     this.blockable = blockable;
-    this.func = func;
+    this.func = func || noop;
   }
 
-  isActive(): boolean {
+  isActive(): boolean { // eslint-disable-line
     return true;
   }
 
@@ -18,7 +19,7 @@ export class FnHandler {
     return this.blockable;
   }
 
-  commit(): ?Function {
+  commit(): Function {
     return this.func;
   }
 }
@@ -36,7 +37,7 @@ export class AltHandler {
     return this.flag.value;
   }
 
-  isBlockable(): boolean {
+  isBlockable(): boolean { // eslint-disable-line
     return true;
   }
 

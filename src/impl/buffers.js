@@ -1,9 +1,7 @@
 // @flow
-import times from 'lodash/times';
-
 function acopy<T>(src: Array<T>, srcStart: number,
                   dest: Array<T>, destStart: number,
-                  len: number) {
+                  len: number): void {
   for (let count = 0; count < len; count += 1) {
     dest[destStart + count] = src[srcStart + count];
   }
@@ -13,9 +11,9 @@ export class RingBuffer<T> {
   head: number;
   tail: number;
   length: number;
-  arr: Array<T>;
+  arr: Array<?T>;
 
-  constructor(head: number, tail: number, length: number, arr: Array<T>) {
+  constructor(head: number, tail: number, length: number, arr: Array<?T>) {
     this.head = head;
     this.tail = tail;
     this.length = length;
@@ -36,13 +34,13 @@ export class RingBuffer<T> {
     return undefined;
   }
 
-  unshift(element: T): void {
+  unshift(element: ?T): void {
     this.arr[this.head] = element;
     this.head = (this.head + 1) % this.arr.length;
     this.length += 1;
   }
 
-  unboundedUnshift(element: T): void {
+  unboundedUnshift(element: ?T): void {
     if (this.length + 1 === this.arr.length) {
       this.resize();
     }
@@ -72,13 +70,13 @@ export class RingBuffer<T> {
   }
 
   cleanup(predicate: Function): void {
-    times(this.length, () => {
+    for (let i = this.length; i > 0; i -= 1) {
       const value = this.pop();
 
       if (predicate(value)) {
         this.unshift(value);
       }
-    });
+    }
   }
 }
 
@@ -115,7 +113,7 @@ export class FixedBuffer<T> {
     return this.buffer.pop();
   }
 
-  add(item: T): void {
+  add(item: ?T): void {
     this.buffer.unboundedUnshift(item);
   }
 
@@ -147,7 +145,7 @@ export class DroppingBuffer<T> {
     return this.buffer.pop();
   }
 
-  add(item: T): void {
+  add(item: ?T): void {
     if (this.buffer.length !== this.n) {
       this.buffer.unshift(item);
     }
@@ -181,7 +179,7 @@ export class SlidingBuffer<T> {
     return this.buffer.pop();
   }
 
-  add(item: T): void {
+  add(item: ?T): void {
     if (this.buffer.length === this.n) {
       this.remove();
     }
@@ -203,7 +201,7 @@ export function sliding<T>(n: number): SlidingBuffer<T> {
 export class PromiseBuffer {
   value: mixed;
 
-  static NO_VALUE = {};
+  static NO_VALUE = '@@PromiseBuffer/NO_VALUE';
   static isUndelivered = (value: mixed) => PromiseBuffer.NO_VALUE === value;
 
   constructor(value: mixed) {
@@ -235,7 +233,7 @@ export class PromiseBuffer {
   }
 }
 
-export function promise<T>(): PromiseBuffer<T> {
+export function promise(): PromiseBuffer {
   return new PromiseBuffer(PromiseBuffer.NO_VALUE);
 }
 
