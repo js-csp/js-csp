@@ -4,6 +4,7 @@ import { assert } from 'chai';
 import { it, identityChan, check, before, beforeEach } from './../src/csp.test-helpers';
 import {
   chan,
+  promiseChan,
   go,
   put,
   take,
@@ -15,7 +16,7 @@ import {
   timeout,
   DEFAULT,
   CLOSED,
-  NO_VALUE,
+  NO_VALUE
 } from './../src/csp';
 import { doAlts } from './../src/impl/select';
 
@@ -517,5 +518,69 @@ describe('close', () => {
 
     ch.close();
     yield undefined;
+  });
+});
+
+describe('promiseChan', () => {
+  describe('put on', () => {
+    it('should fulfill all pending takers', function* () {
+      const pCh = promiseChan();
+      const t1 = go(function* () {
+        return yield take(pCh);
+      });
+      const t2 = go(function* () {
+        return yield take(pCh);
+      });
+      const originalValue = 'original value';
+
+      yield put(pCh, originalValue);
+
+      assert.equal(yield take(t1), originalValue);
+      assert.equal(yield take(t2), originalValue);
+
+      // then puts succeed but are dropped
+      yield put(pCh, 'new value');
+      assert.equal(yield take(pCh), originalValue);
+      assert.equal(yield take(pCh), originalValue);
+
+      // then after close takes continue returning val
+      pCh.close();
+      assert.equal(yield take(pCh), originalValue);
+      assert.equal(yield take(pCh), originalValue);
+    });
+  });
+
+  describe('close on', () => {
+    it('should fulfill all pending takers', function* () {
+      const pCh = promiseChan();
+      const t1 = go(function* () {
+        return yield take(pCh);
+      });
+      const t2 = go(function* () {
+        return yield take(pCh);
+      });
+
+      pCh.close();
+
+      assert.equal(yield take(t1), null);
+      assert.equal(yield take(t2), null);
+    });
+  });
+
+  describe('close after put on', () => {
+    it('should continues delivering promised value', function* () {
+      const pCh = promiseChan();
+      const originalValue = 'original value';
+
+      yield put(pCh, originalValue);
+
+      assert.equal(yield take(pCh), originalValue);
+      assert.equal(yield take(pCh), originalValue);
+
+      pCh.close();
+
+      assert.equal(yield take(pCh), originalValue);
+      assert.equal(yield take(pCh), originalValue);
+    });
   });
 });
