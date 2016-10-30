@@ -127,7 +127,7 @@ console.log((yield csp.take(ch)));
 
 ### `spawn(generator)` ###
 
-Similar to `go`, but takes a generator instead of creating one.
+Similar to `go`, but takes a generator object instead of generator function.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
 function* id(x) {
