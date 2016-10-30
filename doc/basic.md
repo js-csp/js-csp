@@ -49,7 +49,7 @@ Creates a promise channel with an optional transducer, and an optional exception
 exactly one value that consumers will receive. Consumers will block until either a value is placed in
 the channel or the channel is closed.
 
-```
+```javascript
 const promiseCh = csp.promiseChan();
 
 csp.go(function* () {
@@ -70,7 +70,7 @@ csp.go(function* () {
   yield csp.take(csp.timeout(1000));
 
   yield csp.put(promiseCh, 'Hello from the other side');
-  yield csp.put(promiseCh, 'Hello again. I will not work!');
+  yield csp.put(promiseCh, 'Hello again. It will not work!');
 });
 ```
 
