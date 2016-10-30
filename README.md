@@ -8,7 +8,7 @@ Communicating sequential processes for Javascript (like Clojurescript core.async
 
 ## Examples
 ```javascript
-var csp = require('js-csp');
+const csp = require('js-csp');
 ```
 
 Pingpong (ported from [Go](http://talks.golang.org/2013/advconc.slide#6)).
@@ -16,26 +16,30 @@ Pingpong (ported from [Go](http://talks.golang.org/2013/advconc.slide#6)).
 ```javascript
 function* player(name, table) {
   while (true) {
-    var ball = yield csp.take(table);
+    let ball = yield csp.take(table);
+
     if (ball === csp.CLOSED) {
       console.log(name + ": table's gone");
       return;
     }
+
     ball.hits += 1;
-    console.log(name + " " + ball.hits);
+    console.log(`${name} ${ball.hits}`);
+
     yield csp.timeout(100);
     yield csp.put(table, ball);
   }
 }
 
 csp.go(function* () {
-  var table = csp.chan();
+  const table = csp.chan();
 
   csp.go(player, ["ping", table]);
   csp.go(player, ["pong", table]);
 
   yield csp.put(table, {hits: 0});
   yield csp.timeout(1000);
+
   table.close();
 });
 ```
