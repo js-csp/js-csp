@@ -1,6 +1,6 @@
 // @flow
 import type { BufferType } from './impl/buffers';
-import { fixed } from './impl/buffers';
+import { fixed, promise } from './impl/buffers';
 import { putThenCallback, Process } from './impl/process';
 import { chan as channel, Channel, CLOSED } from './impl/channels';
 
@@ -28,4 +28,8 @@ export function chan(bufferOrNumber: ?BufferType<mixed> | ?number, xform: ?Funct
   }
 
   return channel(bufferOrNumber, xform, exHandler);
+}
+
+export function promiseChan(xform: ?Function, exHandler: ?Function): Channel {
+  return channel(promise(), xform, exHandler);
 }

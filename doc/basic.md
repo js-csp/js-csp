@@ -15,7 +15,7 @@ and viceversa (synchronization).
 
 We can put and take values asynchronously from a channel:
 ```javascript
-var ch = csp.chan();
+const ch = csp.chan();
 
 csp.takeAsync(ch, function(value) { return console.log("Got ", value); });
 
@@ -26,7 +26,7 @@ csp.putAsync(ch, 42);
 
 Puts and takes can happen in any order:
 ```javascript
-var ch = csp.chan();
+const ch = csp.chan();
 
 // Async puts accept a callback too
 csp.putAsync(ch, 42, function(){ console.log("Just put 42"); });
@@ -44,6 +44,36 @@ csp.takeAsync(ch, function(value) { console.log("Got ", value); })
 - If a number is passed, the channel is backed by a fixed buffer of that size (bounded asynchronization).
 - If a buffer is passed, the channel is backed by that buffer (bounded asynchronization).
 
+### `promiseChan(transducer?, exHandler?)` ###
+Creates a promise channel with an optional transducer, and an optional exception-handler. It takes
+exactly one value that consumers will receive. Consumers will block until either a value is placed in
+the channel or the channel is closed.
+
+```
+const promiseCh = csp.promiseChan();
+
+csp.go(function* () {
+  console.log('consumer 1 gets', yield csp.take(promiseCh));
+  console.log('consumer 1 gets', yield csp.take(promiseCh));
+});
+//=> "consumer 1 gets Hello from the other side"
+//=> "consumer 1 gets Hello from the other side"
+
+csp.go(function* () {
+  console.log('consumer 2 gets', yield csp.take(promiseCh));
+  console.log('consumer 2 gets', yield csp.take(promiseCh));
+});
+//=> "consumer 2 gets Hello from the other side"
+//=> "consumer 2 gets Hello from the other side"
+
+csp.go(function* () {
+  yield csp.take(csp.timeout(1000));
+
+  yield csp.put(promiseCh, 'Hello from the other side');
+  yield csp.put(promiseCh, 'Hello again. I will not work!');
+});
+```
+
 ### `buffers.fixed(n)` ###
 
 Creates a fixed buffer of size n. When full, puts will "block".
@@ -54,7 +84,7 @@ This is the default buffer that is created when calling `chan` with a number as 
 
 Creates a dropping buffer of size n. When full, puts will not "block", but the value is discarded.
 ```javascript
-var ch = csp.chan(csp.buffers.dropping(1));
+const ch = csp.chan(csp.buffers.dropping(1));
 
 csp.putAsync(ch, 42);
 csp.putAsync(ch, 43); // will be dropped!
@@ -68,7 +98,7 @@ csp.takeAsync(ch); // will "block"
 
 Creates a sliding buffer of size n. When full, puts will not "block", but the oldest value is discarded.
 ```javascript
-var ch = csp.chan(csp.buffers.sliding(1));
+const ch = csp.chan(csp.buffers.sliding(1));
 
 csp.putAsync(ch, 41);
 csp.putAsync(ch, 42);
@@ -83,10 +113,10 @@ csp.takeAsync(ch); // will "block"
 
 If a [transducer](https://github.com/jlongster/transducers.js) is specified, the channel must be buffered. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used.
 ```javascript
-var xducers = require("transducers.js");
+const xducers = require("transducers.js");
 
 // transducers execute from left to right when composed
-var xform = xducers.compose(
+const xform = xducers.compose(
           xducers.filter((v) => v !== 42),
           xducers.map((v) => v + 1)
     ),
@@ -115,7 +145,7 @@ The `yield` keyword can be used for doing take and put operations on a channel.
 Yielding a channel is an implicit take.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
-var ch = csp.go(function*(x) {
+const ch = csp.go(function*(x) {
   yield csp.timeout(1000);
   return x;
 }, [42]);
@@ -127,14 +157,14 @@ console.log((yield csp.take(ch)));
 
 ### `spawn(generator)` ###
 
-Similar to `go`, but takes a generator instead of creating one.
+Similar to `go`, but takes a generator object instead of generator function.
 ```javascript
 // Spawn a goroutine, and immediately return a channel
 function* id(x) {
   yield csp.timeout(1000);
   return x;
 }
-var ch = csp.spawn(id(42));
+const ch = csp.spawn(id(42));
 // Will "block" for 1 second then print 42;
 console.log((yield csp.take(ch)));
 ```
@@ -147,7 +177,7 @@ Note that `put` and `take` operations must be prefixed with `yield`, and must be
 
 Puts a value into the channel. "Returns" `true` unless channel is already closed.
 ```javascript
-var ch = csp.chan(1);
+const ch = csp.chan(1);
 yield csp.put(ch, 42); // true
 ch.close()
 yield csp.put(ch, 43); // false
@@ -157,7 +187,7 @@ yield csp.put(ch, 43); // false
 
 Takes a value from the channel. "Returns" `csp.CLOSED` if channel is empty, and already closed.
 ```javascript
-var ch = csp.chan(1);
+const ch = csp.chan(1);
 yield csp.put(ch, 42);
 yield csp.take(ch); // 42
 ch.close()
@@ -168,7 +198,7 @@ yield csp.take(ch); // csp.CLOSED
 
 Put a value in a channel if it's possible to do so immediately. Returns `true` if channel received the value, `false` otherwise. Unlike `put`, `offer` cannot distinguish closed from ready channels.
 ```javascript
-var ch = csp.chan(1);
+const ch = csp.chan(1);
 csp.offer(ch, 42); // true
 csp.offer(ch, 43); // false
 ```
@@ -177,7 +207,7 @@ csp.offer(ch, 43); // false
 
 Take a value from a channel if it's possible to do so immediately. Returns value if succesful, `NO_VALUE` otherwise. Unlike `take`, `poll` cannot distinguish closed from ready channels.
 ```javascript
-var ch = csp.chan(1);
+const ch = csp.chan(1);
 csp.poll(ch);      // csp.NO_VALUE
 csp.offer(ch, 42); // true
 csp.poll(ch);      // 42
@@ -197,7 +227,7 @@ Completes at most one of the channel operations. Each operation is either a chan
 Here's a simple example using a timeout channel for canceling an operation after a certain
 amount of time:
 ```javascript
-var ch = csp.chan();
+const ch = csp.chan();
 
 csp.go(function*(){
     yield csp.timeout(1000);
@@ -205,8 +235,8 @@ csp.go(function*(){
 });
 
 csp.go(function*(){
-    var cancel = csp.timeout(300),
-        result = yield csp.alts([ch, cancel]);
+    const cancel = csp.timeout(300);
+    const result = yield csp.alts([ch, cancel]);
     console.log("Has been cancelled?", result.channel === cancel);
 });
 //=> "Has been cancelled? true"

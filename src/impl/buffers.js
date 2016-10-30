@@ -237,4 +237,4 @@ export function promise(): PromiseBuffer {
   return new PromiseBuffer(PromiseBuffer.NO_VALUE);
 }
 
-export type BufferType<T> = FixedBuffer<T> | DroppingBuffer<T> | SlidingBuffer<T>;
+export type BufferType<T> = FixedBuffer<T> | DroppingBuffer<T> | SlidingBuffer<T> | PromiseBuffer;

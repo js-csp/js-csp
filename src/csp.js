@@ -1,4 +1,4 @@
-import { fixed, dropping, sliding } from './impl/buffers';
+import { fixed, dropping, sliding, promise } from './impl/buffers';
 import {
   mapFrom, mapInto, filterFrom, filterInto,
   removeFrom, removeInto, mapcatFrom, mapcatInto,
@@ -35,7 +35,7 @@ export const operations = {
   pipelineAsync,
   take: takeN,
 };
-export const buffers = { fixed, dropping, sliding };
+export const buffers = { fixed, dropping, sliding, promise };
 export { CLOSED } from './impl/channels';
 export { timeout } from './impl/timers';
 export { DEFAULT } from './impl/results';
@@ -46,4 +46,4 @@ export {
   putThenCallback as putAsync, takeThenCallback as takeAsync,
   NO_VALUE,
 } from './impl/process';
-export { spawn, go, chan } from './csp.core';
+export { spawn, go, chan, promiseChan } from './csp.core';

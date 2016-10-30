@@ -8,14 +8,15 @@ These functions are exposed through the `csp.operations` namespace.
 Puts values from the supplied array `coll` into the channel `ch`, closing it when done, unless `keepOpen` is `true`.
 
 ```javascript
-var ch = csp.chan(),
-    coll = [0, 1, 2];
+const ch = csp.chan();
+const coll = [0, 1, 2];
 
 // Notice that we're keeping the channel open
 csp.operations.onto(ch, coll, true);
 
 go(function*(){
-    var value = yield ch;
+    let value = yield ch;
+    
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         console.log("Waiting for a value");
@@ -35,11 +36,12 @@ go(function*(){
 Returns a channel that contains the values from the supplied array `coll`. It is closed after the last value is delivered.
 
 ```javascript
-var coll = [0, 1, 2],
-    ch = csp.operations.fromColl(coll);
+const coll = [0, 1, 2];
+const ch = csp.operations.fromColl(coll);
 
 go(function*(){
-    var value = yield ch;
+    let value = yield ch;
+    
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         console.log("Waiting for a value");
@@ -59,10 +61,10 @@ go(function*(){
 Returns a channel that contains a single value obtained by reducing `f` over all the values from the source channel `ch` with `init` as the starting value. The source channel must close for the new channel to deliver the value, after which it is closed. If the source channel closes without producing a value, `init` is put into the new channel.
 
 ```javascript
-var ch = csp.chan(),
-    append = function(a, b) { return a + " " + b; };
+const ch = csp.chan();
+const append = (a, b) => `${a} ${b}`;
 
-var reduceCh = csp.operations.reduce(append, "Hello", ch);
+const reduceCh = csp.operations.reduce(append, "Hello", ch);
 
 csp.go(function*(){
     yield csp.put(ch, "CSP");
@@ -78,10 +80,10 @@ ch.close();
 Returns a channel that contains a single array of values taken from `ch` appended to values from the supplied array `coll`. The source channel must close for the new channel to deliver the value, after which it is closed. If the source channel closes without producing a value, a copy of `coll` is put into the new channel.
 
 ```javascript
-var ch = csp.chan(),
-    baseColl = [0, 1, 2];
+const ch = csp.chan();
+const baseColl = [0, 1, 2];
 
-var intoCh = csp.operations.into(baseColl, ch);
+const intoCh = csp.operations.into(baseColl, ch);
 
 csp.go(function*(){
     yield csp.put(ch, 3);
@@ -99,14 +101,14 @@ ch.close();
 Supplies the target channel `out` with values taken from the source channel `in`. The target channel is closed when the source channel closes, unless `keepOpen` is `true`. Returns the target channel.
 
 ```javascript
-var inCh = csp.chan(),
-    outCh = csp.chan();
+const inCh = csp.chan();
+const outCh = csp.chan();
 
 // Notice that we're keeping `outCh` open after `inCh` is closed
 csp.operations.pipe(inCh, outCh, true);
 
 csp.go(function*(){
-    var value = yield outCh;
+    let value = yield outCh;
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         console.log("Waiting for a value");
@@ -128,22 +130,23 @@ inCh.close();
 Returns an array of 2 channels. The first contains values from the source channel `ch` that satisfy the predicate `p`. The second contains the other values. The new channels are unbuffered, unless `trueBufferOrN`/`falseBufferOrN` are specified, Both channels are closed when the source channel closes.
 
 ```javascript
-var isEven = function(x) { return x % 2 === 0; },
-    ch = csp.chan();
+const isEven = (x) => x % 2 === 0;
+const ch = csp.chan();
 
-var chans = csp.operations.split(isEven, ch),
-    evenChan = chans[0],
-    oddChan = chans[1];
+const chans = csp.operations.split(isEven, ch);
+const evenChan = chans[0];
+const oddChan = chans[1];
 
 csp.go(function*(){
-    var value = yield evenChan;
+    let value = yield evenChan;
     while (value !== csp.CLOSED) {
         console.log("Even! ", value);
         value = yield evenChan;
     };
 });
+
 csp.go(function*(){
-    var value = yield oddChan;
+    let value = yield oddChan;
     while (value !== csp.CLOSED) {
         console.log("Odd! ", value);
         value = yield oddChan;
@@ -161,12 +164,12 @@ csp.operations.onto(ch, [1, 2, 3, 4]);
 Returns a channel that contains values from all the source channels `chs`. The new channel is unbuffered, unless `bufferOrN` is specified. It is closed when all the source channels have closed.
 
 ```javascript
-var aCh = csp.chan(),
-    anotherCh = csp.chan(),
-    mergedCh = csp.operations.merge([aCh, anotherCh]);
+const aCh = csp.chan();
+const anotherCh = csp.chan();
+const mergedCh = csp.operations.merge([aCh, anotherCh]);
 
 csp.go(function*(){
-    var value = yield mergedCh;
+    let value = yield mergedCh;
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         value = yield mergedCh;
@@ -187,18 +190,18 @@ csp.putAsync(anotherCh, 3);
 Moves values from channel `from` to channel `to`, transforming them with the transducer `xf`. When an error is thrown during transformation, `exHandler` will be called with the error as the argument, and any non-`CLOSED` return value will be put into the `to` channel. If `exHandler` is not specified, a default handler that logs the error and returns `CLOSED` will be used. If `keepOpen?` is falsey, the `to` channel is closed when the `from` channel closes.
 
 ```javascript
-var xducers = require("transducers.js");
+const xducers = require("transducers.js");
 
-var fromCh = csp.chan(),
-    toCh = csp.chan(),
-    double = function(x) { return x * 2; }
-    xform = xducers.map(double);
+const fromCh = csp.chan();
+const toCh = csp.chan();
+const double = (x) => x * 2;
+const xform = xducers.map(double);
 
 // Notice that we're keeping `toCh` open after `fromCh` is closed
 csp.operations.pipeline(toCh, xform, fromCh, true);
 
 csp.go(function*(){
-    var value = yield toCh;
+    let value = yield toCh;
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         console.log("Waiting for a value");
@@ -220,8 +223,8 @@ Moves values from channel `from` to channel `to`, using the asynchronous operati
 
 
 ```javascript
-var toCh = csp.chan(),
-    fromCh = csp.chan();
+const toCh = csp.chan();
+const fromCh = csp.chan();
 
 function waitAndPut(value, ch) {
     setTimeout(function(){
@@ -235,7 +238,8 @@ function waitAndPut(value, ch) {
 csp.operations.pipelineAsync(3, toCh, waitAndPut, fromCh, true);
 
 csp.go(function*(){
-    var value = yield toCh;
+    let value = yield toCh;
+    
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         value = yield toCh;
@@ -266,23 +270,23 @@ takers from holding the mult, buffering should be used judiciously.
 Closed tapped channels are removed automatically from the mult.
 
 ```javascript
-var sourceCh = csp.chan(),
-    mult = csp.operations.mult(sourceCh);
+const sourceCh = csp.chan();
+const mult = csp.operations.mult(sourceCh);
 
 // Let's create a couple of channels to tap to `mult`, notice that puts to `anotherCh` will "block" if there aren't any takers
 // because of it not being buffered
-var aCh = csp.chan(),
-    anotherCh = csp.chan(0);
+const aCh = csp.chan();
+const anotherCh = csp.chan(0);
 
 csp.go(function*(){
-    var value = yield aCh;
+    let value = yield aCh;
     while (value !== csp.CLOSED) {
         console.log("Got ", value, " in `aCh`");
         value = yield aCh;
     }
 });
 csp.go(function*(){
-    var value = yield anotherCh;
+    let value = yield anotherCh;
     while (value !== csp.CLOSED) {
         console.log("Got ", value, " in `anotherCh`");
         console.log("Resting for 3 seconds");
@@ -317,23 +321,23 @@ the topics they are interested in with `pub.sub(p, topic, ch, keepOpen?)`.
 the given topic.
 
 ```javascript
-var sourceCh = csp.chan(),
-    extractTopic = function(v) { return v.action; },
-    publication = csp.operations.pub(sourceCh, extractTopic);
+const sourceCh = csp.chan();
+const extractTopic = (v) => v.action;
+const publication = csp.operations.pub(sourceCh, extractTopic);
 
-var ACTIONS = {
+const ACTIONS = {
     INC: "increment",
     DOUBLE: "double"
 }
 
 // This channel will be used for logging published values
-var logCh = csp.chan();
+const logCh = csp.chan();
 
 csp.operations.pub.sub(publication, ACTIONS.INC, logCh);
 csp.operations.pub.sub(publication, ACTIONS.DOUBLE, logCh);
 
 csp.go(function*(){
-    var value = yield logCh;
+    let value = yield logCh;
     while (value !== csp.CLOSED) {
         console.log("LOG: ", value);
         value = yield logCh;
@@ -342,12 +346,12 @@ csp.go(function*(){
 
 
 // This channel will receive the "increment" values
-var incCh = csp.chan();
+const incCh = csp.chan();
 
 csp.operations.pub.sub(publication, ACTIONS.INC, incCh);
 
 csp.go(function*(){
-    var value = yield incCh;
+    let value = yield incCh;
     while (value !== csp.CLOSED) {
         console.log("INCREMENT: ", value.payload + 1);
         value = yield incCh;
@@ -355,12 +359,12 @@ csp.go(function*(){
 });
 
 // This channel will receive the "double" values
-var doubleCh = csp.chan();
+const doubleCh = csp.chan();
 
 csp.operations.pub.sub(publication, ACTIONS.DOUBLE, doubleCh);
 
 csp.go(function*(){
-    var value = yield doubleCh;
+    let value = yield doubleCh;
     while (value !== csp.CLOSED) {
         console.log("DOUBLE: ", value.payload * 2);
         value = yield doubleCh;
@@ -398,12 +402,12 @@ The states of the channels is controlled using `mix.toogle(m, updateStateList)`,
 pairs.
 
 ```javascript
-var outCh = csp.chan(),
-    mix = csp.operations.mix(outCh);
+const outCh = csp.chan();
+const mix = csp.operations.mix(outCh);
 
-var inChan1 = csp.chan(),
-    inChan2 = csp.chan(),
-    inChan3 = csp.chan();
+const inChan1 = csp.chan();
+const inChan2 = csp.chan();
+const inChan3 = csp.chan();
 
 csp.operations.mix.add(mix, inChan1);
 csp.operations.mix.add(mix, inChan2);
@@ -411,7 +415,7 @@ csp.operations.mix.add(mix, inChan3);
 
 // Let's listen to values that `outCh` receives
 csp.go(function*(){
-    var value = yield outCh;
+    let value = yield outCh;
     while (value !== csp.CLOSED) {
         console.log("Got ", value);
         value = yield outCh;
@@ -490,11 +494,11 @@ We can transform the values put into a channel creating it with a mapping transd
 mapping function and takers will receive the transformed value.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var inc = function(x) { return x + 1; },
-    ch = csp.chan(1, xducers.map(inc));
+const inc = (x) => x + 1;
+const ch = csp.chan(1, xducers.map(inc));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 
@@ -517,11 +521,11 @@ We can filter the values put into a channel creating it with a filtering transdu
 with the predicate.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var isEven = function(x) { return x % 2 === 0; },
-    ch = csp.chan(1, xducers.filter(isEven));
+const isEven = (x) => x % 2 === 0;
+const ch = csp.chan(1, xducers.filter(isEven));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 
@@ -542,11 +546,11 @@ Removing is the opposite of filtering, we can remove the values put into a chann
 return `true` when testing them with the predicate.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var isEven = function(x) { return x % 2 === 0; },
-    ch = csp.chan(1, xducers.remove(isEven));
+const isEven = (x) => x % 2 === 0;
+const ch = csp.chan(1, xducers.remove(isEven));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 
@@ -567,11 +571,11 @@ Sometimes we have a function that, given a value, returns an array of results. I
 put in the channel one by one, we can use the mapcatting transducer. mapcat stands for "map and concat".
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var dupe = function(x) { return [x, x]; },
-    ch = csp.chan(1, xducers.mapcat(dupe));
+const dupe = (x) => [x, x];
+const ch = csp.chan(1, xducers.mapcat(dupe));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
@@ -593,10 +597,10 @@ If we want to limit the number of values that can be put into a channel we can u
 transducer will accept, the channel will be closed.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var ch = csp.chan(1, xducers.take(1));
+const ch = csp.chan(1, xducers.take(1));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 
@@ -616,10 +620,10 @@ If we want to avoid consecutive duplicate values in a channel we can use a dedup
 be really put in the channel.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var ch = csp.chan(1, xducers.dedupe());
+const ch = csp.chan(1, xducers.dedupe());
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
@@ -645,10 +649,10 @@ until `n` values have been put into the channel. When `n` values have been put, 
 and the channel is closed, a pending take will receive an array of the elements put so far.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var ch = csp.chan(1, xducers.partition(2));
+const ch = csp.chan(1, xducers.partition(2));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
@@ -666,11 +670,11 @@ If we want to partition sequences of values that return `true` for a certain pre
 values we put into a channel go from returning `true` to `false`, a take will receive the previous values that returned `true` in an array. The same is true when going from `false` to `true`. As with the previous example, if we close the channel a take will receive the elements put so far.
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var isEven = function(x) { return x % 2 === 0; },
-    ch = csp.chan(1, xducers.partitionBy(isEven));
+const isEven = (x) => x % 2 === 0;
+const ch = csp.chan(1, xducers.partitionBy(isEven));
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
@@ -705,17 +709,17 @@ Transducers by themselves are very powerful and allow us to transform the values
 is that they can be composed into another transducer to create more complex transformations. Let's see an example of transducer composition:
 
 ```javascript
-var csp = require("js-csp"),
-    xducers = require("transducers.js");
+const csp = require("js-csp");
+const xducers = require("transducers.js");
 
-var inc = function(x) { return x + 1; },
-    isEven = function(x) { return x % 2 === 0; },
-    xform = xducers.compose(
-        xducers.map(inc),
-        xducers.filter(isEven),
-        xducers.take(2)
-    ),
-    ch = csp.chan(1, xform);
+const inc = (x) => x + 1;
+const isEven = (x) => x % 2 === 0;
+const xform = xducers.compose(
+    xducers.map(inc),
+    xducers.filter(isEven),
+    xducers.take(2)
+);
+const ch = csp.chan(1, xform);
 
 csp.takeAsync(ch, function(v) { console.log("Got", v); });
 csp.takeAsync(ch, function(v) { console.log("Got", v); });

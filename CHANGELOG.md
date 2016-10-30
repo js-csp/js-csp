@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.8.0
+- ADDED: promiseChan and documents
+
 ## 0.7.5
 - CHANGED: refactor the core logic
 
