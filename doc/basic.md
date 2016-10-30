@@ -56,16 +56,21 @@ csp.go(function* () {
   console.log('consumer 1 gets', yield csp.take(promiseCh));
   console.log('consumer 1 gets', yield csp.take(promiseCh));
 });
+//=> "consumer 1 gets Hello from the other side"
+//=> "consumer 1 gets Hello from the other side"
 
 csp.go(function* () {
   console.log('consumer 2 gets', yield csp.take(promiseCh));
   console.log('consumer 2 gets', yield csp.take(promiseCh));
 });
+//=> "consumer 2 gets Hello from the other side"
+//=> "consumer 2 gets Hello from the other side"
 
 csp.go(function* () {
   yield csp.take(csp.timeout(1000));
 
   yield csp.put(promiseCh, 'Hello from the other side');
+  yield csp.put(promiseCh, 'Hello again. I will not work!');
 });
 ```
 
