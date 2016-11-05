@@ -4,7 +4,8 @@ import { FnHandler } from './handlers';
 import { TakeInstruction, PutInstruction, SleepInstruction, AltsInstruction } from './instruction';
 import { Box } from './boxes';
 import { Channel } from './channels';
-import { run, queueDelay } from './dispatch';
+import { queueDelay } from './dispatch';
+import { setImmediateScheduler } from './utils';
 
 export const NO_VALUE = '@@process/NO_VALUE';
 
@@ -68,50 +69,36 @@ export class Process {
 
   constructor(gen: Generator<mixed, void, mixed>, onFinishFunc: Function, creatorFunc: Function) {
     this.gen = gen;
+    this.finished = false;
     this.creatorFunc = creatorFunc;
     this.onFinishFunc = onFinishFunc;
-    this.finished = false;
   }
 
-  // TODO FIX XXX: This is a (probably) temporary hack to avoid blowing
-  // up the stack, but it means double queueing when the value is not
-  // immediately available
-  _continue(response: mixed): void {
-    run(() => this.run(response));
-  }
+  schedule = (state: mixed): void => setImmediateScheduler(() => this.run(state));
 
-  _done(value: mixed): void {
+  run(state: mixed): void {
     if (!this.finished) {
-      this.finished = true;
-      run(() => this.onFinishFunc(value));
-    }
-  }
+      // TODO: Shouldn't we (optionally) stop error propagation here (and
+      // signal the error through a channel or something)? Otherwise the
+      // uncaught exception will crash some runtimes (e.g. Node)
+      const { done, value } = this.gen.next(state);
 
-  run(response: mixed): void {
-    if (this.finished) {
-      return;
-    }
-
-    // TODO: Shouldn't we (optionally) stop error propagation here (and
-    // signal the error through a channel or something)? Otherwise the
-    // uncaught exception will crash some runtimes (e.g. Node)
-    const iter = this.gen.next(response);
-    const ins = iter.value;
-
-    if (iter.done) {
-      this._done(ins);
-    } else if (ins instanceof TakeInstruction) {
-      takeThenCallback(ins.channel, value => this._continue(value));
-    } else if (ins instanceof PutInstruction) {
-      putThenCallback(ins.channel, ins.value, value => this._continue(value));
-    } else if (ins instanceof SleepInstruction) {
-      queueDelay(() => this.run(null), ins.msec);
-    } else if (ins instanceof AltsInstruction) {
-      doAlts(ins.operations, result => this._continue(result), ins.options);
-    } else if (ins instanceof Channel) {
-      takeThenCallback(ins, value => this._continue(value));
-    } else {
-      this._continue(ins);
+      if (done) {
+        this.finished = true;
+        this.onFinishFunc(value);
+      } else if (value instanceof TakeInstruction) {
+        takeThenCallback(value.channel, this.schedule);
+      } else if (value instanceof PutInstruction) {
+        putThenCallback(value.channel, value.value, this.schedule);
+      } else if (value instanceof SleepInstruction) {
+        queueDelay(this.schedule, value.msec);
+      } else if (value instanceof AltsInstruction) {
+        doAlts(value.operations, this.schedule, value.options);
+      } else if (value instanceof Channel) {
+        takeThenCallback(value, this.schedule);
+      } else {
+        this.schedule(value);
+      }
     }
   }
 }

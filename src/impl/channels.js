@@ -1,28 +1,13 @@
 // @flow
-import { run } from './dispatch';
 import type { BufferType } from './buffers';
 import { RingBuffer, ring } from './buffers';
 import { Box, PutBox } from './boxes';
+import { isReduced, flush, taskScheduler } from './utils';
 import type { HandlerType } from './handlers';
 
 export const MAX_DIRTY = 64;
 export const MAX_QUEUE_SIZE = 1024;
 export const CLOSED = null;
-
-function isReduced(v) {
-  return v && v['@@transducer/reduced'];
-}
-
-function schedule(func: Function, value: mixed) {
-  return run(() => func(value));
-}
-
-function flush<T>(channelBuffer: RingBuffer<T>, callback: (element: T) => void): void {
-  while (channelBuffer.length > 0) {
-    // flow-ignore
-    callback(channelBuffer.pop());
-  }
-}
 
 export class Channel {
   buf: ?BufferType<mixed>;
@@ -77,7 +62,7 @@ export class Channel {
         // flow-ignore
         if (taker.isActive()) {
           // flow-ignore
-          schedule(taker.commit(), this.buf.remove());
+          taskScheduler(taker.commit(), this.buf.remove());
         }
       }
 
@@ -99,7 +84,7 @@ export class Channel {
       if (taker.isActive()) {
         handler.commit();
         // flow-ignore
-        schedule(taker.commit(), value);
+        taskScheduler(taker.commit(), value);
         return new Box(true);
       }
     }
@@ -142,7 +127,7 @@ export class Channel {
         // flow-ignore
         if (putter.handler.isActive()) {
           // flow-ignore
-          schedule(putter.handler.commit(), true);
+          taskScheduler(putter.handler.commit(), true);
 
           // flow-ignore
           if (isReduced(this.xform['@@transducer/step'](this.buf, putter.value))) {
@@ -165,7 +150,7 @@ export class Channel {
       if (putter.handler.isActive()) {
         handler.commit();
         // flow-ignore
-        schedule(putter.handler.commit(), true);
+        taskScheduler(putter.handler.commit(), true);
 
         // flow-ignore
         return new Box(putter.value);
@@ -213,20 +198,20 @@ export class Channel {
         // flow-ignore
         if (taker.isActive()) {
           // flow-ignore
-          schedule(taker.commit(), this.buf.remove());
+          taskScheduler(taker.commit(), this.buf.remove());
         }
       }
     }
 
     flush(this.takes, (taker: HandlerType) => {
       if (taker.isActive()) {
-        schedule(taker.commit(), CLOSED);
+        taskScheduler(taker.commit(), CLOSED);
       }
     });
 
     flush(this.puts, (putter: PutBox<mixed>) => {
       if (putter.handler.isActive()) {
-        schedule(putter.handler.commit(), false);
+        taskScheduler(putter.handler.commit(), false);
       }
     });
   }
