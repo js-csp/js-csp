@@ -73,8 +73,8 @@ export class Process {
     this.onFinishFunc = onFinishFunc;
   }
 
-  schedule = (state: mixed): void => {
-    setImmediate(() => this.run(state));
+  schedule = (nextState: mixed): void => {
+    setImmediate(() => this.run(nextState));
   };
 
   run(state: mixed): void {
