@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.8.1
+- CHANGED: Update process and add utils function
+
 ## 0.8.0
 - ADDED: promiseChan and documents
 
