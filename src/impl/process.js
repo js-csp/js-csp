@@ -5,7 +5,6 @@ import { TakeInstruction, PutInstruction, SleepInstruction, AltsInstruction } fr
 import { Box } from './boxes';
 import { Channel } from './channels';
 import { queueDelay } from './dispatch';
-import { setImmediateScheduler } from './utils';
 
 export const NO_VALUE = '@@process/NO_VALUE';
 
@@ -74,7 +73,9 @@ export class Process {
     this.onFinishFunc = onFinishFunc;
   }
 
-  schedule = (state: mixed): void => setImmediateScheduler(() => this.run(state));
+  schedule = (state: mixed): void => {
+    setImmediate(() => this.run(state));
+  };
 
   run(state: mixed): void {
     if (!this.finished) {
