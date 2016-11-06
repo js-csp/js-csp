@@ -8,7 +8,7 @@ import {
   putThenCallback as putAsync,
   alts,
 } from './impl/process';
-import { go, chan } from './csp.core';
+import { go, chan, promiseChan } from './csp.core';
 
 export function mapFrom(f, ch) {
   return {
@@ -282,11 +282,10 @@ export function merge(chs, bufferOrN) {
 }
 
 export function into(coll, ch) {
-  const result = coll.slice(0);
   return reduce((_result, item) => {
     _result.push(item);
     return _result;
-  }, result, ch);
+  }, coll.slice(0), ch);
 }
 
 export function take(n, ch, bufferOrN) {
@@ -661,9 +660,8 @@ function constantlyNull() {
 }
 
 class Pub {
-  constructor(ch, topicFn, bufferFn) {
+  constructor(ch, bufferFn) {
     this.ch = ch;
-    this.topicFn = topicFn;
     this.bufferFn = bufferFn;
     this.mults = {};
   }
@@ -699,7 +697,7 @@ class Pub {
 }
 
 export function pub(ch, topicFn, bufferFn = constantlyNull) {
-  const p = new Pub(ch, topicFn, bufferFn);
+  const p = new Pub(ch, bufferFn);
   go(function* () {
     for (;;) {
       const value = yield _take(ch);
@@ -837,6 +835,20 @@ export function pipelineAsync(n, to, af, from, keepOpen) {
   }
 
   return pipelineInternal(n, to, from, !keepOpen, taskFn);
+}
+
+export function fromPromise(promise) {
+  if (typeof promise.then !== 'function' || typeof promise.catch !== 'function') {
+    throw new Error('Only accept promise as an input');
+  }
+
+  const pch = promiseChan();
+
+  promise
+    .then(data => putAsync(pch, data, () => pch.close()))
+    .catch(error => putAsync(pch, error, () => pch.close()));
+
+  return pch;
 }
 // Possible "fluid" interfaces:
 
