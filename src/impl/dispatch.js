@@ -46,6 +46,10 @@ export function run(func: Function): void {
 
 export type TimeoutType = number | any;
 
-export function queueDelay(func: Function, delay: number): Timeout {
+export function queueDelay(func: Function, delay: number): TimeoutType {
   return setTimeout(func, delay);
+}
+
+export function removeDelay(timer: TimeoutType): void {
+  clearTimeout(timer);
 }
