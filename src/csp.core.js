@@ -4,7 +4,7 @@ import { fixed, promise } from './impl/buffers';
 import { putThenCallback, Process } from './impl/process';
 import { chan as channel, Channel, CLOSED } from './impl/channels';
 
-export function spawn(gen: Generator<mixed, void, mixed>, creator: Function): Channel {
+export function spawn(gen: Generator<mixed, void, mixed>): Channel {
   const ch = channel(fixed(1));
   const process = new Process(gen, (value) => {
     if (value === CLOSED) {
@@ -12,14 +12,14 @@ export function spawn(gen: Generator<mixed, void, mixed>, creator: Function): Ch
     } else {
       putThenCallback(ch, value, () => ch.close());
     }
-  }, creator);
+  });
 
   process.run();
   return ch;
 }
 
 export function go(f: Function, args: any[] = []): Channel {
-  return spawn(f(...args), f);
+  return spawn(f(...args));
 }
 
 export function chan(bufferOrNumber: ?BufferType<mixed> | ?number, xform: ?Function, exHandler: ?Function): Channel {

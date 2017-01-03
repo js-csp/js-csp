@@ -47,10 +47,7 @@ describe('Operations', () => {
     it('should work', function* () {
       const ch = chan();
       operations.onto(ch, [1, 2, 3, 4]);
-      assert.deepEqual(
-        [1, 2, 3, 4],
-        (yield take(operations.into([], ch)))
-      );
+      assert.deepEqual([1, 2, 3, 4], (yield take(operations.into([], ch))));
     });
   });
 
@@ -191,10 +188,7 @@ describe('Operations', () => {
       ];
       const output = operations.merge(inputs);
       const result = yield take(operations.into([], output));
-      assert.deepEqual(
-        [1, 1, 1, 2, 2, 2, 3, 3, 3],
-        result.sort()
-      );
+      assert.deepEqual([1, 1, 1, 2, 2, 2, 3, 3, 3], result.sort());
     });
   });
 
@@ -202,19 +196,13 @@ describe('Operations', () => {
     it('should work without enough values', function* () {
       const src = operations.fromColl([1, 2, 3]);
       const dst = operations.take(10, src);
-      assert.deepEqual(
-        [1, 2, 3],
-        (yield take(operations.into([], dst)))
-      );
+      assert.deepEqual([1, 2, 3], (yield take(operations.into([], dst))));
     });
 
     it('should work with more than enough values', function* () {
       const src = operations.fromColl([1, 2, 3, 4, 5]);
       const dst = operations.take(3, src);
-      assert.deepEqual(
-        [1, 2, 3],
-        (yield take(operations.into([], dst)))
-      );
+      assert.deepEqual([1, 2, 3], (yield take(operations.into([], dst))));
     });
   });
 
@@ -242,10 +230,7 @@ describe('Operations', () => {
     it('should work', function* () {
       const src = operations.fromColl(['a', 'b', 1, 2, 'c', true, undefined, false]);
       const dst = operations.partitionBy(typeOf, src);
-      assert.deepEqual(
-        [['a', 'b'], [1, 2], ['c'], [true], [undefined], [false]],
-        (yield take(operations.into([], dst)))
-      );
+      assert.deepEqual([['a', 'b'], [1, 2], ['c'], [true], [undefined], [false]], (yield take(operations.into([], dst))));
     });
   });
 
@@ -260,14 +245,8 @@ describe('Operations', () => {
       operations.mult.tap(m, b);
       operations.pipe(operations.fromColl([1, 2, 3, 4]), src);
 
-      assert.deepEqual(
-        [1, 2, 3, 4],
-        (yield take(operations.into([], a)))
-      );
-      assert.deepEqual(
-        [1, 2, 3, 4],
-        (yield take(operations.into([], b)))
-      );
+      assert.deepEqual([1, 2, 3, 4], (yield take(operations.into([], a))));
+      assert.deepEqual([1, 2, 3, 4], (yield take(operations.into([], b))));
     });
   });
 
@@ -300,10 +279,7 @@ describe('Operations', () => {
         takeOut.close();
       });
 
-      assert.deepEqual(
-        [1, 2, 3, 4, 5, 6],
-        (yield take(operations.into([], takeOut))).sort()
-      );
+      assert.deepEqual([1, 2, 3, 4, 5, 6], (yield take(operations.into([], takeOut))).sort());
     });
 
     describe('#toggle', () => {
@@ -320,10 +296,7 @@ describe('Operations', () => {
           takeOut.close();
         });
 
-        assert.deepEqual(
-          [1, 2, 3],
-          (yield take(operations.into([], takeOut))).sort()
-        );
+        assert.deepEqual([1, 2, 3], (yield take(operations.into([], takeOut))).sort());
       });
 
       it('should mute', function* () {
@@ -339,10 +312,7 @@ describe('Operations', () => {
           takeOut.close();
         });
 
-        assert.deepEqual(
-          [4, 5, 6],
-          (yield take(operations.into([], takeOut))).sort()
-        );
+        assert.deepEqual([4, 5, 6], (yield take(operations.into([], takeOut))).sort());
       });
     });
   });
@@ -364,22 +334,10 @@ describe('Operations', () => {
 
       operations.pipe(operations.fromColl([1, 'a', 2, 'b', 3, 'c']), src);
 
-      assert.deepEqual(
-        [1, 2, 3],
-        (yield take(operations.into([], aNums)))
-      );
-      assert.deepEqual(
-        [1, 2, 3],
-        (yield take(operations.into([], bNums)))
-      );
-      assert.deepEqual(
-        ['a', 'b', 'c'],
-        (yield take(operations.into([], aStrs)))
-      );
-      assert.deepEqual(
-        ['a', 'b', 'c'],
-        (yield take(operations.into([], bStrs)))
-      );
+      assert.deepEqual([1, 2, 3], (yield take(operations.into([], aNums))));
+      assert.deepEqual([1, 2, 3], (yield take(operations.into([], bNums))));
+      assert.deepEqual(['a', 'b', 'c'], (yield take(operations.into([], aStrs))));
+      assert.deepEqual(['a', 'b', 'c'], (yield take(operations.into([], bStrs))));
     });
   });
 });

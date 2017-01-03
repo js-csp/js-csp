@@ -63,13 +63,11 @@ export function offer(channel: Channel, value: Object): boolean {
 export class Process {
   gen: Generator<mixed, void, mixed>;
   onFinishFunc: Function;
-  creatorFunc: Function;
   finished: boolean;
 
-  constructor(gen: Generator<mixed, void, mixed>, onFinishFunc: Function, creatorFunc: Function) {
+  constructor(gen: Generator<mixed, void, mixed>, onFinishFunc: Function) {
     this.gen = gen;
     this.finished = false;
-    this.creatorFunc = creatorFunc;
     this.onFinishFunc = onFinishFunc;
   }
 

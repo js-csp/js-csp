@@ -19,7 +19,7 @@ function pipelineTester(pipelineFunction, n, inputs, xf) {
   const results = [];
 
   return csp.go(function* (_results) {
-    while (true) {
+    for (;;) {
       const val = yield csp.take(cout);
       if (val !== csp.CLOSED) {
         _results.push(val);
@@ -167,4 +167,3 @@ describe('pipeline-async', () => {
     yield csp.take(g);
   });
 });
-

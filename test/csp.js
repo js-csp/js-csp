@@ -16,7 +16,7 @@ import {
   timeout,
   DEFAULT,
   CLOSED,
-  NO_VALUE
+  NO_VALUE,
 } from './../src/csp';
 import { doAlts } from './../src/impl/select';
 

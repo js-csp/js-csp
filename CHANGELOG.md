@@ -1,5 +1,10 @@
 # Changes to js-csp
 
+## 0.9.0
+- CHANGED: Remove creator function in process
+- UPDATED: Project dependencies
+- FIXED: Eslint
+
 ## 0.8.1
 - CHANGED: Update process and add utils function
 
