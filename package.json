@@ -30,6 +30,7 @@
     "babel-types": "^6.21.0",
     "chai": "^3.5.0",
     "chokidar-cli": "^1.2.0",
+    "cross-env": "^3.1.4",
     "eslint": "^3.12.2",
     "eslint-config-airbnb": "^13.0.0",
     "eslint-import-resolver-webpack": "^0.8.0",
@@ -42,7 +43,7 @@
     "eslint-plugin-react": "^6.8.0",
     "eslint-watch": "^2.1.14",
     "flow-bin": "^0.37.4",
-    "istanbul": "^1.0.0-alpha.2",
+    "istanbul": "^1.1.0-alpha.1",
     "jsdom": "^9.9.1",
     "jsdom-global": "^2.1.1",
     "mocha": "^3.2.0",
@@ -91,8 +92,10 @@
   "scripts": {
     "build": "npm run build:node && npm run build:es && npm run build:browser",
     "build:browser": "webpack --config webpack.config.js",
-    "build:es": "node -e \"require('ncp').ncp('./src', './es')\" && ES_PRESETS=true BABEL_ENV=production babel -d es src",
-    "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && BABEL_ENV=production babel -d lib src",
+    "build:es": "node -e \"require('ncp').ncp('./src', './es')\" && cross-env ES_PRESETS=true BABEL_ENV=production npm run babel:es",
+    "build:node": "node -e \"require('ncp').ncp('./src', './lib')\" && cross-env BABEL_ENV=production npm run babel:node",
+    "babel:es": "babel -d es src",
+    "babel:node": "babel -d lib src",
     "clean": "rimraf lib build",
     "flow:status": "flow status; test $? -eq 0 -o $? -eq 2",
     "flow:stop": "flow stop",
@@ -100,7 +103,7 @@
     "lint": "esw -w './src/**/*-test.js' './test/**/*.js'",
     "prepublish": "npm run build",
     "test": "mocha",
-    "test:coverage": "istanbul cover ./node_modules/.bin/_mocha",
+    "test:coverage": "istanbul cover node_modules/mocha/bin/_mocha",
     "test:watch": "mocha --watch --reporter progress"
   }
 }
