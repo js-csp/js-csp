@@ -1,4 +1,4 @@
-import times from 'lodash/times';
+import { range } from './helpers/array';
 import { Box } from './impl/boxes';
 import { CLOSED } from './impl/channels';
 import {
@@ -743,7 +743,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
   const jobs = chan(n);
   const results = chan(n);
 
-  times(n, () => {
+  range(n).forEach(() => {
     go(function* (_taskFn, _jobs, _results) {
       for (;;) {
         const job = yield _take(_jobs);
