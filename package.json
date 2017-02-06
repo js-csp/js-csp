@@ -100,10 +100,10 @@
     "flow:status": "flow status; test $? -eq 0 -o $? -eq 2",
     "flow:stop": "flow stop",
     "flow:watch": "npm run flow:status && chokidar './src/**/*.js' './test/**/*.js' -c 'npm run flow:status'",
+    "lint": "esw -w './src/**/*.js' './test/**/*.js'",
     "prepublish": "npm run build",
     "test": "mocha",
     "test:coverage": "istanbul cover node_modules/mocha/bin/_mocha",
-    "test:lint": "esw -w './src/**/*-test.js' './test/**/*.js'",
     "test:watch": "mocha --watch --reporter progress"
   }
 }
