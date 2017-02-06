@@ -191,7 +191,6 @@ export class Channel {
     if (this.buf) {
       this.xform['@@transducer/result'](this.buf);
 
-      // flow-ignore
       while (this.buf.count() > 0 && this.takes.length > 0) {
         const taker = this.takes.pop();
 
@@ -240,9 +239,11 @@ function defaultExceptionHandler(err: Error): typeof CLOSED {
   return CLOSED;
 }
 
-function handleEx<T>(buf: BufferType<T>,
-                     exHandler: ?Function,
-                     e: Error): BufferType<T> {
+function handleEx<T>(
+  buf: BufferType<T>,
+  exHandler: ?Function,
+  e: Error,
+): BufferType<T> {
   const def = (exHandler || defaultExceptionHandler)(e);
 
   if (def !== CLOSED) {
@@ -273,9 +274,11 @@ function handleException<T>(exHandler: ?Function): Function {
 
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducers xform, not both
-export function chan(buf: ?BufferType<mixed>,
-                     xform: ?Function,
-                     exHandler: ?Function): Channel {
+export function chan(
+  buf: ?BufferType<mixed>,
+  xform: ?Function,
+  exHandler: ?Function,
+): Channel {
   let newXForm: typeof AddTransformer;
 
   if (xform) {

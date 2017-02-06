@@ -390,9 +390,13 @@ const ID_ATTR = '__csp_channel_id';
 function chanId(ch) {
   let id = ch[ID_ATTR];
 
-  if (id === undefined) {
-    id = ch[ID_ATTR] = genId();
+  if (!id) {
+    const generatedId = genId();
+
+    id = generatedId;
+    ch[ID_ATTR] = generatedId;
   }
+
   return id;
 }
 
@@ -584,10 +588,13 @@ class Mix {
       let chanData = this.stateMap[id];
 
       if (!chanData) {
-        chanData = this.stateMap[id] = {
+        const defaultVal = {
           channel: ch,
           state: {},
         };
+
+        chanData = defaultVal;
+        this.stateMap[id] = defaultVal;
       }
       Object.keys(updateState).forEach((mode) => {
         chanData.state[mode] = updateState[mode];
@@ -671,8 +678,12 @@ class Pub {
   _ensureMult(topic) {
     let m = this.mults[topic];
     const bufferFn = this.bufferFn;
+
     if (!m) {
-      m = this.mults[topic] = mult(chan(bufferFn(topic)));
+      const defaultVal = mult(chan(bufferFn(topic)));
+
+      m = defaultVal;
+      this.mults[topic] = defaultVal;
     }
     return m;
   }

@@ -1,7 +1,9 @@
 // @flow
-function acopy<T>(src: Array<T>, srcStart: number,
-                  dest: Array<T>, destStart: number,
-                  len: number): void {
+function acopy<T>(
+  src: Array<T>, srcStart: number,
+  dest: Array<T>, destStart: number,
+  len: number,
+): void {
   for (let count = 0; count < len; count += 1) {
     dest[destStart + count] = src[srcStart + count];
   }

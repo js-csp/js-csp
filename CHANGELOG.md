@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.9.2
+- UPDATED: Update dependencies
+
 ## 0.9.1
 - FIXED: Built script for running development in Windows environment
 
