@@ -1,5 +1,8 @@
 # Changes to js-csp
 
+## 0.9.1
+- FIXED: Built script for running development in Windows environment
+
 ## 0.9.0
 - CHANGED: Remove creator function in process
 - UPDATED: Project dependencies
