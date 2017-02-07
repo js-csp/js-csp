@@ -7,7 +7,7 @@ var filename = 'js-csp.js', library = 'csp', libraryTarget = 'umd', umdNamedDefi
 var loaders = [
   { test: /\.js$/, exclude: /node_modules/, loader: "babel-loader" }
 ]
-var plugins = []
+var plugins = [new webpack.DefinePlugin({'process.env.NODE_ENV': "'production'"})]
 var uglify = new webpack.optimize.UglifyJsPlugin({compress: {warnings: false, drop_console: true}})
 if(es5) {
     plugins.push(uglify)
