@@ -1,5 +1,7 @@
 // @flow
-function swap(arr, i, j) {
+export function mswap(arr, i, j) {
+  if (i < 0 || j < 0) return arr;
+  if (i >= arr.length || j >= arr.length) return arr;
   arr[i] = arr.splice(j, 1, arr[i])[0];
   return arr;
 }
@@ -9,11 +11,12 @@ function random(limit) {
 }
 
 export const shuffle = (arr: Array<any>): Array<any> => {
-  let len = arr.length;
+  const result = arr.slice(0);
+  let len = result.length;
   while (len > 0) {
-    swap(arr, random(len), len -= 1);
+    mswap(result, random(len), len -= 1);
   }
-  return arr;
+  return result;
 };
 
 type MapperType = (any, number) => number
