@@ -92,7 +92,7 @@
     "build:latest": "cross-env BABEL_ENV=latest babel src -d ./lib/latest",
     "build:current:dist": "cross-env BABEL_ENV=current-dist babel ./lib/js-csp.js -o ./dist/js-csp.min.js",
     "build:current": "cross-env BABEL_ENV=current webpack && npm run build:current:dist",
-    "build:es5": "cross-env BABEL_ENV=es5 webpack --display-modules",
+    "build:es5": "cross-env BABEL_ENV=es5 webpack",
     "build": "npm run build:latest && npm run build:current && npm run build:es5",
     "clean": "rimraf lib build",
     "flow:status": "flow status; test $? -eq 0 -o $? -eq 2",
