@@ -1,5 +1,5 @@
 // @flow
-import { noop } from '../helpers/object';
+import noop from 'lodash/noop';
 import { Box } from './boxes';
 
 export class FnHandler {

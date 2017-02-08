@@ -13,7 +13,8 @@
     "url": "https://github.com/ubolonton/js-csp/issues"
   },
   "dependencies": {
-    "babel-runtime": "^6.22.0"
+    "babel-runtime": "^6.22.0",
+    "lodash": "^4.17.4"
   },
   "devDependencies": {
     "babel-cli": "^6.22.2",
@@ -47,7 +48,6 @@
     "istanbul": "^1.1.0-alpha.1",
     "jsdom": "^9.10.0",
     "jsdom-global": "^2.1.1",
-    "lodash": "^4.17.4",
     "mocha": "^3.2.0",
     "rimraf": "^2.5.4",
     "transducers.js": "^0.3.2",

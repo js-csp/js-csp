@@ -1,19 +1,19 @@
 'use script';
 
-const webpack = require('webpack');
-const join = require('path').join;
+var webpack = require('webpack');
+var join = require('path').join;
 
-const es5 = process.env.BABEL_ENV === 'es5';
+var es5 = process.env.BABEL_ENV === 'es5';
 
-const context = __dirname;
-const entry = join(context, 'src', 'csp');
-const library = 'csp';
-const libraryTarget = 'umd';
-const umdNamedDefine = true;
-let filename = 'js-csp.js';
-let path = join(context, 'lib');
+var context = __dirname;
+var entry = join(context, 'src', 'csp');
+var library = 'csp';
+var libraryTarget = 'umd';
+var umdNamedDefine = true;
+var filename = 'js-csp.js';
+var path = join(context, 'lib');
 
-const loaders = [
+var loaders = [
   {
     test: /\.js$/,
     exclude: /node_modules/,
@@ -21,8 +21,8 @@ const loaders = [
   },
 ];
 
-const plugins = [];
-const uglify = new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false, drop_console: true } });
+var plugins = [];
+var uglify = new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false, drop_console: true } });
 
 if (es5) {
   plugins.push(uglify);
@@ -30,6 +30,6 @@ if (es5) {
   path = join(context, 'dist');
 }
 
-const output = { path, filename, library, libraryTarget, umdNamedDefine };
+var output = { path, filename, library, libraryTarget, umdNamedDefine };
 
 module.exports = { context, entry, output, plugins, module: { loaders } };

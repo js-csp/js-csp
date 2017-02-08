@@ -1,6 +1,7 @@
 // @flow
-import { has } from '../helpers/object';
-import { range, shuffle } from '../helpers/array';
+import has from 'lodash/get';
+import range from 'lodash/range';
+import shuffle from 'lodash/_arrayShuffle';
 import { Box } from './boxes';
 import { Channel } from './channels';
 import { AltHandler } from './handlers';
@@ -44,7 +45,7 @@ export function doAlts( // eslint-disable-line
     }
   }
 
-  if (!result && flag.value && has(options, 'default')) {
+  if (!result && has(options, 'default') && flag.value) {
     flag.value = false;
     callback(new AltResult(options.default, DEFAULT));
   }
