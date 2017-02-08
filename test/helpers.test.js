@@ -43,13 +43,10 @@ describe('array helpers', () => {
       assert.deepEqual(arr, backup)
       assert.notDeepEqual(shuffle(arr), backup)
     })
-    it('should work on [0,1,2]-element arrays', () => {
-      let a0 = [], a1 = ['x'], a2 = [1,2]
+    it('should work on arrays with 0 or 1 element', () => {
+      let a0 = [], a1 = ['x']
       assert.equal(typeof shuffle(a0), 'object')
       assert.deepEqual(shuffle(a1), a1)
-      let res = range(5, () => shuffle(a2))
-      let shuffled = res.find(a => a[0] === a2[1])
-      assert.ok(shuffled)
     })
   })
   describe('range', () => {
