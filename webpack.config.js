@@ -1,7 +1,7 @@
 'use script';
-
 var webpack = require('webpack');
 var join = require('path').join;
+var LodashPlugin = require('lodash-webpack-plugin');
 
 var es5 = process.env.BABEL_ENV === 'es5';
 
@@ -21,7 +21,7 @@ var loaders = [
   },
 ];
 
-var plugins = [];
+var plugins = [new LodashPlugin];
 var uglify = new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false, drop_console: true } });
 
 if (es5) {

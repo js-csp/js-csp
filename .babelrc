@@ -1,5 +1,5 @@
 {
-  "plugins": ["transform-flow-strip-types"],
+  "plugins": ["transform-flow-strip-types", "lodash"],
   "env": {
     "latest": {
       "presets": ["stage-2"]
