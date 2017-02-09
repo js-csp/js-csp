@@ -1,7 +1,7 @@
 // @flow
 import has from 'lodash/get';
 import range from 'lodash/range';
-import shuffle from 'lodash/shuffle';
+import shuffle from 'lodash/_arrayShuffle';
 import { Box } from './boxes';
 import { Channel } from './channels';
 import { AltHandler } from './handlers';

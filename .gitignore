@@ -16,4 +16,5 @@ node_modules
 lib
 es
 build
+dist
 coverage

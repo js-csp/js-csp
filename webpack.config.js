@@ -1,55 +1,43 @@
-'use strict';
+'use script';
 
-const ROOT = __dirname;
-const path = require('path');
-const webpack = require('webpack');
+var webpack = require('webpack');
+var join = require('path').join;
+var LodashPlugin = require('lodash-webpack-plugin');
 
-module.exports = {
-  context: ROOT,
-  entry: {
-    csp: path.join(ROOT, 'src', 'csp'),
-  },
+var es5 = process.env.BABEL_ENV === 'es5';
+
+var filename = 'js-csp.js';
+var path = join(__dirname, 'lib');
+
+var plugins = [new LodashPlugin];
+var uglify = new webpack.optimize.UglifyJsPlugin({ compress: { warnings: false, drop_console: true } });
+
+if (es5) {
+  plugins.push(uglify);
+  filename = 'js-csp.es5.min.js';
+  path = join(__dirname, 'dist');
+}
+
+var config = {
+  context: __dirname,
+  entry: join(__dirname, 'src', 'csp'),
   output: {
-    path: path.join(ROOT, 'build'),
-    filename: '[name].min.js',
+    path: path,
+    filename: filename,
+    library: 'csp',
     libraryTarget: 'umd',
-    library: '[name]',
+    umdNamedDefine: true
   },
-  resolve: {
-    extensions: ['.js'],
-    modules: [
-      path.resolve('./app'),
-      'node_modules',
-    ],
-  },
+  plugins: plugins,
   module: {
     loaders: [
       {
         test: /\.js$/,
         exclude: /node_modules/,
-        loader: 'babel-loader',
-      },
-    ],
-  },
-  devtool: false,
-  plugins: [
-    new webpack.optimize.AggressiveMergingPlugin(),
-    new webpack.optimize.OccurrenceOrderPlugin(),
-    new webpack.DefinePlugin({
-      'process.env.NODE_ENV': "'production'",
-    }),
-    new webpack.LoaderOptionsPlugin({
-      minimize: true,
-      debug: false,
-    }),
-    new webpack.optimize.UglifyJsPlugin({
-      compress: {
-        warnings: false,
-      },
-      output: {
-        comments: false,
-      },
-      sourceMap: false,
-    }),
-  ],
+        loader: 'babel-loader'
+      }
+    ]
+  }
 };
+
+module.exports = config;

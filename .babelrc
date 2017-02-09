@@ -1,14 +1,23 @@
 {
-  "presets": ["./scripts/preset"],
-  "plugins": [
-    "transform-runtime",
-    "transform-flow-strip-types"
-  ],
+  "plugins": ["transform-flow-strip-types"],
   "env": {
+    "latest": {
+      "presets": ["stage-2"]
+    },
+    "current": {
+      "presets": ["es2016","stage-2"],
+      "plugins": ["lodash"]
+    },
+    "current-dist": {
+      "presets": ["babili"]
+    },
+    "es5": {
+      "presets": ["es2015","stage-2"],
+      "plugins": ["transform-runtime","lodash"]
+    },
     "test": {
-      "plugins": [
-        "rewire"
-      ]
+      "presets": ["es2015","stage-2"],
+      "plugins": ["rewire"]
     }
   }
 }
