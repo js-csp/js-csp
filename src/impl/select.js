@@ -8,10 +8,10 @@ import { AltHandler } from './handlers';
 import { AltResult, DEFAULT } from './results';
 
 // TODO: Accept a priority function or something
-export function doAlts( // eslint-disable-line
+export function doAlts(
   operations: Channel[] | [Channel, mixed][],
   callback: Function,
-  options: Object,
+  options: Object
 ) {
   if (operations.length === 0) {
     throw new Error('Empty alt list');
@@ -23,19 +23,23 @@ export function doAlts( // eslint-disable-line
   let result: ?Box<mixed>;
 
   for (let i = 0; i < operations.length; i += 1) {
-    const operation: Channel | [Channel, mixed] = operations[hasPriority ? i : indexes[i]];
+    const operation: Channel | [Channel, mixed] = operations[
+      hasPriority ? i : indexes[i]
+    ];
     let ch: Channel;
 
     if (operation instanceof Channel) {
       ch = operation;
       result = ch.take(
-        new AltHandler(flag, (value: mixed) => callback(new AltResult(value, ch))),
+        new AltHandler(flag, (value: mixed) =>
+          callback(new AltResult(value, ch)))
       );
     } else {
       ch = operation[0];
       result = ch.put(
         operation[1],
-        new AltHandler(flag, (value: mixed) => callback(new AltResult(value, ch))),
+        new AltHandler(flag, (value: mixed) =>
+          callback(new AltResult(value, ch)))
       );
     }
 

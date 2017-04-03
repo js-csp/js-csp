@@ -6,7 +6,7 @@ import { chan as channel, Channel, CLOSED } from './impl/channels';
 
 export function spawn(gen: Generator<mixed, void, mixed>): Channel {
   const ch = channel(fixed(1));
-  const process = new Process(gen, (value) => {
+  const process = new Process(gen, value => {
     if (value === CLOSED) {
       ch.close();
     } else {
@@ -22,9 +22,17 @@ export function go(f: Function, args: any[] = []): Channel {
   return spawn(f(...args));
 }
 
-export function chan(bufferOrNumber: ?BufferType<mixed> | ?number, xform: ?Function, exHandler: ?Function): Channel {
+export function chan(
+  bufferOrNumber: ?BufferType<mixed> | ?number,
+  xform: ?Function,
+  exHandler: ?Function
+): Channel {
   if (typeof bufferOrNumber === 'number') {
-    return channel(bufferOrNumber === 0 ? null : fixed(bufferOrNumber), xform, exHandler);
+    return channel(
+      bufferOrNumber === 0 ? null : fixed(bufferOrNumber),
+      xform,
+      exHandler
+    );
   }
 
   return channel(bufferOrNumber, xform, exHandler);

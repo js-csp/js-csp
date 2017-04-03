@@ -11,7 +11,7 @@ export class FnHandler {
     this.func = func || noop;
   }
 
-  isActive(): boolean { // eslint-disable-line
+  isActive(): boolean {
     return true;
   }
 
@@ -37,7 +37,7 @@ export class AltHandler {
     return this.flag.value;
   }
 
-  isBlockable(): boolean { // eslint-disable-line
+  isBlockable(): boolean {
     return true;
   }
 

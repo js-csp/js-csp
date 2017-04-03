@@ -17,45 +17,57 @@ describe('Test helpers', () => {
   let started = false;
   // FIX: 'after' is not tested yet
 
-  before(function* () {
+  before(function*() {
     started = true;
   });
 
-  after(function* () {
+  after(function*() {
     assert.equal(started, true);
   });
 
-  beforeEach(function* () {
-    assert.equal(started, true, '\'before\' hook was run');
-    assert.equal(running, false, 'last \'afterEach\' hook was run');
+  beforeEach(function*() {
+    assert.equal(started, true, "'before' hook was run");
+    assert.equal(running, false, "last 'afterEach' hook was run");
     running = true;
   });
 
-  afterEach(function* () {
-    assert.equal(started, true, '\'before\' hook was run');
-    assert.equal(running, true, '\'beforeEach\' hook was run');
+  afterEach(function*() {
+    assert.equal(started, true, "'before' hook was run");
+    assert.equal(running, true, "'beforeEach' hook was run");
     running = false;
   });
 
   it('should run with no sugar', done => {
-    go(function* () {
-      check(() => {
-        assert.equal(running, true, '\'beforeEach\' hook was run');
-      }, done);
+    go(function*() {
+      check(
+        () => {
+          assert.equal(running, true, "'beforeEach' hook was run");
+        },
+        done
+      );
     });
   });
 
-  it('should run with 1 layer of sugar', goAsync(function* (done) {
-    check(() => {
-      assert.equal(running, true, '\'beforeEach\' hook was run');
-    }, done);
-  }));
+  it(
+    'should run with 1 layer of sugar',
+    goAsync(function*(done) {
+      check(
+        () => {
+          assert.equal(running, true, "'beforeEach' hook was run");
+        },
+        done
+      );
+    })
+  );
 
-  it('should run with 2 layers of sugar', goTest(function* () {
-    assert.equal(running, true, '\'beforeEach\' hook was run');
-  }));
+  it(
+    'should run with 2 layers of sugar',
+    goTest(function*() {
+      assert.equal(running, true, "'beforeEach' hook was run");
+    })
+  );
 
-  itTest('should run with 3 layers of sugar', function* () {
-    assert.equal(running, true, '\'beforeEach\' hook was run');
+  itTest('should run with 3 layers of sugar', function*() {
+    assert.equal(running, true, "'beforeEach' hook was run");
   });
 });

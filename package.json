@@ -109,7 +109,7 @@
     "test": "cross-env BABEL_ENV=test mocha",
     "test:coverage": "cross-env BABEL_ENV=test istanbul cover node_modules/mocha/bin/_mocha",
     "test:watch": "cross-env BABEL_ENV=test mocha --watch --reporter progress",
-    "format": "prettier --trailing-comma es5 --single-quote --write \"{src,test}/**/*.js\"",
+    "format": "prettier --trailing-comma all --single-quote --write \"{src,test}/**/*.js\"",
     "precommit": "lint-staged"
   },
   "lint-staged": {

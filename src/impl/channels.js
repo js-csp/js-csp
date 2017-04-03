@@ -18,7 +18,12 @@ export class Channel {
   dirtyTakes: number;
   closed: boolean;
 
-  constructor(takes: RingBuffer<HandlerType>, puts: RingBuffer<PutBox<mixed>>, buf: ?BufferType<mixed>, xform: Object) {
+  constructor(
+    takes: RingBuffer<HandlerType>,
+    puts: RingBuffer<PutBox<mixed>>,
+    buf: ?BufferType<mixed>,
+    xform: Object
+  ) {
     this.buf = buf;
     this.xform = xform;
     this.takes = takes;
@@ -91,7 +96,7 @@ export class Channel {
 
     // No buffer, full buffer, no pending takes. Queue this put now if blockable.
     if (this.dirtyPuts > MAX_DIRTY) {
-      this.puts.cleanup((putter) => putter.handler.isActive());
+      this.puts.cleanup(putter => putter.handler.isActive());
       this.dirtyPuts = 0;
     } else {
       this.dirtyPuts += 1;
@@ -99,7 +104,9 @@ export class Channel {
 
     if (handler.isBlockable()) {
       if (this.puts.length >= MAX_QUEUE_SIZE) {
-        throw new Error(`No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`);
+        throw new Error(
+          `No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`
+        );
       }
       this.puts.unboundedUnshift(new PutBox(handler, value));
     }
@@ -130,7 +137,9 @@ export class Channel {
           taskScheduler(putter.handler.commit(), true);
 
           // flow-ignore
-          if (isReduced(this.xform['@@transducer/step'](this.buf, putter.value))) {
+          if (
+            isReduced(this.xform['@@transducer/step'](this.buf, putter.value))
+          ) {
             this.close();
           }
         }
@@ -172,7 +181,9 @@ export class Channel {
 
     if (handler.isBlockable()) {
       if (this.takes.length >= MAX_QUEUE_SIZE) {
-        throw new Error(`No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`);
+        throw new Error(
+          `No more than ${MAX_QUEUE_SIZE} pending takes are allowed on a single channel.`
+        );
       }
 
       this.takes.unboundedUnshift(handler);
@@ -242,7 +253,7 @@ function defaultExceptionHandler(err: Error): typeof CLOSED {
 function handleEx<T>(
   buf: BufferType<T>,
   exHandler: ?Function,
-  e: Error,
+  e: Error
 ): BufferType<T> {
   const def = (exHandler || defaultExceptionHandler)(e);
 
@@ -277,7 +288,7 @@ function handleException<T>(exHandler: ?Function): Function {
 export function chan(
   buf: ?BufferType<mixed>,
   xform: ?Function,
-  exHandler: ?Function,
+  exHandler: ?Function
 ): Channel {
   let newXForm: typeof AddTransformer;
 
@@ -291,5 +302,10 @@ export function chan(
     newXForm = AddTransformer;
   }
 
-  return new Channel(ring(32), ring(32), buf, handleException(exHandler)(newXForm));
+  return new Channel(
+    ring(32),
+    ring(32),
+    buf,
+    handleException(exHandler)(newXForm)
+  );
 }

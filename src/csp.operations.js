@@ -62,7 +62,7 @@ export function mapInto(f, ch) {
 export function filterFrom(p, ch, bufferOrN) {
   const out = chan(bufferOrN);
 
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(ch);
       if (value === CLOSED) {
@@ -139,7 +139,7 @@ export function mapcatInto(f, ch, bufferOrN) {
 }
 
 export function pipe(src, dst, keepOpen) {
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(src);
       if (value === CLOSED) {
@@ -159,7 +159,7 @@ export function pipe(src, dst, keepOpen) {
 export function split(p, ch, trueBufferOrN, falseBufferOrN) {
   const tch = chan(trueBufferOrN);
   const fch = chan(falseBufferOrN);
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(ch);
       if (value === CLOSED) {
@@ -174,22 +174,26 @@ export function split(p, ch, trueBufferOrN, falseBufferOrN) {
 }
 
 export function reduce(f, init, ch) {
-  return go(function* () {
-    let result = init;
-    for (;;) {
-      const value = yield _take(ch);
+  return go(
+    function*() {
+      let result = init;
+      for (;;) {
+        const value = yield _take(ch);
 
-      if (value === CLOSED) {
-        return result;
+        if (value === CLOSED) {
+          return result;
+        }
+
+        result = f(result, value);
       }
-
-      result = f(result, value);
-    }
-  }, [], true);
+    },
+    [],
+    true
+  );
 }
 
 export function onto(ch, coll, keepOpen) {
-  return go(function* () {
+  return go(function*() {
     const length = coll.length;
     // FIX: Should be a generic looping interface (for...in?)
     for (let i = 0; i < length; i += 1) {
@@ -219,19 +223,20 @@ export function map(f, chs, bufferOrN) {
   let dcount;
   // put callbacks for each channel
   const dcallbacks = new Array(length);
-  const callback = (i) => (value) => {
-    values[i] = value;
-    dcount -= 1;
-    if (dcount === 0) {
-      putAsync(dchan, values.slice(0));
-    }
-  };
+  const callback = i =>
+    value => {
+      values[i] = value;
+      dcount -= 1;
+      if (dcount === 0) {
+        putAsync(dchan, values.slice(0));
+      }
+    };
 
   for (let i = 0; i < length; i += 1) {
     dcallbacks[i] = callback(i);
   }
 
-  go(function* () {
+  go(function*() {
     for (;;) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
@@ -261,7 +266,7 @@ export function map(f, chs, bufferOrN) {
 export function merge(chs, bufferOrN) {
   const out = chan(bufferOrN);
   const actives = chs.slice(0);
-  go(function* () {
+  go(function*() {
     for (;;) {
       if (actives.length === 0) {
         break;
@@ -283,15 +288,19 @@ export function merge(chs, bufferOrN) {
 
 export function into(coll, ch) {
   const result = coll.slice(0);
-  return reduce((_result, item) => {
-    _result.push(item);
-    return _result;
-  }, result, ch);
+  return reduce(
+    (_result, item) => {
+      _result.push(item);
+      return _result;
+    },
+    result,
+    ch
+  );
 }
 
 export function take(n, ch, bufferOrN) {
   const out = chan(bufferOrN);
-  go(function* () {
+  go(function*() {
     for (let i = 0; i < n; i += 1) {
       const value = yield _take(ch);
       if (value === CLOSED) {
@@ -309,7 +318,7 @@ const NOTHING = {};
 export function unique(ch, bufferOrN) {
   const out = chan(bufferOrN);
   let last = NOTHING;
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(ch);
       if (value === CLOSED) {
@@ -329,7 +338,7 @@ export function partitionBy(f, ch, bufferOrN) {
   const out = chan(bufferOrN);
   let part = [];
   let last = NOTHING;
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(ch);
       if (value === CLOSED) {
@@ -355,7 +364,7 @@ export function partitionBy(f, ch, bufferOrN) {
 
 export function partition(n, ch, bufferOrN) {
   const out = chan(bufferOrN);
-  go(function* () {
+  go(function*() {
     for (;;) {
       const part = new Array(n);
       for (let i = 0; i < n; i += 1) {
@@ -376,14 +385,14 @@ export function partition(n, ch, bufferOrN) {
 }
 
 // For channel identification
-const genId = ((() => {
+const genId = (() => {
   let i = 0;
 
   return () => {
     i += 1;
     return `${i}`;
   };
-}))();
+})();
 
 const ID_ATTR = '__csp_channel_id';
 
@@ -436,7 +445,7 @@ export function mult(ch) {
   let dcount;
 
   function makeDoneCallback(tap) {
-    return (stillOpen) => {
+    return stillOpen => {
       dcount -= 1;
       if (dcount === 0) {
         putAsync(dchan, true);
@@ -447,14 +456,14 @@ export function mult(ch) {
     };
   }
 
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(ch);
       const taps = m.taps;
       let t;
 
       if (value === CLOSED) {
-        Object.keys(taps).forEach((id) => {
+        Object.keys(taps).forEach(id => {
           t = taps[id];
           if (!t.keepOpen) {
             t.channel.close();
@@ -470,7 +479,7 @@ export function mult(ch) {
       // immediately. Fix that
       const initDcount = dcount;
       // Put value on tapping channels...
-      Object.keys(taps).forEach((id) => {
+      Object.keys(taps).forEach(id => {
         t = taps[id];
         putAsync(t.channel, value, makeDoneCallback(t));
       });
@@ -492,7 +501,7 @@ mult.untap = (m, ch) => {
   m.untap(ch);
 };
 
-mult.untapAll = (m) => {
+mult.untapAll = m => {
   m.untapAll();
 };
 
@@ -520,7 +529,7 @@ class Mix {
     const pauses = [];
     let reads;
 
-    Object.keys(stateMap).forEach((id) => {
+    Object.keys(stateMap).forEach(id => {
       const chanData = stateMap[id];
       const state = chanData.state;
       const channel = chanData.channel;
@@ -547,7 +556,7 @@ class Mix {
       reads[n] = this.change;
     } else {
       reads = [];
-      Object.keys(stateMap).forEach((id) => {
+      Object.keys(stateMap).forEach(id => {
         const chanData = stateMap[id];
         const channel = chanData.channel;
         if (pauses.indexOf(channel) < 0) {
@@ -596,7 +605,7 @@ class Mix {
         chanData = defaultVal;
         this.stateMap[id] = defaultVal;
       }
-      Object.keys(updateState).forEach((mode) => {
+      Object.keys(updateState).forEach(mode => {
         chanData.state[mode] = updateState[mode];
       });
     }
@@ -614,7 +623,7 @@ class Mix {
 
 export function mix(out) {
   const m = new Mix(out);
-  go(function* () {
+  go(function*() {
     let state = m._getAllState();
 
     for (;;) {
@@ -630,8 +639,10 @@ export function mix(out) {
       } else {
         const solos = state.solos;
 
-        if (solos.indexOf(channel) > -1 ||
-          (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))) {
+        if (
+          solos.indexOf(channel) > -1 ||
+          (solos.length === 0 && !(state.mutes.indexOf(channel) > -1))
+        ) {
           const stillOpen = yield put(out, value);
           if (!stillOpen) {
             break;
@@ -711,12 +722,12 @@ class Pub {
 
 export function pub(ch, topicFn, bufferFn = constantlyNull) {
   const p = new Pub(ch, topicFn, bufferFn);
-  go(function* () {
+  go(function*() {
     for (;;) {
       const value = yield _take(ch);
       const mults = p.mults;
       if (value === CLOSED) {
-        Object.keys(mults).forEach((topic) => {
+        Object.keys(mults).forEach(topic => {
           mults[topic].muxch().close();
         });
         break;
@@ -755,58 +766,67 @@ function pipelineInternal(n, to, from, close, taskFn) {
   const results = chan(n);
 
   times(n, () => {
-    go(function* (_taskFn, _jobs, _results) {
-      for (;;) {
-        const job = yield _take(_jobs);
+    go(
+      function*(_taskFn, _jobs, _results) {
+        for (;;) {
+          const job = yield _take(_jobs);
 
-        if (!_taskFn(job)) {
-          _results.close();
-          break;
+          if (!_taskFn(job)) {
+            _results.close();
+            break;
+          }
         }
-      }
-    }, [taskFn, jobs, results]);
+      },
+      [taskFn, jobs, results]
+    );
   });
 
-  go(function* (_jobs, _from, _results) {
-    for (;;) {
-      const v = yield _take(_from);
-
-      if (v === CLOSED) {
-        _jobs.close();
-        break;
-      }
-
-      const p = chan(1);
-
-      yield put(_jobs, [v, p]);
-      yield put(_results, p);
-    }
-  }, [jobs, from, results]);
-
-  go(function* (_results, _close, _to) {
-    for (;;) {
-      const p = yield _take(_results);
-
-      if (p === CLOSED) {
-        if (_close) {
-          _to.close();
-        }
-        break;
-      }
-
-      const res = yield _take(p);
-
+  go(
+    function*(_jobs, _from, _results) {
       for (;;) {
-        const v = yield _take(res);
+        const v = yield _take(_from);
 
         if (v === CLOSED) {
+          _jobs.close();
           break;
         }
 
-        yield put(_to, v);
+        const p = chan(1);
+
+        yield put(_jobs, [v, p]);
+        yield put(_results, p);
       }
-    }
-  }, [results, close, to]);
+    },
+    [jobs, from, results]
+  );
+
+  go(
+    function*(_results, _close, _to) {
+      for (;;) {
+        const p = yield _take(_results);
+
+        if (p === CLOSED) {
+          if (_close) {
+            _to.close();
+          }
+          break;
+        }
+
+        const res = yield _take(p);
+
+        for (;;) {
+          const v = yield _take(res);
+
+          if (v === CLOSED) {
+            break;
+          }
+
+          yield put(_to, v);
+        }
+      }
+    },
+    [results, close, to]
+  );
 
   return to;
 }
@@ -820,10 +840,13 @@ export function pipeline(to, xf, from, keepOpen, exHandler) {
     const [v, p] = job;
     const res = chan(1, xf, exHandler);
 
-    go(function* (ch, value) {
-      yield put(ch, value);
-      res.close();
-    }, [res, v]);
+    go(
+      function*(ch, value) {
+        yield put(ch, value);
+        res.close();
+      },
+      [res, v]
+    );
 
     putAsync(p, res);
 

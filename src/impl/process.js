@@ -1,14 +1,23 @@
 // @flow
 import { doAlts } from './select';
 import { FnHandler } from './handlers';
-import { TakeInstruction, PutInstruction, SleepInstruction, AltsInstruction } from './instruction';
+import {
+  TakeInstruction,
+  PutInstruction,
+  SleepInstruction,
+  AltsInstruction,
+} from './instruction';
 import { Box } from './boxes';
 import { Channel } from './channels';
 import { queueDelay } from './dispatch';
 
 export const NO_VALUE = '@@process/NO_VALUE';
 
-export function putThenCallback(channel: Channel, value: mixed, callback: ?Function): void {
+export function putThenCallback(
+  channel: Channel,
+  value: mixed,
+  callback: ?Function
+): void {
   const result: ?Box<mixed> = channel.put(value, new FnHandler(true, callback));
 
   if (result && callback) {
@@ -36,7 +45,10 @@ export function sleep(msecs: number): SleepInstruction {
   return new SleepInstruction(msecs);
 }
 
-export function alts(operations: Channel[] | [Channel, mixed][], options: Object): AltsInstruction {
+export function alts(
+  operations: Channel[] | [Channel, mixed][],
+  options: Object
+): AltsInstruction {
   return new AltsInstruction(operations, options);
 }
 
