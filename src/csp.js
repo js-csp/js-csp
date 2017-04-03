@@ -5,7 +5,7 @@ import {
   pipe, split, reduce, onto, fromColl, map,
   merge, into, take as takeN,
   unique, partitionBy, partition, mult, mix, pub,
-  pipeline, pipelineAsync,
+  pipeline, pipelineAsync, isChan,
 } from './csp.operations';
 
 export const operations = {
@@ -34,6 +34,7 @@ export const operations = {
   pipeline,
   pipelineAsync,
   take: takeN,
+  isChan,
 };
 export const buffers = { fixed, dropping, sliding, promise };
 export { CLOSED, Channel, } from './impl/channels';

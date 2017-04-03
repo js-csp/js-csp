@@ -3,6 +3,7 @@ import _ from 'lodash';
 import { assert } from 'chai';
 import { it, beforeEach } from './../src/csp.test-helpers';
 import { chan, go, put, take, operations } from './../src/csp';
+import { Channel } from './../src/impl/channels';
 
 function inc(x) {
   return x + 1;
@@ -23,6 +24,16 @@ function sum(...args) {
 // TODO: These are very rudimentary tests. Add more
 
 describe('Operations', () => {
+  describe('isChan', () => {
+    it('should work', function* () {
+      let isChan = operations.isChan
+      let CSub = class extends Channel { }
+      assert(isChan(chan()));
+      assert(isChan(new CSub));
+      assert(!isChan(null));
+    });
+  });
+
   describe('fromColl', () => {
     it('should work', function* () {
       const ch = operations.fromColl([1, 2, 3, 4]);
