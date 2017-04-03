@@ -1,6 +1,6 @@
 import times from 'lodash/times';
 import { Box } from './impl/boxes';
-import { CLOSED } from './impl/channels';
+import { Channel, CLOSED } from './impl/channels';
 import {
   take as _take,
   put,
@@ -849,6 +849,11 @@ export function pipelineAsync(n, to, af, from, keepOpen) {
 
   return pipelineInternal(n, to, from, !keepOpen, taskFn);
 }
+
+export function isChan(target) {
+  return target instanceof Channel;
+}
+
 // Possible "fluid" interfaces:
 
 // thread(
