@@ -36,7 +36,7 @@ export const operations = {
   take: takeN,
 };
 export const buffers = { fixed, dropping, sliding, promise };
-export { CLOSED } from './impl/channels';
+export { CLOSED, Channel, } from './impl/channels';
 export { timeout } from './impl/timers';
 export { DEFAULT } from './impl/results';
 export {
