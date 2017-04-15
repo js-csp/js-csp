@@ -46,11 +46,14 @@
     "eslint-plugin-react": "^6.9.0",
     "eslint-watch": "^2.1.14",
     "flow-bin": "^0.38.0",
+    "husky": "^0.13.3",
     "istanbul": "^1.1.0-alpha.1",
     "jsdom": "^9.10.0",
     "jsdom-global": "^2.1.1",
+    "lint-staged": "^3.4.0",
     "lodash-webpack-plugin": "^0.11.0",
     "mocha": "^3.2.0",
+    "prettier": "^0.22.0",
     "rimraf": "^2.5.4",
     "transducers.js": "^0.3.2",
     "webpack": "^2.2.1"
@@ -105,6 +108,14 @@
     "prepublish": "npm run build",
     "test": "cross-env BABEL_ENV=test mocha",
     "test:coverage": "cross-env BABEL_ENV=test istanbul cover node_modules/mocha/bin/_mocha",
-    "test:watch": "cross-env BABEL_ENV=test mocha --watch --reporter progress"
+    "test:watch": "cross-env BABEL_ENV=test mocha --watch --reporter progress",
+    "format": "prettier --trailing-comma all --single-quote --write \"{src,test}/**/*.js\"",
+    "precommit": "lint-staged"
+  },
+  "lint-staged": {
+    "*.js": [
+      "prettier --trailing-comma es5 --single-quote --write",
+      "git add"
+    ]
   }
 }

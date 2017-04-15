@@ -1,8 +1,10 @@
 // @flow
 function acopy<T>(
-  src: Array<T>, srcStart: number,
-  dest: Array<T>, destStart: number,
-  len: number,
+  src: Array<T>,
+  srcStart: number,
+  dest: Array<T>,
+  destStart: number,
+  len: number
 ): void {
   for (let count = 0; count < len; count += 1) {
     dest[destStart + count] = src[srcStart + count];
@@ -119,7 +121,7 @@ export class FixedBuffer<T> {
     this.buffer.unboundedUnshift(item);
   }
 
-  closeBuffer(): void {} // eslint-disable-line
+  closeBuffer(): void {}
 
   count(): number {
     return this.buffer.length;
@@ -139,7 +141,7 @@ export class DroppingBuffer<T> {
     this.n = n;
   }
 
-  isFull(): boolean { // eslint-disable-line
+  isFull(): boolean {
     return false;
   }
 
@@ -153,7 +155,7 @@ export class DroppingBuffer<T> {
     }
   }
 
-  closeBuffer(): void {} // eslint-disable-line
+  closeBuffer(): void {}
 
   count(): number {
     return this.buffer.length;
@@ -173,7 +175,7 @@ export class SlidingBuffer<T> {
     this.n = n;
   }
 
-  isFull(): boolean { // eslint-disable-line
+  isFull(): boolean {
     return false;
   }
 
@@ -189,7 +191,7 @@ export class SlidingBuffer<T> {
     this.buffer.unshift(item);
   }
 
-  closeBuffer(): void {} // eslint-disable-line
+  closeBuffer(): void {}
 
   count(): number {
     return this.buffer.length;
@@ -210,7 +212,7 @@ export class PromiseBuffer {
     this.value = value;
   }
 
-  isFull(): boolean { // eslint-disable-line
+  isFull(): boolean {
     return false;
   }
 
@@ -239,4 +241,8 @@ export function promise(): PromiseBuffer {
   return new PromiseBuffer(PromiseBuffer.NO_VALUE);
 }
 
-export type BufferType<T> = FixedBuffer<T> | DroppingBuffer<T> | SlidingBuffer<T> | PromiseBuffer;
+export type BufferType<T> =
+  | FixedBuffer<T>
+  | DroppingBuffer<T>
+  | SlidingBuffer<T>
+  | PromiseBuffer;
