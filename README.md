@@ -59,7 +59,7 @@ is that the IOC logic is encapsulated using generators (`yield`) instead of macr
 Or, if you use Python's Twisted:
 https://github.com/ubolonton/twisted-csp
 
-Or, if you want a better language:
+Or, if you use Clojure:
 https://github.com/clojure/core.async
 
 ## Install
