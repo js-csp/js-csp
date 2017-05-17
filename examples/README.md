@@ -11,7 +11,7 @@ node examples/go/pingpong
 ## Web
 Compile first by running
 ```bash
-npm run build:browser
+npm run build
 ```
 
 The Firebase example needs a real [Firebase](https://www.firebase.com) url, and works only in Firefox
