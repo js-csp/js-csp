@@ -1,5 +1,10 @@
 # Changes to js-csp
 
+## 0.9.3
+- FIXED: import path for example
+- ADDED: prettier
+- ADDED: expose channel
+
 ## 0.9.2
 - UPDATED: Update dependencies
 
