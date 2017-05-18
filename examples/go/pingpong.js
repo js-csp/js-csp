@@ -1,7 +1,7 @@
 'use strict'; // eslint-disable-line
 
 // http://talks.golang.org/2013/advconc.slide#6
-const csp = require('../../lib/csp');
+const csp = require('../../lib/js-csp');
 
 function* player(name, table) {
   for (;;) {
@@ -20,7 +20,7 @@ function* player(name, table) {
   }
 }
 
-csp.go(function* () {
+csp.go(function*() {
   const table = csp.chan();
 
   csp.go(player, ['ping', table]);
