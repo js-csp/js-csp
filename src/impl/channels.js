@@ -1,27 +1,38 @@
 // @flow
-import type { BufferType } from './buffers';
+import constant from 'lodash/constant';
+import { MAX_QUEUE_SIZE } from './protocols';
 import { RingBuffer, ring } from './buffers';
 import { Box, PutBox } from './boxes';
-import { isReduced, flush, taskScheduler } from './utils';
-import type { HandlerType } from './handlers';
+import { run } from './dispatch';
+import type {
+  MMCInterface,
+  ReadPortInterface,
+  WritePortInterface,
+  HandlerInterface,
+  ChannelInterface,
+  BufferInterface,
+} from './protocols';
 
 export const MAX_DIRTY = 64;
-export const MAX_QUEUE_SIZE = 1024;
 export const CLOSED = null;
 
-export class Channel {
-  buf: ?BufferType<mixed>;
+const box = (val: any) => new Box(val);
+const isReduced = (v: Object) => v && v['@@transducer/reduced'];
+
+export class Channel
+  implements MMCInterface, WritePortInterface, ReadPortInterface, ChannelInterface {
+  buf: ?BufferInterface<mixed>;
   xform: Object;
-  takes: RingBuffer<HandlerType>;
-  puts: RingBuffer<PutBox<mixed>>;
+  takes: RingBuffer<HandlerInterface>;
+  puts: RingBuffer<PutBox>;
   dirtyPuts: number;
   dirtyTakes: number;
   closed: boolean;
 
   constructor(
-    takes: RingBuffer<HandlerType>,
-    puts: RingBuffer<PutBox<mixed>>,
-    buf: ?BufferType<mixed>,
+    takes: RingBuffer<HandlerInterface>,
+    puts: RingBuffer<PutBox>,
+    buf: ?BufferInterface<mixed>,
     xform: Object
   ) {
     this.buf = buf;
@@ -33,9 +44,27 @@ export class Channel {
     this.closed = false;
   }
 
-  put(value: mixed, handler: HandlerType): ?Box<mixed> {
+  abort() {
+    while (true) {
+      const putter: ?PutBox = this.puts.pop();
+
+      if (!putter) {
+        break;
+      }
+
+      if (putter.handler.isActive()) {
+        const putCb = putter.handler.commit();
+        run(() => putCb(true));
+      }
+    }
+
+    this.puts.cleanup(constant(false));
+    this.close();
+  }
+
+  put(value: mixed, handler: HandlerInterface): ?Box {
     if (value === CLOSED) {
-      throw new Error('Cannot put CLOSED on a channel.');
+      throw new Error("Can't put CLOSED in a channel.");
     }
 
     // TODO: I'm not sure how this can happen, because the operations
@@ -50,7 +79,7 @@ export class Channel {
 
     if (this.closed) {
       handler.commit();
-      return new Box(false);
+      return box(false);
     }
 
     // Soak the value through the buffer first, even if there is a
@@ -58,23 +87,28 @@ export class Channel {
     // value.
     if (this.buf && !this.buf.isFull()) {
       handler.commit();
-      const done = isReduced(this.xform['@@transducer/step'](this.buf, value));
+      const isDone = isReduced(
+        this.xform['@@transducer/step'](this.buf, value)
+      );
 
       // flow-ignore
       while (this.buf.count() > 0 && this.takes.length > 0) {
         const taker = this.takes.pop();
 
-        // flow-ignore
-        if (taker.isActive()) {
+        if (taker && taker.isActive()) {
+          const fn = taker.commit();
           // flow-ignore
-          taskScheduler(taker.commit(), this.buf.remove());
+          const val = this.buf.remove();
+
+          run(() => fn(val));
         }
       }
 
-      if (done) {
-        this.close();
+      if (isDone) {
+        this.abort();
       }
-      return new Box(true);
+
+      return box(true);
     }
 
     // Either the buffer is full, in which case there won't be any
@@ -89,8 +123,9 @@ export class Channel {
       if (taker.isActive()) {
         handler.commit();
         // flow-ignore
-        taskScheduler(taker.commit(), value);
-        return new Box(true);
+        const fn = taker.commit();
+        run(() => fn(value));
+        return box(true);
       }
     }
 
@@ -105,7 +140,7 @@ export class Channel {
     if (handler.isBlockable()) {
       if (this.puts.length >= MAX_QUEUE_SIZE) {
         throw new Error(
-          `No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel.`
+          `No more than ${MAX_QUEUE_SIZE} pending puts are allowed on a single channel. Consider using a windowed buffer.`
         );
       }
       this.puts.unboundedUnshift(new PutBox(handler, value));
@@ -114,37 +149,49 @@ export class Channel {
     return null;
   }
 
-  take(handler: HandlerType): ?Box<mixed> {
+  take(handler: HandlerInterface): ?Box {
     if (!handler.isActive()) {
       return null;
     }
 
     if (this.buf && this.buf.count() > 0) {
-      handler.commit();
-      // flow-ignore
-      const value: mixed = this.buf.remove();
+      const takeCb = handler.commit();
 
-      // We need to check pending puts here, other wise they won't
-      // be able to proceed until their number reaches MAX_DIRTY
-
-      // flow-ignore
-      while (this.puts.length > 0 && !this.buf.isFull()) {
-        const putter = this.puts.pop();
+      if (takeCb) {
+        // flow-ignore
+        const val = this.buf.remove();
+        let isDone;
+        let cbs = [];
 
         // flow-ignore
-        if (putter.handler.isActive()) {
-          // flow-ignore
-          taskScheduler(putter.handler.commit(), true);
+        while (this.puts.length > 0 && !this.buf.isFull()) {
+          const putter = this.puts.pop();
 
-          // flow-ignore
-          if (
-            isReduced(this.xform['@@transducer/step'](this.buf, putter.value))
-          ) {
-            this.close();
+          if (putter) {
+            const putHandler = putter.handler;
+            const val = putter.value;
+
+            if (putHandler.isActive()) {
+              cbs.push(putHandler.commit());
+              isDone = isReduced(
+                this.xform['@@transducer/step'](this.buf, val)
+              );
+
+              if (isDone) {
+                break;
+              }
+            }
           }
         }
+
+        if (isDone) {
+          this.abort();
+        }
+
+        cbs.forEach(cb => run(() => cb(true)));
+
+        return box(val);
       }
-      return new Box(value);
     }
 
     // Either the buffer is empty, in which case there won't be any
@@ -152,28 +199,34 @@ export class Channel {
     // fulfills the first of them that is active (note that we don't
     // have to worry about transducers here since we require a buffer
     // for that).
-    while (this.puts.length > 0) {
+    while (true) {
       const putter = this.puts.pop();
 
-      // flow-ignore
-      if (putter.handler.isActive()) {
-        handler.commit();
-        // flow-ignore
-        taskScheduler(putter.handler.commit(), true);
+      if (!putter) {
+        break;
+      }
 
-        // flow-ignore
-        return new Box(putter.value);
+      if (putter.handler.isActive()) {
+        const putCb = putter.handler.commit();
+
+        handler.commit();
+        run(() => putCb(true));
+
+        return box(putter.value);
       }
     }
 
     if (this.closed) {
-      handler.commit();
-      return new Box(CLOSED);
+      if (handler.isActive() && handler.commit()) {
+        return box(this.buf && this.buf.count() > 0 ? this.buf.remove() : null);
+      } else {
+        return null;
+      }
     }
 
     // No buffer, empty buffer, no pending puts. Queue this take now if blockable.
     if (this.dirtyTakes > MAX_DIRTY) {
-      this.takes.cleanup((_handler: HandlerType) => _handler.isActive());
+      this.takes.cleanup(handler => handler.isActive());
       this.dirtyTakes = 0;
     } else {
       this.dirtyTakes += 1;
@@ -199,31 +252,28 @@ export class Channel {
 
     this.closed = true;
 
-    if (this.buf) {
+    if (this.buf && this.puts.length === 0) {
       this.xform['@@transducer/result'](this.buf);
+    }
 
-      while (this.buf.count() > 0 && this.takes.length > 0) {
-        const taker = this.takes.pop();
+    while (true) {
+      const taker = this.takes.pop();
 
-        // flow-ignore
-        if (taker.isActive()) {
-          // flow-ignore
-          taskScheduler(taker.commit(), this.buf.remove());
-        }
+      if (!taker) {
+        break;
+      }
+
+      if (taker.isActive()) {
+        const takeCb = taker.commit();
+        const val = this.buf && this.buf.count() > 0 ? this.buf.remove() : null;
+
+        run(() => takeCb(val));
       }
     }
 
-    flush(this.takes, (taker: HandlerType) => {
-      if (taker.isActive()) {
-        taskScheduler(taker.commit(), CLOSED);
-      }
-    });
-
-    flush(this.puts, (putter: PutBox<mixed>) => {
-      if (putter.handler.isActive()) {
-        taskScheduler(putter.handler.commit(), false);
-      }
-    });
+    if (this.buf) {
+      this.buf.closeBuffer();
+    }
   }
 
   isClosed() {
@@ -251,10 +301,10 @@ function defaultExceptionHandler(err: Error): typeof CLOSED {
 }
 
 function handleEx<T>(
-  buf: BufferType<T>,
+  buf: BufferInterface<T>,
   exHandler: ?Function,
   e: Error
-): BufferType<T> {
+): BufferInterface<T> {
   const def = (exHandler || defaultExceptionHandler)(e);
 
   if (def !== CLOSED) {
@@ -266,14 +316,14 @@ function handleEx<T>(
 
 function handleException<T>(exHandler: ?Function): Function {
   return (xform: Object): Object => ({
-    '@@transducer/step': (buffer: BufferType<T>, input: mixed) => {
+    '@@transducer/step': (buffer: BufferInterface<T>, input: mixed) => {
       try {
         return xform['@@transducer/step'](buffer, input);
       } catch (e) {
         return handleEx(buffer, exHandler, e);
       }
     },
-    '@@transducer/result': (buffer: BufferType<T>) => {
+    '@@transducer/result': (buffer: BufferInterface<T>) => {
       try {
         return xform['@@transducer/result'](buffer);
       } catch (e) {
@@ -286,7 +336,7 @@ function handleException<T>(exHandler: ?Function): Function {
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducers xform, not both
 export function chan(
-  buf: ?BufferType<mixed>,
+  buf: ?BufferInterface<mixed>,
   xform: ?Function,
   exHandler: ?Function
 ): Channel {

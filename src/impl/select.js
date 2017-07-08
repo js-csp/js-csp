@@ -17,10 +17,10 @@ export function doAlts(
     throw new Error('Empty alt list');
   }
 
-  const flag: Box<boolean> = new Box(true);
+  const flag: Box = new Box(true);
   const indexes: number[] = shuffle(range(operations.length));
   const hasPriority: boolean = !!(options && options.priority);
-  let result: ?Box<mixed>;
+  let result: ?Box;
 
   for (let i = 0; i < operations.length; i += 1) {
     const operation: Channel | [Channel, mixed] = operations[

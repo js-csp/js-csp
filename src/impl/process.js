@@ -18,7 +18,7 @@ export function putThenCallback(
   value: mixed,
   callback: ?Function
 ): void {
-  const result: ?Box<mixed> = channel.put(value, new FnHandler(true, callback));
+  const result: ?Box = channel.put(value, new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -26,7 +26,7 @@ export function putThenCallback(
 }
 
 export function takeThenCallback(channel: Channel, callback: ?Function): void {
-  const result: ?Box<mixed> = channel.take(new FnHandler(true, callback));
+  const result: ?Box = channel.take(new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -57,7 +57,7 @@ export function poll(channel: Channel): mixed | typeof NO_VALUE {
     return NO_VALUE;
   }
 
-  const result: ?Box<mixed> = channel.take(new FnHandler(false));
+  const result: ?Box = channel.take(new FnHandler(false));
 
   return result ? result.value : NO_VALUE;
 }
@@ -67,7 +67,7 @@ export function offer(channel: Channel, value: Object): boolean {
     return false;
   }
 
-  const result: ?Box<mixed> = channel.put(value, new FnHandler(false));
+  const result: ?Box = channel.put(value, new FnHandler(false));
 
   return result instanceof Box;
 }

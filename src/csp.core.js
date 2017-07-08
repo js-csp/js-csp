@@ -1,5 +1,5 @@
 // @flow
-import type { BufferType } from './impl/buffers';
+import type { BufferInterface } from './impl/protocols';
 import { fixed, promise } from './impl/buffers';
 import { putThenCallback, Process } from './impl/process';
 import { chan as channel, Channel, CLOSED } from './impl/channels';
@@ -23,7 +23,7 @@ export function go(f: Function, args: any[] = []): Channel {
 }
 
 export function chan(
-  bufferOrNumber: ?BufferType<mixed> | ?number,
+  bufferOrNumber: ?BufferInterface<any>,
   xform: ?Function,
   exHandler: ?Function
 ): Channel {

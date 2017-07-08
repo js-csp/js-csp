@@ -1,4 +1,6 @@
 // @flow
+import type { BufferInterface } from './protocols';
+
 function acopy<T>(
   src: Array<T>,
   srcStart: number,
@@ -75,10 +77,10 @@ export class RingBuffer<T> {
 
   cleanup(predicate: Function): void {
     for (let i = this.length; i > 0; i -= 1) {
-      const value = this.pop();
+      const val = this.pop();
 
-      if (predicate(value)) {
-        this.unshift(value);
+      if (predicate(val)) {
+        this.unshift(val);
       }
     }
   }
@@ -100,7 +102,7 @@ export function ring<T>(n: number): RingBuffer<T> {
  * running the transduced step function, while still allowing a
  * transduced step to expand into multiple "essence" steps.
  */
-export class FixedBuffer<T> {
+export class FixedBuffer<T> implements BufferInterface<T> {
   buffer: RingBuffer<T>;
   n: number;
 
@@ -132,7 +134,7 @@ export function fixed<T>(n: number): FixedBuffer<T> {
   return new FixedBuffer(ring(n), n);
 }
 
-export class DroppingBuffer<T> {
+export class DroppingBuffer<T> implements BufferInterface<T> {
   buffer: RingBuffer<T>;
   n: number;
 
@@ -166,7 +168,7 @@ export function dropping<T>(n: number): DroppingBuffer<T> {
   return new DroppingBuffer(ring(n), n);
 }
 
-export class SlidingBuffer<T> {
+export class SlidingBuffer<T> implements BufferInterface<T> {
   buffer: RingBuffer<T>;
   n: number;
 
@@ -202,14 +204,14 @@ export function sliding<T>(n: number): SlidingBuffer<T> {
   return new SlidingBuffer(ring(n), n);
 }
 
-export class PromiseBuffer {
-  value: mixed;
+export class PromiseBuffer implements BufferInterface<any> {
+  val: mixed;
 
-  static NO_VALUE = '@@PromiseBuffer/NO_VALUE';
-  static isUndelivered = (value: mixed) => PromiseBuffer.NO_VALUE === value;
+  static NO_VALUE = Symbol('@@PromiseBuffer/NO_VALUE');
+  static isUndelivered = val => PromiseBuffer.NO_VALUE === val;
 
-  constructor(value: mixed) {
-    this.value = value;
+  constructor(val: mixed) {
+    this.val = val;
   }
 
   isFull(): boolean {
@@ -217,32 +219,26 @@ export class PromiseBuffer {
   }
 
   remove(): mixed {
-    return this.value;
+    return this.val;
   }
 
   add(item: mixed): void {
-    if (PromiseBuffer.isUndelivered(this.value)) {
-      this.value = item;
+    if (PromiseBuffer.isUndelivered(this.val)) {
+      this.val = item;
     }
   }
 
   closeBuffer(): void {
-    if (PromiseBuffer.isUndelivered(this.value)) {
-      this.value = null;
+    if (PromiseBuffer.isUndelivered(this.val)) {
+      this.val = null;
     }
   }
 
   count() {
-    return PromiseBuffer.isUndelivered(this.value) ? 0 : 1;
+    return PromiseBuffer.isUndelivered(this.val) ? 0 : 1;
   }
 }
 
 export function promise(): PromiseBuffer {
   return new PromiseBuffer(PromiseBuffer.NO_VALUE);
 }
-
-export type BufferType<T> =
-  | FixedBuffer<T>
-  | DroppingBuffer<T>
-  | SlidingBuffer<T>
-  | PromiseBuffer;
