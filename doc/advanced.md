@@ -734,3 +734,18 @@ csp.putAsync(ch, 11);
 console.log(ch.closed);
 //=> true
 ```
+
+### Utils ###
+
+#### `fromPromise(promise)` ####
+
+```javascript
+go(function *() {
+    const value = yield csp.take(csp.operations.fromPromise(new Promise((resolve) => {
+        setTimeout(() => resolve('value from Promise'), 500);
+    })));
+    
+    console.log(value);
+    // => value from Promise
+});
+```

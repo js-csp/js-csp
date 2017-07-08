@@ -1,7 +1,7 @@
 {
   "name": "js-csp",
   "description": "CSP channels with ES6 generators, inspired by Clojurescript's core.async and Go",
-  "version": "0.9.3",
+  "version": "1.0.0",
   "author": "Nguyễn Tuấn Anh <ubolonton@gmail.com>",
   "browserify": {
     "transform": [
