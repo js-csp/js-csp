@@ -1,10 +1,10 @@
 // @flow
-import type { BufferInterface } from './impl/protocols';
 import { fixed, promise } from './impl/buffers';
 import { putThenCallback, Process } from './impl/process';
 import { chan as channel, Channel, CLOSED } from './impl/channels';
+import type { BufferInterface } from './impl/protocols';
 
-export function spawn(gen: Generator<mixed, void, mixed>): Channel {
+export function spawn(gen: Generator<any, void, any>): Channel {
   const ch = channel(fixed(1));
   const process = new Process(gen, value => {
     if (value === CLOSED) {

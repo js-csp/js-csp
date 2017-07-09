@@ -21,7 +21,7 @@ const isReduced = (v: Object) => v && v['@@transducer/reduced'];
 
 export class Channel
   implements MMCInterface, WritePortInterface, ReadPortInterface, ChannelInterface {
-  buf: ?BufferInterface<mixed>;
+  buf: ?BufferInterface<any>;
   xform: Object;
   takes: RingBuffer<HandlerInterface>;
   puts: RingBuffer<PutBox>;
@@ -32,7 +32,7 @@ export class Channel
   constructor(
     takes: RingBuffer<HandlerInterface>,
     puts: RingBuffer<PutBox>,
-    buf: ?BufferInterface<mixed>,
+    buf: ?BufferInterface<any>,
     xform: Object
   ) {
     this.buf = buf;
@@ -62,7 +62,7 @@ export class Channel
     this.close();
   }
 
-  put(value: mixed, handler: HandlerInterface): ?Box {
+  put(value: any, handler: HandlerInterface): ?Box {
     if (value === CLOSED) {
       throw new Error("Can't put CLOSED in a channel.");
     }
@@ -316,7 +316,7 @@ function handleEx<T>(
 
 function handleException<T>(exHandler: ?Function): Function {
   return (xform: Object): Object => ({
-    '@@transducer/step': (buffer: BufferInterface<T>, input: mixed) => {
+    '@@transducer/step': (buffer: BufferInterface<T>, input: any) => {
       try {
         return xform['@@transducer/step'](buffer, input);
       } catch (e) {
@@ -336,7 +336,7 @@ function handleException<T>(exHandler: ?Function): Function {
 // XXX: This is inconsistent. We should either call the reducing
 // function xform, or call the transducers xform, not both
 export function chan(
-  buf: ?BufferInterface<mixed>,
+  buf: ?BufferInterface<any>,
   xform: ?Function,
   exHandler: ?Function
 ): Channel {

@@ -205,12 +205,12 @@ export function sliding<T>(n: number): SlidingBuffer<T> {
 }
 
 export class PromiseBuffer implements BufferInterface<any> {
-  val: mixed;
+  val: any;
 
   static NO_VALUE = Symbol('@@PromiseBuffer/NO_VALUE');
   static isUndelivered = val => PromiseBuffer.NO_VALUE === val;
 
-  constructor(val: mixed) {
+  constructor(val: any) {
     this.val = val;
   }
 
@@ -218,11 +218,11 @@ export class PromiseBuffer implements BufferInterface<any> {
     return false;
   }
 
-  remove(): mixed {
+  remove(): any {
     return this.val;
   }
 
-  add(item: mixed): void {
+  add(item: any): void {
     if (PromiseBuffer.isUndelivered(this.val)) {
       this.val = item;
     }

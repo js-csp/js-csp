@@ -9,7 +9,7 @@ import { AltResult, DEFAULT } from './results';
 
 // TODO: Accept a priority function or something
 export function doAlts(
-  operations: Channel[] | [Channel, mixed][],
+  operations: Channel[] | [Channel, any][],
   callback: Function,
   options: Object
 ) {
@@ -23,7 +23,7 @@ export function doAlts(
   let result: ?Box;
 
   for (let i = 0; i < operations.length; i += 1) {
-    const operation: Channel | [Channel, mixed] = operations[
+    const operation: Channel | [Channel, any] = operations[
       hasPriority ? i : indexes[i]
     ];
     let ch: Channel;
@@ -31,15 +31,13 @@ export function doAlts(
     if (operation instanceof Channel) {
       ch = operation;
       result = ch.take(
-        new AltHandler(flag, (value: mixed) =>
-          callback(new AltResult(value, ch)))
+        new AltHandler(flag, (value: any) => callback(new AltResult(value, ch)))
       );
     } else {
       ch = operation[0];
       result = ch.put(
         operation[1],
-        new AltHandler(flag, (value: mixed) =>
-          callback(new AltResult(value, ch)))
+        new AltHandler(flag, (value: any) => callback(new AltResult(value, ch)))
       );
     }
 
