@@ -5,7 +5,7 @@ csp.go(function*() {
   while (true) {
     const value = yield ch;
     // OR
-    // const { value } = yield csp.alts( [ ch ] )
+    // const value = yield csp.alts([ch]);
 
     console.log('closed:', ch.closed, ', value:', value);
 
