@@ -1,5 +1,9 @@
 # Changes to js-csp
 
+## 1.0.0
+- FIXED: #129
+- ADDED: fromPromise operation
+
 ## 0.9.3
 - FIXED: import path for example
 - ADDED: prettier
