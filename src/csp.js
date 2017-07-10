@@ -25,6 +25,7 @@ import {
   pub,
   pipeline,
   pipelineAsync,
+  fromPromise,
 } from './csp.operations';
 
 export const operations = {
@@ -53,6 +54,7 @@ export const operations = {
   pipeline,
   pipelineAsync,
   take: takeN,
+  fromPromise,
 };
 export const buffers = { fixed, dropping, sliding, promise };
 export { CLOSED, Channel } from './impl/channels';

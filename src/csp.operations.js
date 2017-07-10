@@ -8,7 +8,7 @@ import {
   putThenCallback as putAsync,
   alts,
 } from './impl/process';
-import { go, chan } from './csp.core';
+import { go, chan, promiseChan } from './csp.core';
 
 export function mapFrom(f, ch) {
   return {
@@ -63,7 +63,7 @@ export function filterFrom(p, ch, bufferOrN) {
   const out = chan(bufferOrN);
 
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(ch);
       if (value === CLOSED) {
         out.close();
@@ -108,7 +108,7 @@ export function removeInto(p, ch) {
 }
 
 function* mapcat(f, src, dst) {
-  for (;;) {
+  while (true) {
     const value = yield _take(src);
     if (value === CLOSED) {
       dst.close();
@@ -140,7 +140,7 @@ export function mapcatInto(f, ch, bufferOrN) {
 
 export function pipe(src, dst, keepOpen) {
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(src);
       if (value === CLOSED) {
         if (!keepOpen) {
@@ -160,7 +160,7 @@ export function split(p, ch, trueBufferOrN, falseBufferOrN) {
   const tch = chan(trueBufferOrN);
   const fch = chan(falseBufferOrN);
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(ch);
       if (value === CLOSED) {
         tch.close();
@@ -177,7 +177,7 @@ export function reduce(f, init, ch) {
   return go(
     function*() {
       let result = init;
-      for (;;) {
+      while (true) {
         const value = yield _take(ch);
 
         if (value === CLOSED) {
@@ -237,7 +237,7 @@ export function map(f, chs, bufferOrN) {
   }
 
   go(function*() {
-    for (;;) {
+    while (true) {
       dcount = length;
       // We could just launch n goroutines here, but for effciency we
       // don't
@@ -267,7 +267,7 @@ export function merge(chs, bufferOrN) {
   const out = chan(bufferOrN);
   const actives = chs.slice(0);
   go(function*() {
-    for (;;) {
+    while (true) {
       if (actives.length === 0) {
         break;
       }
@@ -319,7 +319,7 @@ export function unique(ch, bufferOrN) {
   const out = chan(bufferOrN);
   let last = NOTHING;
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(ch);
       if (value === CLOSED) {
         break;
@@ -339,7 +339,7 @@ export function partitionBy(f, ch, bufferOrN) {
   let part = [];
   let last = NOTHING;
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(ch);
       if (value === CLOSED) {
         if (part.length > 0) {
@@ -365,7 +365,7 @@ export function partitionBy(f, ch, bufferOrN) {
 export function partition(n, ch, bufferOrN) {
   const out = chan(bufferOrN);
   go(function*() {
-    for (;;) {
+    while (true) {
       const part = new Array(n);
       for (let i = 0; i < n; i += 1) {
         const value = yield _take(ch);
@@ -457,7 +457,7 @@ export function mult(ch) {
   }
 
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(ch);
       const taps = m.taps;
       let t;
@@ -626,7 +626,7 @@ export function mix(out) {
   go(function*() {
     let state = m._getAllState();
 
-    for (;;) {
+    while (true) {
       const result = yield alts(state.reads);
       const value = result.value;
       const channel = result.channel;
@@ -679,9 +679,8 @@ function constantlyNull() {
 }
 
 class Pub {
-  constructor(ch, topicFn, bufferFn) {
+  constructor(ch, bufferFn) {
     this.ch = ch;
-    this.topicFn = topicFn;
     this.bufferFn = bufferFn;
     this.mults = {};
   }
@@ -721,9 +720,9 @@ class Pub {
 }
 
 export function pub(ch, topicFn, bufferFn = constantlyNull) {
-  const p = new Pub(ch, topicFn, bufferFn);
+  const p = new Pub(ch, bufferFn);
   go(function*() {
-    for (;;) {
+    while (true) {
       const value = yield _take(ch);
       const mults = p.mults;
       if (value === CLOSED) {
@@ -768,7 +767,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
   times(n, () => {
     go(
       function*(_taskFn, _jobs, _results) {
-        for (;;) {
+        while (true) {
           const job = yield _take(_jobs);
 
           if (!_taskFn(job)) {
@@ -783,7 +782,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
 
   go(
     function*(_jobs, _from, _results) {
-      for (;;) {
+      while (true) {
         const v = yield _take(_from);
 
         if (v === CLOSED) {
@@ -802,7 +801,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
 
   go(
     function*(_results, _close, _to) {
-      for (;;) {
+      while (true) {
         const p = yield _take(_results);
 
         if (p === CLOSED) {
@@ -814,7 +813,7 @@ function pipelineInternal(n, to, from, close, taskFn) {
 
         const res = yield _take(p);
 
-        for (;;) {
+        while (true) {
           const v = yield _take(res);
 
           if (v === CLOSED) {
@@ -871,6 +870,22 @@ export function pipelineAsync(n, to, af, from, keepOpen) {
   }
 
   return pipelineInternal(n, to, from, !keepOpen, taskFn);
+}
+
+export function fromPromise(promise) {
+  if (
+    typeof promise.then !== 'function' || typeof promise.catch !== 'function'
+  ) {
+    throw new Error('Only accept promise as an input');
+  }
+
+  const pch = promiseChan();
+
+  promise
+    .then(data => putAsync(pch, data, () => pch.close()))
+    .catch(error => putAsync(pch, error, () => pch.close()));
+
+  return pch;
 }
 // Possible "fluid" interfaces:
 

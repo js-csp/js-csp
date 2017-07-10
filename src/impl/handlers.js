@@ -1,8 +1,9 @@
 // @flow
 import noop from 'lodash/noop';
 import { Box } from './boxes';
+import type { HandlerInterface } from './protocols';
 
-export class FnHandler {
+export class FnHandler implements HandlerInterface {
   blockable: boolean;
   func: Function;
 
@@ -24,11 +25,11 @@ export class FnHandler {
   }
 }
 
-export class AltHandler {
-  flag: Box<boolean>;
+export class AltHandler implements HandlerInterface {
+  flag: Box;
   func: Function;
 
-  constructor(flag: Box<boolean>, func: Function) {
+  constructor(flag: Box, func: Function) {
     this.flag = flag;
     this.func = func;
   }
@@ -46,5 +47,3 @@ export class AltHandler {
     return this.func;
   }
 }
-
-export type HandlerType = FnHandler | AltHandler;

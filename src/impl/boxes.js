@@ -1,19 +1,19 @@
 // @flow
-import type { HandlerType } from './handlers';
+import type { HandlerInterface } from './protocols';
 
-export class Box<T> {
-  value: T;
+export class Box {
+  value: any;
 
-  constructor(value: T) {
+  constructor(value: any) {
     this.value = value;
   }
 }
 
-export class PutBox<T> {
-  handler: HandlerType;
-  value: T;
+export class PutBox {
+  handler: HandlerInterface;
+  value: any;
 
-  constructor(handler: HandlerType, value: T) {
+  constructor(handler: HandlerInterface, value: any) {
     this.handler = handler;
     this.value = value;
   }
