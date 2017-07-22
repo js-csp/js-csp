@@ -69,6 +69,5 @@ export {
   alts,
   putThenCallback as putAsync,
   takeThenCallback as takeAsync,
-  NO_VALUE,
 } from './impl/process';
 export { spawn, go, chan, promiseChan } from './csp.core';

@@ -54,12 +54,12 @@ export function alts(
 
 export function poll(channel: Channel): any | typeof NO_VALUE {
   if (channel.closed) {
-    return NO_VALUE;
+    return null;
   }
 
   const result: ?Box = channel.take(new FnHandler(false));
 
-  return result ? result.value : NO_VALUE;
+  return result ? result.value : null;
 }
 
 export function offer(channel: Channel, value: Object): boolean {

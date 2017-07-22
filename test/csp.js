@@ -22,7 +22,6 @@ import {
   timeout,
   DEFAULT,
   CLOSED,
-  NO_VALUE,
 } from './../src/csp';
 import { doAlts } from './../src/impl/select';
 
@@ -196,7 +195,7 @@ describe('offer and poll', () => {
       assert.equal(offer(ch, 44), false);
       assert.equal(poll(ch), 42);
       assert.equal(poll(ch), 43);
-      assert.equal(poll(ch), NO_VALUE);
+      assert.equal(poll(ch), null);
     }
   );
 
@@ -215,14 +214,14 @@ describe('offer and poll', () => {
 
   mocha.it("should fail if they can't complete immediately", () => {
     const ch = chan();
-    assert.equal(poll(ch), NO_VALUE);
+    assert.equal(poll(ch), null);
     assert.equal(offer(ch, 44), false);
   });
 
   mocha.it('should fail if they are performed on a closed channel', () => {
     const ch = chan();
     ch.close();
-    assert.equal(poll(ch), NO_VALUE);
+    assert.equal(poll(ch), null);
     assert.equal(offer(ch, 44), false);
   });
 
@@ -235,7 +234,7 @@ describe('offer and poll', () => {
 
       const takeCh = chan();
       takeAsync(takeCh, noOp);
-      assert.equal(poll(takeCh), NO_VALUE);
+      assert.equal(poll(takeCh), null);
     }
   );
 });
