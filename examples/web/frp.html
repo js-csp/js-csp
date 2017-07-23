@@ -1,0 +1,107 @@
+<html>
+    <head>
+        <meta charset="UTF-8"></meta>
+        <title>FRP</title>
+        <script type="text/javascript" src="../../dist/js-csp.es5.min.js"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+    </head>
+    <body>
+        <style>
+         #display.waiting {
+             color: gray;
+         }
+        </style>
+        <input type="text" name="" value="" id="input" />
+        <div id="output"></div>
+        <script type="text/javascript">
+/**
+  * Throttles inc channel by given amount of milliseconds, but so
+  * that event is only emitted after the given "quiet period". 
+  *  
+  * Example:
+  * ```
+  * inc:             asdf----asdf----
+  * debounce(inc,2): -----f-------f--
+  * ```
+  * @param {Channel} inc
+  * @param {Number} timout in ms
+  * @returns {Channel} debounced channel
+  */
+function* debounce(inc, timeout) {
+  var scheduler
+  var outc = csp.chan();
+  csp.go(function* () {
+    while(true) {
+      var next = yield csp.take(inc);
+      scheduler && clearTimeout(scheduler);
+	    // if nothing happens in the next timeout interval, then `next`
+			// will be propagated. Otherwise, the above line (in the next
+			// event) will reset the timeout.
+			scheduler = setTimeout(
+				() => {
+					csp.put(outc, next);
+				},
+				timeout);
+		}
+	});
+	return outc;
+}
+
+/**
+  * Drops consecutive equal elements. If no comparator function is
+  * specified, uses ===.
+  * @param {Channel} inc
+  * @param {Function} comparatorFn
+  * @returns {Channel}
+  */
+function* skipDuplicates(inc, comparatorFn) {
+  comparatorFn = comparatorFn || ((x,y) => x === y);
+  var init = false;
+  var previous = null;
+  var outc = csp.chan();
+  csp.go(function* () {
+    while(true) {
+      var next = yield csp.take(inc);
+      // always pipe out the first one
+      if (init) {
+        previous = next;
+        init = true;
+        csp.put(outc, next);
+        continue;
+      }
+      // if they're not dupicates, then pipe to outc
+      if (!comparatorFn(next, prev)) {
+        previous = next;
+        csp.put(outc, next);
+        continue;
+      }
+    }
+  });
+  return outc;
+}
+
+var $input = $('#input');
+var $results = $('#results');
+
+var keyups = csp.chan();
+/* Only get the value from each key up */
+$input.on('keyup', evt => {
+	var text = evt.target.value;
+	if (text.length > 2) {
+		//			csp.put(keyups, text);	
+	}
+})
+
+var debounced = debounce(keyups, 500 /* ms */);
+/* Now get only distinct values, so we eliminate the arrows and other control characters */
+var distinct = skipDuplicates(debounced);
+
+csp.go(function*() {
+   while(true) {
+ 		var text = yield csp.take(distinct);
+ 		$('output').val(text)
+ 	}
+ });
+        </script>
+    </body>
+</html>
