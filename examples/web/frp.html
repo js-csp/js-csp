@@ -14,19 +14,19 @@
         <input type="text" name="" value="" id="input" />
         <div id="output"></div>
         <script type="text/javascript">
-/**
-  * Throttles inc channel by given amount of milliseconds, but so
-  * that event is only emitted after the given "quiet period". 
-  *  
-  * Example:
-  * ```
-  * inc:             asdf----asdf----
-  * debounce(inc,2): -----f-------f--
-  * ```
-  * @param {Channel} inc
-  * @param {Number} timout in ms
-  * @returns {Channel} debounced channel
-  */
+  /**
+   * Throttles inc channel by given amount of milliseconds, but so
+   * that event is only emitted after the given "quiet period". 
+   *  
+   * Example:
+   * ```
+   * inc:       asdf----asdf----
+   * debounce(inc,2): -----f-------f--
+   * ```
+   * @param {Channel} inc
+   * @param {Number} timout in ms
+   * @returns {Channel} debounced channel
+   */
 function* debounce(inc, timeout) {
   var scheduler
   var outc = csp.chan();
@@ -34,26 +34,24 @@ function* debounce(inc, timeout) {
     while(true) {
       var next = yield csp.take(inc);
       scheduler && clearTimeout(scheduler);
-	    // if nothing happens in the next timeout interval, then `next`
-			// will be propagated. Otherwise, the above line (in the next
-			// event) will reset the timeout.
-			scheduler = setTimeout(
-				() => {
-					csp.put(outc, next);
-				},
-				timeout);
-		}
-	});
-	return outc;
+      // if nothing happens in the next timeout interval, then `next`
+      // will be propagated. Otherwise, the above line (in the next
+      // event) will reset the timeout.
+      scheduler = setTimeout(
+        () => csp.put(outc, next),
+        timeout);
+    }
+  });
+  return outc;
 }
 
 /**
-  * Drops consecutive equal elements. If no comparator function is
-  * specified, uses ===.
-  * @param {Channel} inc
-  * @param {Function} comparatorFn
-  * @returns {Channel}
-  */
+ * Drops consecutive equal elements. If no comparator function is
+ * specified, uses ===.
+ * @param {Channel} inc
+ * @param {Function} comparatorFn
+ * @returns {Channel}
+ */
 function* skipDuplicates(inc, comparatorFn) {
   comparatorFn = comparatorFn || ((x,y) => x === y);
   var init = false;
@@ -86,10 +84,10 @@ var $results = $('#results');
 var keyups = csp.chan();
 /* Only get the value from each key up */
 $input.on('keyup', evt => {
-	var text = evt.target.value;
-	if (text.length > 2) {
-		csp.putAsync(keyups, text);	
-	}
+  var text = evt.target.value;
+  if (text.length > 2) {
+    csp.putAsync(keyups, text); 
+  }
 })
 
 var debounced = debounce(keyups, 500 /* ms */);
@@ -97,11 +95,11 @@ var debounced = debounce(keyups, 500 /* ms */);
 var distinct = skipDuplicates(debounced);
 
 csp.go(function*() {
-   while(true) {
- 		var text = yield csp.take(distinct);
- 		$('output').val(text)
- 	}
- });
+  while(true) {
+    var text = yield csp.take(distinct);
+    $('output').val(text)
+  }
+});
         </script>
     </body>
 </html>
