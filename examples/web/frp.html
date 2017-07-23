@@ -88,7 +88,7 @@ var keyups = csp.chan();
 $input.on('keyup', evt => {
 	var text = evt.target.value;
 	if (text.length > 2) {
-		//			csp.put(keyups, text);	
+		csp.putAsync(keyups, text);	
 	}
 })
 
