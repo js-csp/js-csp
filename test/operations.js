@@ -364,32 +364,4 @@ describe('Operations', () => {
       assert.deepEqual(['a', 'b', 'c'], yield take(operations.into([], bStrs)));
     });
   });
-
-  describe('fromPromise', () => {
-    it('should work', function*() {
-      const ch = operations.fromPromise(
-        new Promise(resolve => {
-          setTimeout(() => resolve('value'), 500);
-        })
-      );
-
-      // subsequence call to fromPromise channel should return old value
-      assert.equal(yield take(ch), 'value');
-      assert.equal(yield take(ch), 'value');
-
-      assert.deepEqual(
-        yield take(
-          operations.fromPromise(
-            new Promise((resolve, reject) => {
-              setTimeout(
-                () => reject(new Error('Exception from yieldable')),
-                500
-              );
-            })
-          )
-        ),
-        new Error('Exception from yieldable')
-      );
-    });
-  });
 });

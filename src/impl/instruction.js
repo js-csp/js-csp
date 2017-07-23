@@ -11,9 +11,9 @@ export class TakeInstruction {
 
 export class PutInstruction {
   channel: Channel;
-  value: any;
+  value: mixed;
 
-  constructor(channel: Channel, value: any) {
+  constructor(channel: Channel, value: mixed) {
     this.channel = channel;
     this.value = value;
   }
@@ -28,10 +28,10 @@ export class SleepInstruction {
 }
 
 export class AltsInstruction {
-  operations: Channel[] | [Channel, any][];
+  operations: Channel[] | [Channel, mixed][];
   options: Object;
 
-  constructor(operations: Channel[] | [Channel, any][], options: Object) {
+  constructor(operations: Channel[] | [Channel, mixed][], options: Object) {
     this.operations = operations;
     this.options = options;
   }

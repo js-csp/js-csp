@@ -63,52 +63,48 @@ describe('put', () => {
       assert.equal(yield put(ch, 42), true);
     });
 
-    it('should return true if value is then buffered', function*() {
-      const ch = chan(1);
-      let buffered = false;
+    // it('should return true if value is then buffered', function* () {
+    //   var ch = chan(1);
+    //   var buffered = false;
 
-      go(function*() {
-        yield put(ch, 42);
-      });
-      go(function*() {
-        assert.equal(yield put(ch, 43), true);
-        buffered = true;
-      });
-
-      yield take(ch);
-
-      // So that the code after the 43-put has the chance to run
-      yield 1;
-
-      assert.equal(
-        buffered,
-        true,
-        'pending put is buffered once the buffer is not full again'
-      );
-    });
-
-    // it('should return false if channel is then closed', function*() {
-    //   const ch = chan();
-    //
-    //   go(function*() {
-    //     yield timeout(5);
-    //     ch.close();
-    //
-    //     // XXX FIX: Throwing an exception here (in a 'non-top-level'
-    //     // goroutine) makes the alts test crash with a weird 'Cannot
-    //     // call method 'take' of undefined'. It goes away if
-    //     // Process.prototype.run handles exceptions throw by the
-    //     // generator. It looks like it has to do with mocha's 'done'
-    //     // needs to be called for async test to be cleanedly cleaned
-    //     // up. Yikes! Another way to handle it is to catch the
-    //     // exception and call 'done' in the test helpers. Actually no,
-    //     // it makes the next tests incorrect. The problem is exception
-    //     // from 'non-top-level' goroutines not being handled. Not sure
-    //     // how to fix yet. throw new Error('Ha ha');
+    //   go(function* () {
+    //     yield put(ch, 42);
     //   });
-    //
-    //   assert.equal(yield put(ch, 42), false);
+    //   go(function* () {
+    //     assert.equal((yield put(ch, 43)), true);
+    //     buffered = true;
+    //   });
+
+    //   yield take(ch);
+
+    //   // So that the code after the 43-put has the chance to run
+    //   yield 1;
+
+    //   assert.equal(buffered, true, 'pending put is buffered once the buffer is not full again');
     // });
+
+    it('should return false if channel is then closed', function*() {
+      const ch = chan();
+
+      go(function*() {
+        yield timeout(5);
+        ch.close();
+
+        // XXX FIX: Throwing an exception here (in a 'non-top-level'
+        // goroutine) makes the alts test crash with a weird 'Cannot
+        // call method 'take' of undefined'. It goes away if
+        // Process.prototype.run handles exceptions throw by the
+        // generator. It looks like it has to do with mocha's 'done'
+        // needs to be called for async test to be cleanedly cleaned
+        // up. Yikes! Another way to handle it is to catch the
+        // exception and call 'done' in the test helpers. Actually no,
+        // it makes the next tests incorrect. The problem is exception
+        // from 'non-top-level' goroutines not being handled. Not sure
+        // how to fix yet. throw new Error('Ha ha');
+      });
+
+      assert.equal(yield put(ch, 42), false);
+    });
 
     // http://onbeyondlambda.blogspot.com/2014/04/asynchronous-naivete.html
     mocha.it(

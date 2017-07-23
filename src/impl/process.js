@@ -15,10 +15,10 @@ export const NO_VALUE = '@@process/NO_VALUE';
 
 export function putThenCallback(
   channel: Channel,
-  value: any,
+  value: mixed,
   callback: ?Function
 ): void {
-  const result: ?Box = channel.put(value, new FnHandler(true, callback));
+  const result: ?Box<mixed> = channel.put(value, new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -26,7 +26,7 @@ export function putThenCallback(
 }
 
 export function takeThenCallback(channel: Channel, callback: ?Function): void {
-  const result: ?Box = channel.take(new FnHandler(true, callback));
+  const result: ?Box<mixed> = channel.take(new FnHandler(true, callback));
 
   if (result && callback) {
     callback(result.value);
@@ -46,18 +46,18 @@ export function sleep(msecs: number): SleepInstruction {
 }
 
 export function alts(
-  operations: Channel[] | [Channel, any][],
+  operations: Channel[] | [Channel, mixed][],
   options: Object
 ): AltsInstruction {
   return new AltsInstruction(operations, options);
 }
 
-export function poll(channel: Channel): any | typeof NO_VALUE {
+export function poll(channel: Channel): mixed | typeof NO_VALUE {
   if (channel.closed) {
     return NO_VALUE;
   }
 
-  const result: ?Box = channel.take(new FnHandler(false));
+  const result: ?Box<mixed> = channel.take(new FnHandler(false));
 
   return result ? result.value : NO_VALUE;
 }
@@ -67,27 +67,27 @@ export function offer(channel: Channel, value: Object): boolean {
     return false;
   }
 
-  const result: ?Box = channel.put(value, new FnHandler(false));
+  const result: ?Box<mixed> = channel.put(value, new FnHandler(false));
 
   return result instanceof Box;
 }
 
 export class Process {
-  gen: Generator<any, void, any>;
+  gen: Generator<mixed, void, mixed>;
   onFinishFunc: Function;
   finished: boolean;
 
-  constructor(gen: Generator<any, void, any>, onFinishFunc: Function) {
+  constructor(gen: Generator<mixed, void, mixed>, onFinishFunc: Function) {
     this.gen = gen;
     this.finished = false;
     this.onFinishFunc = onFinishFunc;
   }
 
-  schedule = (nextState: any): void => {
+  schedule = (nextState: mixed): void => {
     setImmediate(() => this.run(nextState));
   };
 
-  run(state: any): void {
+  run(state: mixed): void {
     if (!this.finished) {
       // TODO: Shouldn't we (optionally) stop error propagation here (and
       // signal the error through a channel or something)? Otherwise the
