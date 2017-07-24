@@ -69,7 +69,6 @@ function skipDuplicates(inc, comparatorFn) {
   csp.go(function* () {
     while(true) {
       var next = yield csp.take(inc);
-      console.log(next);
       // always pipe out the first one
       if (init) {
         previous = next;
