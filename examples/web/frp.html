@@ -14,31 +14,40 @@
         <input type="text" name="" value="" id="input" />
         <div id="output"></div>
         <script type="text/javascript">
-  /**
-   * Throttles inc channel by given amount of milliseconds, but so
-   * that event is only emitted after the given "quiet period". 
-   *  
-   * Example:
-   * ```
-   * inc:       asdf----asdf----
-   * debounce(inc,2): -----f-------f--
-   * ```
-   * @param {Channel} inc
-   * @param {Number} timout in ms
-   * @returns {Channel} debounced channel
-   */
-function* debounce(inc, timeout) {
+
+function fromEvent($element, eventName) {
+  var outc = csp.chan();
+  $element.on(eventName, evt => csp.putAsync(outc, evt, () => undefined));
+  return outc;
+}
+
+/**
+ * Throttles inc channel by given amount of milliseconds, but so
+ * that event is only emitted after the given "quiet period". 
+ *  
+ * Example:
+ * ```
+ * inc:       asdf----asdf----
+ * debounce(inc,2): -----f-------f--
+ * ```
+ * @param {Channel} inc
+ * @param {Number} timout in ms
+ * @returns {Channel} debounced channel
+ */
+function debounce(inc, timeout) {
   var scheduler
   var outc = csp.chan();
   csp.go(function* () {
     while(true) {
       var next = yield csp.take(inc);
-      scheduler && clearTimeout(scheduler);
+      clearTimeout(scheduler);
       // if nothing happens in the next timeout interval, then `next`
       // will be propagated. Otherwise, the above line (in the next
       // event) will reset the timeout.
-      scheduler = setTimeout(
-        function*() { yield csp.put(outc, next) },
+      scheduler = setTimeout(   
+        function() {
+          csp.putAsync(outc, next, () => undefined)
+        },
         timeout);
     }
   });
@@ -52,7 +61,7 @@ function* debounce(inc, timeout) {
  * @param {Function} comparatorFn
  * @returns {Channel}
  */
-function* skipDuplicates(inc, comparatorFn) {
+function skipDuplicates(inc, comparatorFn) {
   comparatorFn = comparatorFn || ((x,y) => x === y);
   var init = false;
   var previous = null;
@@ -60,6 +69,7 @@ function* skipDuplicates(inc, comparatorFn) {
   csp.go(function* () {
     while(true) {
       var next = yield csp.take(inc);
+      console.log(next);
       // always pipe out the first one
       if (init) {
         previous = next;
@@ -68,7 +78,7 @@ function* skipDuplicates(inc, comparatorFn) {
         continue;
       }
       // if they're not dupicates, then pipe to outc
-      if (!comparatorFn(next, prev)) {
+      if (!comparatorFn(next, previous)) {
         previous = next;
         yield csp.put(outc, next);
         continue;
@@ -79,27 +89,32 @@ function* skipDuplicates(inc, comparatorFn) {
 }
 
 var $input = $('#input');
-var $results = $('#results');
+var $output = $('#output');
 
-var keyups = csp.chan();
-/* Only get the value from each key up */
-$input.on('keyup', function*(evt) {
-  var text = evt.target.value;
-  if (text.length > 2) {
-    yield csp.putAsync(keyups, text); 
+var keyups = fromEvent($input, 'keyup');
+var longText = csp.chan(10);
+
+csp.go(function*() {
+  while(true) {
+    var evt = yield csp.take(keyups);
+    var text = evt.target.value;
+    if (text.length > 2) {
+      yield csp.put(longText, evt.key, () => undefined);
+   }
   }
-})
+});
 
-var debounced = debounce(keyups, 500 /* ms */);
-/* Now get only distinct values, so we eliminate the arrows and other control characters */
+var debounced = debounce(longText, 500 /* ms */);
 var distinct = skipDuplicates(debounced);
 
 csp.go(function* () {
+  var text = "";
   while(true) {
-    var text = yield csp.take(distinct);
-    $('output').val(text)
+    var ch = yield csp.take(distinct);
+    text += ch;
+    $output.text(text)
   }
-});
+ });
         </script>
     </body>
 </html>
