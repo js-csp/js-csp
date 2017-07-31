@@ -46,7 +46,7 @@
               // event) will reset the timeout.
               scheduler = setTimeout(   
                 function() {
-                  csp.putAsync(outc, next, () => undefined)
+                  csp.putAsync(outc, next);
                 },
                 timeout);
             }
