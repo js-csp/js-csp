@@ -17,9 +17,7 @@
         
         function fromEvent($element, eventName) {
           var outc = csp.chan();
-          csp.go(function* () {
-            $element.on(eventName, evt => { yield csp.put(outc, evt) });
-          });
+          $element.on(eventName, evt => { csp.putAsync(outc, evt) });
           return outc;
         }
 
@@ -102,7 +100,7 @@
             if (text.length > 2) {
               yield csp.put(longText, evt.key, () => undefined);
            }
-          }p
+          }
         });
 
         var debounced = debounce(longText, 500 /* ms */);
