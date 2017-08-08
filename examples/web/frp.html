@@ -1,0 +1,139 @@
+<html>
+    <head>
+        <meta charset="UTF-8"></meta>
+        <title>FRP</title>
+        <script type="text/javascript" src="../../dist/js-csp.min.js"></script>
+        <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.1/jquery.min.js"></script>
+    </head>
+    <body>
+        <style>
+         #display.waiting {
+             color: gray;
+         }
+        </style>
+        <h3>FRP Example</h3>
+        <h4>Demonstrates controling/transforming stream input</h4>
+        <ul>
+          <li>
+            Processes input text when total text is more than two characters.
+          </li>
+          <li>
+            Debounces key presses by 500ms i.e., it limits the rate it
+            processes key presses.
+          </li>
+          <li>
+            Skips duplicate key presses.
+          </li>
+          <li>
+            Example:
+            <pre>
+input:  abcd----efgh----
+output: -----d-------h--
+            </pre>
+          </li>
+        </ul>
+        <input type="text" name="" value="" id="input" />
+        <div id="output"></div>
+        <script type="text/javascript">
+        
+        function fromEvent($element, eventName) {
+          var outc = csp.chan();
+          $element.on(eventName, evt => { csp.putAsync(outc, evt) });
+          return outc;
+        }
+
+        /**
+         * Throttles inc channel by given amount of milliseconds, but so
+         * that event is only emitted after the given "quiet period". 
+         *  
+         * Example:
+         * ```
+         * inc:             abcd----efgh----
+         * debounce(inc,2): -----d-------h--
+         * ```
+         * @param {Channel} inc
+         * @param {Number} timout in ms
+         * @returns {Channel} debounced channel
+         */
+        function debounce(inc, timeout) {
+          var scheduler
+          var outc = csp.chan();
+          csp.go(function* () {
+            while(true) {
+              var next = yield csp.take(inc);
+              clearTimeout(scheduler);
+              // if nothing happens in the next timeout interval, then `next`
+              // will be propagated. Otherwise, the above line (in the next
+              // event) will reset the timeout.
+              scheduler = setTimeout(   
+                function() {
+                  csp.putAsync(outc, next);
+                },
+                timeout);
+            }
+          });
+          return outc;
+        }
+
+        /**
+         * Drops consecutive equal elements. If no comparator function is
+         * specified, uses ===.
+         * @param {Channel} inc
+         * @param {Function} comparatorFn
+         * @returns {Channel}
+         */
+        function skipDuplicates(inc, comparatorFn) {
+          comparatorFn = comparatorFn || ((x,y) => x === y);
+          var init = false;
+          var previous = null;
+          var outc = csp.chan();
+          csp.go(function* () {
+            while(true) {
+              var next = yield csp.take(inc);
+              // always pipe out the first one
+              if (init) {
+                previous = next;
+                init = true;
+                yield csp.put(outc, next);
+                continue;
+              }
+              // if they're not dupicates, then pipe to outc
+              if (!comparatorFn(next, previous)) {
+                previous = next;
+                yield csp.put(outc, next);
+                continue;
+              }
+            }
+          });
+          return outc;
+        }
+
+        var $input = $('#input');
+        var $output = $('#output');
+
+        var keyups = fromEvent($input, 'keyup');
+        var longText = csp.chan();
+        var debounced = debounce(longText, 500 /* ms */);
+        var distinct = skipDuplicates(debounced);
+
+        csp.go(function*() {
+          while(true) {
+            var evt = yield csp.take(keyups);
+            var text = evt.target.value;
+            if (text.length > 2) {
+              yield csp.put(longText, evt.key);
+           }
+          }
+        });
+
+        csp.go(function* () {
+          var text = "";
+          while(true) {
+            var ch =  yield csp.take(distinct);
+            text += ch;
+            $output.text(text)
+          }
+        });
+        </script>
+    </body>
+</html>
