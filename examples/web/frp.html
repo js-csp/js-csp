@@ -11,6 +11,27 @@
              color: gray;
          }
         </style>
+        <h3>FRP Example</h3>
+        <h4>Demonstrates controling/transforming stream input</h4>
+        <ul>
+          <li>
+            Processes input text when total text is more than two characters.
+          </li>
+          <li>
+            Debounces key presses by 500ms i.e., it limits the rate it
+            processes key presses.
+          </li>
+          <li>
+            Skips duplicate key presses.
+          </li>
+          <li>
+            Example:
+            <pre>
+input:  abcd----efgh----
+output: -----d-------h--
+            </pre>
+          </li>
+        </ul>
         <input type="text" name="" value="" id="input" />
         <div id="output"></div>
         <script type="text/javascript">
@@ -27,8 +48,8 @@
          *  
          * Example:
          * ```
-         * inc:       asdf----asdf----
-         * debounce(inc,2): -----f-------f--
+         * inc:             abcd----efgh----
+         * debounce(inc,2): -----d-------h--
          * ```
          * @param {Channel} inc
          * @param {Number} timout in ms
@@ -91,20 +112,19 @@
         var $output = $('#output');
 
         var keyups = fromEvent($input, 'keyup');
-        var longText = csp.chan(10);
+        var longText = csp.chan();
+        var debounced = debounce(longText, 500 /* ms */);
+        var distinct = skipDuplicates(debounced);
 
         csp.go(function*() {
           while(true) {
             var evt = yield csp.take(keyups);
             var text = evt.target.value;
             if (text.length > 2) {
-              yield csp.put(longText, evt.key, () => undefined);
+              yield csp.put(longText, evt.key);
            }
           }
         });
-
-        var debounced = debounce(longText, 500 /* ms */);
-        var distinct = skipDuplicates(debounced);
 
         csp.go(function* () {
           var text = "";
