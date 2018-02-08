@@ -6,6 +6,12 @@
 # js-csp
 Communicating sequential processes for Javascript (like Clojurescript core.async, or Go).
 
+## Maintainer wanted
+This project is at maintenance mode at the moment, and actively looking for new maintainers. Please send us
+an issue via github if you are interested.
+
+Current maintainer: [hung-phan](https://github.com/hung-phan), [gt3](https://github.com/gt3)
+
 ## Examples
 ```javascript
 const csp = require('js-csp');
