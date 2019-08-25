@@ -17,7 +17,7 @@
     "lodash": "^4.17.4"
   },
   "devDependencies": {
-    "babel-cli": "^6.22.2",
+    "babel-cli": "^6.26.0",
     "babel-core": "^6.22.1",
     "babel-eslint": "^7.1.1",
     "babel-loader": "^6.2.10",
@@ -44,7 +44,7 @@
     "eslint-plugin-jsx-a11y": "^4.0.0",
     "eslint-plugin-mocha": "^4.8.0",
     "eslint-plugin-react": "^6.9.0",
-    "eslint-watch": "^2.1.14",
+    "eslint-watch": "^6.0.0",
     "flow-bin": "^0.38.0",
     "husky": "^0.13.3",
     "istanbul": "^1.1.0-alpha.1",
@@ -52,7 +52,7 @@
     "jsdom-global": "^2.1.1",
     "lint-staged": "^3.4.0",
     "lodash-webpack-plugin": "^0.11.0",
-    "mocha": "^3.2.0",
+    "mocha": "^6.2.0",
     "prettier": "^0.22.0",
     "rimraf": "^2.5.4",
     "transducers.js": "^0.3.2",
