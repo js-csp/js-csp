@@ -50,7 +50,7 @@ csp.go(function* () {
 });
 ```
 
-There are more under [examples](examples/) directory.
+There are more under the [examples](examples/) directory.
 
 ## Documentation
 
@@ -58,7 +58,7 @@ There are more under [examples](examples/) directory.
 - [Advanced operations](doc/advanced.md).
 
 This is a very close port of Clojurescript's [core.async](https://github.com/clojure/core.async). The most significant difference
-is that the IOC logic is encapsulated using generators (`yield`) instead of macros. Therefore resources on `core.async` or Go channels are also helpful.
+is that the IOC logic is encapsulated using generators (`yield`) instead of macros. Therefore, resources on `core.async` or Go channels are also helpful.
 
 ## Other
 
@@ -89,7 +89,7 @@ Some areas that need attention:
 
 ### Development
 
-These commands are supposed to run separately
+These commands are supposed to run separately:
 ```bash
 $ npm run test:watch
 $ npm run lint # for code quality checking
